@@ -58,8 +58,8 @@ export default function Hero() {
       </div>
 
       {/* Content Premium com container responsivo */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 text-white">
-        <div className="text-center max-w-5xl mx-auto">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-16 text-white">
+        <div className="text-center max-w-6xl mx-auto">
           {/* Badge Premium */}
           <div className="inline-flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 bg-white/10 backdrop-blur-md rounded-full border border-[#98ab44]/30 mb-6 sm:mb-8 animate-slide-up">
             <Compass className="h-4 w-4 sm:h-5 sm:w-5 text-[#98ab44]" />
@@ -67,44 +67,44 @@ export default function Hero() {
           </div>
           
           {/* Título Principal com tipografia premium responsiva */}
-          <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6 sm:mb-8 leading-tight animate-slide-up delay-200">
-            <span className="block mb-2">Investir é coisa séria,</span>
+          <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-bold mb-6 sm:mb-8 lg:mb-10 leading-tight animate-slide-up delay-200 max-w-5xl mx-auto">
+            <span className="block mb-2 lg:mb-4">Investir é coisa séria,</span>
             <span className="bg-gradient-to-r from-[#98ab44] to-[#becc6a] bg-clip-text text-transparent">
               mas pode ser simples e acessível
             </span>
           </h1>
           
           {/* Subtítulo Premium com melhor responsividade */}
-          <p className="text-lg sm:text-xl md:text-2xl mb-8 sm:mb-12 text-gray-200 max-w-4xl mx-auto leading-relaxed font-light animate-slide-up delay-300 px-4 sm:px-0">
+          <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl mb-8 sm:mb-12 lg:mb-16 text-gray-200 max-w-5xl mx-auto leading-relaxed font-light animate-slide-up delay-300 px-4 sm:px-0">
             Ajudamos você a alcançar o melhor nível de bem-estar na sua vida através do mercado financeiro com o 
             <span className="text-[#98ab44] font-medium"> melhor modelo de serviço financeiro disponível.</span>
           </p>
         </div>
 
         {/* Seção de Valores com Cards Premium responsivos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mb-8 sm:mb-12 animate-slide-up delay-500 max-w-4xl mx-auto">
-          <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-white/10 hover:bg-white/10 transition-all duration-300 group">
-            <div className="flex items-center gap-3 sm:gap-4 mb-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#98ab44]/20 rounded-xl flex items-center justify-center group-hover:bg-[#98ab44]/30 transition-colors">
-                <Mountain className="h-5 w-5 sm:h-6 sm:w-6 text-[#98ab44]" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 xl:gap-16 mb-8 sm:mb-12 lg:mb-16 animate-slide-up delay-500 max-w-6xl mx-auto">
+          <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 sm:p-8 lg:p-10 xl:p-12 border border-white/10 hover:bg-white/10 transition-all duration-300 group">
+            <div className="flex items-center gap-3 sm:gap-4 lg:gap-6 mb-4 lg:mb-6">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 xl:w-20 xl:h-20 bg-[#98ab44]/20 rounded-xl flex items-center justify-center group-hover:bg-[#98ab44]/30 transition-colors">
+                <Mountain className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 xl:h-10 xl:w-10 text-[#98ab44]" />
               </div>
-              <h3 className="font-serif text-lg sm:text-xl font-semibold text-white">Nossa Origem</h3>
+              <h3 className="font-serif text-lg sm:text-xl lg:text-2xl xl:text-3xl font-semibold text-white">Nossa Origem</h3>
             </div>
-            <p className="text-gray-300 leading-relaxed text-sm sm:text-base">
+            <p className="text-gray-300 leading-relaxed text-sm sm:text-base lg:text-lg xl:text-xl">
               Nascida no interior do Rio Grande do Sul, carregamos os valores de 
               <span className="text-[#98ab44] font-medium"> humildade, tranquilidade, identidade e trabalho duro</span> 
               em cada consultoria.
             </p>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-white/10 hover:bg-white/10 transition-all duration-300 group">
-            <div className="flex items-center gap-3 sm:gap-4 mb-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#becc6a]/20 rounded-xl flex items-center justify-center group-hover:bg-[#becc6a]/30 transition-colors">
-                <Compass className="h-5 w-5 sm:h-6 sm:w-6 text-[#becc6a]" />
+          <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 sm:p-8 lg:p-10 xl:p-12 border border-white/10 hover:bg-white/10 transition-all duration-300 group">
+            <div className="flex items-center gap-3 sm:gap-4 lg:gap-6 mb-4 lg:mb-6">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 xl:w-20 xl:h-20 bg-[#becc6a]/20 rounded-xl flex items-center justify-center group-hover:bg-[#becc6a]/30 transition-colors">
+                <Compass className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 xl:h-10 xl:w-10 text-[#becc6a]" />
               </div>
-              <h3 className="font-serif text-lg sm:text-xl font-semibold text-white">Nossa Missão</h3>
+              <h3 className="font-serif text-lg sm:text-xl lg:text-2xl xl:text-3xl font-semibold text-white">Nossa Missão</h3>
             </div>
-            <p className="text-gray-300 leading-relaxed text-sm sm:text-base">
+            <p className="text-gray-300 leading-relaxed text-sm sm:text-base lg:text-lg xl:text-xl">
               Mais do que finanças, oferecemos 
               <span className="text-[#becc6a] font-medium"> direção clara e segura</span> 
               para grandes patrimônios, sem atalhos, apenas estrutura sólida.
@@ -113,20 +113,20 @@ export default function Hero() {
         </div>
 
         {/* CTAs Premium com animações responsivos */}
-        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center animate-slide-up delay-700 max-w-2xl mx-auto">
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 lg:gap-8 xl:gap-10 justify-center items-center animate-slide-up delay-700 max-w-4xl mx-auto">
           <Button
             onClick={scrollToContact}
             size="lg"
-            className="w-full sm:w-auto bg-gradient-to-r from-[#98ab44] to-[#becc6a] hover:from-[#98ab44]/90 hover:to-[#becc6a]/90 text-white px-8 sm:px-10 py-4 sm:py-5 text-base sm:text-lg font-semibold rounded-2xl shadow-2xl hover:shadow-[#98ab44]/25 transition-all duration-300 group border-0"
+            className="w-full sm:w-auto bg-gradient-to-r from-[#98ab44] to-[#becc6a] hover:from-[#98ab44]/90 hover:to-[#becc6a]/90 text-white px-8 sm:px-10 lg:px-12 xl:px-16 py-4 sm:py-5 lg:py-6 xl:py-8 text-base sm:text-lg lg:text-xl xl:text-2xl font-semibold rounded-2xl shadow-2xl hover:shadow-[#98ab44]/25 transition-all duration-300 group border-0"
           >
             Fale com um Consultor
-            <ArrowRight className="ml-2 sm:ml-3 h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="ml-2 sm:ml-3 lg:ml-4 xl:ml-5 h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 xl:h-7 xl:w-7 group-hover:translate-x-1 transition-transform" />
           </Button>
           
           <Button
             variant="outline"
             size="lg"
-            className="w-full sm:w-auto border-2 border-white/30 text-white hover:bg-white/10 hover:border-[#98ab44] px-8 sm:px-10 py-4 sm:py-5 text-base sm:text-lg rounded-2xl backdrop-blur-md transition-all duration-300"
+            className="w-full sm:w-auto border-2 border-white/30 text-white hover:bg-white/10 hover:border-[#98ab44] px-8 sm:px-10 lg:px-12 xl:px-16 py-4 sm:py-5 lg:py-6 xl:py-8 text-base sm:text-lg lg:text-xl xl:text-2xl rounded-2xl backdrop-blur-md transition-all duration-300"
             asChild
           >
             <a href="#services">Conheça nossos serviços</a>

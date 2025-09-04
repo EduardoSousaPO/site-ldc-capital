@@ -81,19 +81,19 @@
   }
   
   h1 {
-    @apply text-4xl lg:text-6xl font-bold tracking-tight;
+    @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight;
   }
   
   h2 {
-    @apply text-3xl lg:text-5xl font-semibold;
+    @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-semibold;
   }
   
   h3 {
-    @apply text-2xl lg:text-3xl font-semibold;
+    @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl font-semibold;
   }
   
   p {
-    @apply text-base lg:text-lg leading-relaxed;
+    @apply text-sm sm:text-base md:text-lg lg:text-xl leading-relaxed;
   }
 }
 
@@ -256,4 +256,45 @@ html {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* Correções para telas grandes - previne sobreposição */
+@media (min-width: 1280px) {
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+@media (min-width: 1536px) {
+  .container {
+    max-width: 1536px;
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+}
+
+/* Garantir espaçamento adequado em telas ultra-wide */
+@media (min-width: 1920px) {
+  .container {
+    max-width: 1800px;
+    padding-left: 4rem;
+    padding-right: 4rem;
+  }
+}
+
+/* Prevenção de overflow horizontal */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  overflow-x: hidden;
+  width: 100%;
 }
