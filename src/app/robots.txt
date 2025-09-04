@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://ldccapital.com.br/sitemap.xml
+
+# Disallow admin areas
+Disallow: /api/
+Disallow: /.data/
+Disallow: /admin/
+
+# Allow all pages
+Allow: /
+Allow: /consultoria
+Allow: /blog
+Allow: /materiais
+Allow: /contato

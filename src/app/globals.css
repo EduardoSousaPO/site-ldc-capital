@@ -1,26 +1,259 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-public-sans);
+  --font-serif: "IvyMode", "Georgia", "Times New Roman", serif;
+  --color-ldc-primary: #262d3d;
+  --color-ldc-accent-1: #98ab44;
+  --color-ldc-accent-2: #becc6a;
+  --color-ldc-gray-light: #e3e3e3;
+  --color-ldc-neutral-dark: #344645;
+  --color-ldc-neutral-medium: #577171;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  --radius: 1rem;
+  --background: #ffffff;
+  --foreground: #262d3d;
+  --card: #ffffff;
+  --card-foreground: #262d3d;
+  --popover: #ffffff;
+  --popover-foreground: #262d3d;
+  --primary: #98ab44;
+  --primary-foreground: #ffffff;
+  --secondary: #e3e3e3;
+  --secondary-foreground: #262d3d;
+  --muted: #e3e3e3;
+  --muted-foreground: #577171;
+  --accent: #becc6a;
+  --accent-foreground: #262d3d;
+  --destructive: #dc2626;
+  --border: #e3e3e3;
+  --input: #e3e3e3;
+  --ring: #98ab44;
+}
+
+.dark {
+  --background: #262d3d;
+  --foreground: #ffffff;
+  --card: #344645;
+  --card-foreground: #ffffff;
+  --popover: #344645;
+  --popover-foreground: #ffffff;
+  --primary: #98ab44;
+  --primary-foreground: #262d3d;
+  --secondary: #577171;
+  --secondary-foreground: #ffffff;
+  --muted: #577171;
+  --muted-foreground: #e3e3e3;
+  --accent: #becc6a;
+  --accent-foreground: #262d3d;
+  --border: #577171;
+  --input: #577171;
+  --ring: #98ab44;
+}
+
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+  
+  *:focus-visible {
+    @apply outline-2 outline-[#98ab44] outline-offset-2;
+  }
+  
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+    letter-spacing: -0.025em;
+  }
+  
+  h1 {
+    @apply text-4xl lg:text-6xl font-bold tracking-tight;
+  }
+  
+  h2 {
+    @apply text-3xl lg:text-5xl font-semibold;
+  }
+  
+  h3 {
+    @apply text-2xl lg:text-3xl font-semibold;
+  }
+  
+  p {
+    @apply text-base lg:text-lg leading-relaxed;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--muted);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Focus styles for accessibility */
+.focus-visible {
+  @apply outline-2 outline-[#98ab44] outline-offset-2;
+}
+
+/* Animações Premium LDC Capital */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(152, 171, 68, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(152, 171, 68, 0.6);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.8s ease-out forwards;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.8s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.8s ease-out forwards;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+/* Delays para animações escalonadas */
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-500 { animation-delay: 0.5s; }
+.delay-700 { animation-delay: 0.7s; }
+.delay-1000 { animation-delay: 1s; }
+.delay-2000 { animation-delay: 2s; }
+
+/* Gradientes premium */
+.gradient-premium {
+  background: linear-gradient(135deg, #98ab44 0%, #becc6a 50%, #98ab44 100%);
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Efeitos de hover premium */
+.card-premium {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-premium:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 40px rgba(152, 171, 68, 0.1);
+}
+
+/* Glassmorphism effect */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Texto com gradiente */
+.text-gradient-ldc {
+  background: linear-gradient(135deg, #98ab44, #becc6a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
