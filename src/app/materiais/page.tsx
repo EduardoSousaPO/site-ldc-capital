@@ -22,16 +22,70 @@ export default function MateriaisPage() {
     <main>
       <Header />
       
-      {/* Hero Section */}
-      <section className="pt-20 pb-16 lg:pt-32 lg:pb-24 bg-gradient-to-br from-[#262d3d] to-[#344645] text-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-              Materiais Gratuitos
+      {/* Hero Section Premium */}
+      <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
+        {/* Background com cor uniforme conforme print */}
+        <div className="absolute inset-0 bg-[#becc6a]">
+          {/* Padrão sutil para textura */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0" style={{
+              backgroundImage: `radial-gradient(circle at 20% 20%, rgba(152, 171, 68, 0.1) 2px, transparent 2px),
+                               radial-gradient(circle at 80% 80%, rgba(190, 204, 106, 0.05) 2px, transparent 2px)`,
+              backgroundSize: '60px 60px'
+            }}></div>
+          </div>
+          
+          {/* Elementos decorativos flutuantes */}
+          <div className="absolute top-20 right-10 w-32 h-32 border-2 border-white/10 rounded-full animate-pulse"></div>
+          <div className="absolute bottom-20 left-20 w-48 h-48 border border-white/5 rounded-full animate-pulse delay-1000"></div>
+          <div className="absolute top-1/2 left-10 w-24 h-24 border border-white/20 rounded-full animate-pulse delay-2000"></div>
+        </div>
+
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-white">
+          <div className="text-center max-w-5xl mx-auto">
+            {/* Badge Premium */}
+            <div className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-md rounded-full border border-[#98ab44]/30 mb-8 animate-slide-up">
+              <FileText className="h-5 w-5 text-[#98ab44]" />
+              <span className="text-[#98ab44] font-medium">Conteúdo Especializado</span>
+            </div>
+            
+            {/* Título com gradiente */}
+            <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6 sm:mb-8 leading-tight animate-slide-up delay-200 px-2 sm:px-0">
+              <span className="bg-gradient-to-r from-white via-gray-100 to-white bg-clip-text text-transparent">
+                Materiais 
+              </span>
+              <span className="text-white"> Gratuitos</span>
             </h1>
-            <p className="text-xl md:text-2xl text-gray-200 max-w-3xl mx-auto leading-relaxed">
+            
+            <p className="text-lg sm:text-xl md:text-2xl mb-8 sm:mb-12 text-gray-100 max-w-4xl mx-auto leading-relaxed font-light animate-slide-up delay-300 px-2 sm:px-0">
               E-books, guias e cartilhas para aprimorar seu conhecimento sobre investimentos
             </p>
+
+            {/* Stats premium */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 animate-slide-up delay-500 max-w-3xl mx-auto px-4 sm:px-0">
+              <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-white/10">
+                <div className="text-2xl sm:text-3xl font-bold text-white mb-2">100%</div>
+                <div className="text-white/80 text-sm sm:text-base">Gratuito</div>
+              </div>
+              <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-white/10">
+                <div className="text-2xl sm:text-3xl font-bold text-white mb-2">Especializado</div>
+                <div className="text-white/80 text-sm sm:text-base">Por consultores</div>
+              </div>
+              <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-white/10">
+                <div className="text-2xl sm:text-3xl font-bold text-white mb-2">Prático</div>
+                <div className="text-white/80 text-sm sm:text-base">Aplicação imediata</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Scroll Indicator */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 hidden sm:flex">
+          <div className="flex flex-col items-center gap-2 animate-bounce">
+            <span className="text-white/60 text-sm font-medium">Explore os materiais</span>
+            <div className="w-6 h-10 border-2 border-white/40 rounded-full flex justify-center">
+              <div className="w-1 h-3 bg-white/60 rounded-full mt-2 animate-pulse"></div>
+            </div>
           </div>
         </div>
       </section>
@@ -52,62 +106,68 @@ export default function MateriaisPage() {
         </div>
       </section>
 
-      {/* Materials Grid */}
-      <section className="py-16 lg:py-24">
+      {/* Materials Grid Premium */}
+      <section className="py-16 lg:py-24 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           {materials.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 text-lg">Materiais em breve...</p>
-              <p className="text-gray-500 mt-2">
+            <div className="text-center py-16">
+              <div className="w-24 h-24 bg-[#98ab44]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <FileText className="w-12 h-12 text-[#98ab44]" />
+              </div>
+              <h3 className="font-serif text-2xl font-bold text-[#262d3d] mb-4">Materiais em breve...</h3>
+              <p className="text-gray-600 text-lg max-w-md mx-auto leading-relaxed">
                 Estamos preparando conteúdos exclusivos para você. Volte em breve!
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
               {materials.map((material) => (
-                <Card key={material.slug} className="group hover:shadow-lg transition-all duration-300 border-0 shadow-md overflow-hidden">
+                <Card key={material.slug} className="group hover:shadow-2xl transition-all duration-500 border-0 shadow-lg overflow-hidden bg-white rounded-2xl sm:rounded-3xl">
                   <div className="aspect-[4/3] bg-gray-200 relative overflow-hidden">
                     {material.cover ? (
                       <Image
                         src={material.cover}
                         alt={material.title}
                         fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="object-cover group-hover:scale-110 transition-transform duration-700"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-[#98ab44] to-[#becc6a] flex items-center justify-center">
-                        <BookOpen className="w-16 h-16 text-white" />
+                      <div className="w-full h-full bg-gradient-to-br from-[#98ab44] to-[#becc6a] flex items-center justify-center relative">
+                        <BookOpen className="w-20 h-20 text-white/90" />
+                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent to-white/10"></div>
                       </div>
                     )}
                     
-                    {/* Type Badge */}
-                    <div className="absolute top-4 left-4">
-                      <Badge className="bg-[#262d3d] text-white">
+                    {/* Type Badge Premium */}
+                    <div className="absolute top-6 left-6">
+                      <Badge className="bg-[#262d3d]/90 backdrop-blur-md text-white px-3 py-1 text-sm font-medium border border-white/20">
                         {material.type}
                       </Badge>
                     </div>
+
+                    {/* Hover Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   </div>
                   
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <Badge variant="secondary" className="text-xs">
+                  <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-8 pt-4 sm:pt-8">
+                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                      <Badge variant="secondary" className="text-xs sm:text-sm bg-[#98ab44]/10 text-[#98ab44] border-[#98ab44]/20">
                         {material.category}
                       </Badge>
                       {material.pages && (
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs sm:text-sm text-gray-500 font-medium">
                           {material.pages} páginas
                         </span>
                       )}
                     </div>
                     
-                    <CardTitle className="font-serif text-xl text-[#262d3d] group-hover:text-[#98ab44] transition-colors line-clamp-2">
+                    <CardTitle className="font-serif text-lg sm:text-xl lg:text-2xl text-[#262d3d] group-hover:text-[#98ab44] transition-colors duration-300 line-clamp-2 leading-tight">
                       {material.title}
                     </CardTitle>
                   </CardHeader>
                   
-                  <CardContent className="pt-0">
-                    <p className="text-gray-600 text-sm line-clamp-3 mb-6">
+                  <CardContent className="pt-0 px-4 sm:px-8 pb-4 sm:pb-8">
+                    <p className="text-gray-600 text-sm sm:text-base leading-relaxed mb-6 sm:mb-8 line-clamp-3">
                       {material.description}
                     </p>
                     
@@ -133,38 +193,38 @@ export default function MateriaisPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-[#98ab44]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <BookOpen className="w-8 h-8 text-[#98ab44]" />
+            <div className="text-center group">
+              <div className="w-20 h-20 bg-gradient-to-br from-[#98ab44] to-[#becc6a] rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <BookOpen className="w-10 w-10 text-white" />
               </div>
-              <h3 className="font-serif text-xl font-semibold text-[#262d3d] mb-3">
+              <h3 className="font-serif text-2xl font-bold text-[#262d3d] mb-4">
                 Conteúdo Especializado
               </h3>
-              <p className="text-gray-600">
-                Material desenvolvido por consultores com mais de 400M sob gestão
+              <p className="text-gray-600 leading-relaxed">
+                Material desenvolvido por consultores com mais de 400M sob gestão e consultoria
               </p>
             </div>
 
-            <div className="text-center">
-              <div className="w-16 h-16 bg-[#98ab44]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Download className="w-8 h-8 text-[#98ab44]" />
+            <div className="text-center group">
+              <div className="w-20 h-20 bg-gradient-to-br from-[#becc6a] to-[#98ab44] rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <Download className="w-10 w-10 text-white" />
               </div>
-              <h3 className="font-serif text-xl font-semibold text-[#262d3d] mb-3">
+              <h3 className="font-serif text-2xl font-bold text-[#262d3d] mb-4">
                 100% Gratuito
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 leading-relaxed">
                 Acesso livre a todos os materiais, sem custos ocultos ou pegadinhas
               </p>
             </div>
 
-            <div className="text-center">
-              <div className="w-16 h-16 bg-[#98ab44]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FileText className="w-8 h-8 text-[#98ab44]" />
+            <div className="text-center group">
+              <div className="w-20 h-20 bg-gradient-to-br from-[#98ab44] to-[#becc6a] rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <FileText className="w-10 w-10 text-white" />
               </div>
-              <h3 className="font-serif text-xl font-semibold text-[#262d3d] mb-3">
+              <h3 className="font-serif text-2xl font-bold text-[#262d3d] mb-4">
                 Aplicação Prática
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 leading-relaxed">
                 Guias com passo a passo e ferramentas para aplicar imediatamente
               </p>
             </div>

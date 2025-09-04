@@ -26,8 +26,8 @@ export default function BlogPage() {
     <main>
       <Header />
       
-      {/* Hero Section - Inspirado na Musa */}
-      <section className="relative pt-20 pb-16 lg:pt-32 lg:pb-24 bg-gradient-to-br from-[#98ab44] to-[#becc6a] text-white overflow-hidden">
+      {/* Hero Section - Cor uniforme conforme print */}
+      <section className="relative pt-20 pb-16 lg:pt-32 lg:pb-24 bg-[#becc6a] text-white overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0" style={{
@@ -43,15 +43,15 @@ export default function BlogPage() {
 
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <div className="inline-block px-4 py-2 bg-white/20 text-white text-sm font-medium rounded-full border border-white/30 mb-6">
+            <div className="inline-block px-3 py-1.5 sm:px-4 sm:py-2 bg-white/20 text-white text-xs sm:text-sm font-medium rounded-full border border-white/30 mb-4 sm:mb-6">
               BLOG LDC CAPITAL
             </div>
             
-            <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+            <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-4 sm:mb-6 leading-tight px-2 sm:px-0">
               Confira nosso Blog
             </h1>
             
-            <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-lg sm:text-xl md:text-2xl text-white/90 max-w-3xl mx-auto leading-relaxed px-2 sm:px-0">
               Insights e conhecimento sobre investimentos, planejamento financeiro e consultoria
             </p>
           </div>
@@ -61,7 +61,7 @@ export default function BlogPage() {
       {/* Main Content - Layout com Sidebar */}
       <section className="py-16 lg:py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
             
             {/* Posts Grid - 3/4 da largura */}
             <div className="lg:col-span-3">
@@ -71,7 +71,7 @@ export default function BlogPage() {
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-8 sm:mb-12">
                     {posts.map((post) => (
                       <Card key={post.slug} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden bg-white">
                         <div className="aspect-[16/10] bg-gray-200 relative overflow-hidden">
@@ -98,8 +98,8 @@ export default function BlogPage() {
                           </div>
                         </div>
                         
-                        <CardContent className="p-6">
-                          <h2 className="font-serif text-xl font-bold text-[#262d3d] group-hover:text-[#98ab44] transition-colors mb-3 line-clamp-2 leading-tight">
+                        <CardContent className="p-4 sm:p-6">
+                          <h2 className="font-serif text-lg sm:text-xl font-bold text-[#262d3d] group-hover:text-[#98ab44] transition-colors mb-3 line-clamp-2 leading-tight">
                             <Link href={`/blog/${post.slug}`}>
                               {post.title}
                             </Link>
@@ -109,10 +109,11 @@ export default function BlogPage() {
                             {post.summary}
                           </p>
                           
-                          <div className="flex items-center justify-between text-xs text-gray-500">
+                          <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
                             <div className="flex items-center">
                               <CalendarDays className="w-3 h-3 mr-1" />
-                              {format(new Date(post.date), "dd 'de' MMM, yyyy", { locale: ptBR })}
+                              <span className="hidden sm:inline">{format(new Date(post.date), "dd 'de' MMM, yyyy", { locale: ptBR })}</span>
+                              <span className="sm:hidden">{format(new Date(post.date), "dd/MM/yy", { locale: ptBR })}</span>
                             </div>
                             <div className="flex items-center">
                               <Clock className="w-3 h-3 mr-1" />
@@ -120,7 +121,7 @@ export default function BlogPage() {
                             </div>
                           </div>
                           
-                          <div className="mt-4 pt-4 border-t border-gray-100">
+                          <div className="pt-4 border-t border-gray-100">
                             <Link 
                               href={`/blog/${post.slug}`}
                               className="text-[#98ab44] hover:text-[#98ab44]/80 font-medium text-sm flex items-center group/link"
@@ -134,43 +135,45 @@ export default function BlogPage() {
                     ))}
                   </div>
 
-                  {/* Paginação */}
-                  <div className="flex justify-center items-center space-x-2">
-                    <Button variant="outline" size="sm" className="text-[#98ab44] border-[#98ab44] hover:bg-[#98ab44] hover:text-white">
-                      Anterior
+                  {/* Paginação Responsiva */}
+                  <div className="flex justify-center items-center space-x-1 sm:space-x-2">
+                    <Button variant="outline" size="sm" className="text-[#98ab44] border-[#98ab44] hover:bg-[#98ab44] hover:text-white text-xs sm:text-sm px-2 sm:px-3">
+                      <span className="hidden sm:inline">Anterior</span>
+                      <span className="sm:hidden">Ant</span>
                     </Button>
-                    <Button size="sm" className="bg-[#98ab44] hover:bg-[#98ab44]/90 text-white min-w-[40px]">
+                    <Button size="sm" className="bg-[#98ab44] hover:bg-[#98ab44]/90 text-white min-w-[32px] sm:min-w-[40px] text-xs sm:text-sm">
                       1
                     </Button>
-                    <Button variant="outline" size="sm" className="text-gray-600 hover:text-[#98ab44] min-w-[40px]">
+                    <Button variant="outline" size="sm" className="text-gray-600 hover:text-[#98ab44] min-w-[32px] sm:min-w-[40px] text-xs sm:text-sm">
                       2
                     </Button>
-                    <Button variant="outline" size="sm" className="text-gray-600 hover:text-[#98ab44] min-w-[40px]">
+                    <Button variant="outline" size="sm" className="text-gray-600 hover:text-[#98ab44] min-w-[32px] sm:min-w-[40px] text-xs sm:text-sm hidden sm:inline-flex">
                       3
                     </Button>
-                    <span className="text-gray-500">...</span>
-                    <Button variant="outline" size="sm" className="text-gray-600 hover:text-[#98ab44] min-w-[40px]">
+                    <span className="text-gray-500 text-xs sm:text-sm hidden sm:inline">...</span>
+                    <Button variant="outline" size="sm" className="text-gray-600 hover:text-[#98ab44] min-w-[32px] sm:min-w-[40px] text-xs sm:text-sm hidden sm:inline-flex">
                       5
                     </Button>
-                    <Button variant="outline" size="sm" className="text-[#98ab44] border-[#98ab44] hover:bg-[#98ab44] hover:text-white">
-                      Próximo
+                    <Button variant="outline" size="sm" className="text-[#98ab44] border-[#98ab44] hover:bg-[#98ab44] hover:text-white text-xs sm:text-sm px-2 sm:px-3">
+                      <span className="hidden sm:inline">Próximo</span>
+                      <span className="sm:hidden">Prox</span>
                     </Button>
                   </div>
                 </>
               )}
             </div>
 
-            {/* Sidebar - 1/4 da largura */}
-            <div className="lg:col-span-1 space-y-6">
+            {/* Sidebar - 1/4 da largura - Responsiva */}
+            <div className="lg:col-span-1 space-y-4 sm:space-y-6">
               
               {/* Campo de Pesquisa */}
               <Card className="border-0 shadow-lg">
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <div className="relative">
                     <Input
                       type="text"
                       placeholder="Pesquisar"
-                      className="pr-12 border-gray-200 focus:border-[#98ab44] focus:ring-[#98ab44]"
+                      className="pr-12 border-gray-200 focus:border-[#98ab44] focus:ring-[#98ab44] text-sm"
                     />
                     <Button 
                       size="sm"

@@ -46,16 +46,16 @@ export default function Header() {
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-24 lg:h-28">
+        <div className="flex items-center justify-between h-32 lg:h-40 xl:h-44">
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href="/" className="flex items-center">
               <Image
                 src="/images/logo-ldc-principal.png"
                 alt="LDC Capital"
-                width={320}
-                height={80}
-                className="h-16 lg:h-20 w-auto"
+                width={640}
+                height={160}
+                className="h-24 lg:h-32 xl:h-36 w-auto"
                 priority
               />
             </Link>

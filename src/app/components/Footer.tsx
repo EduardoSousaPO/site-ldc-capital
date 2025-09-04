@@ -124,9 +124,9 @@ export default function Footer() {
               <Image
                 src="/images/logo-ldc-branca.png"
                 alt="LDC Capital"
-                width={280}
-                height={70}
-                className="h-16 w-auto"
+                width={560}
+                height={140}
+                className="h-28 lg:h-32 xl:h-36 w-auto"
                 priority
               />
             </div>
