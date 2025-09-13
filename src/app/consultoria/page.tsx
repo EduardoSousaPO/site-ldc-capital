@@ -20,7 +20,7 @@ export default function ConsultoriaPage() {
       <Header />
       
       {/* Hero Section Premium - Inspirado na Musa */}
-      <section className="relative min-h-screen bg-gradient-to-br from-[#98ab44] to-[#becc6a] overflow-hidden">
+      <section className="relative min-h-screen bg-gradient-to-br from-[#98ab44] to-[#becc6a] overflow-hidden pt-32 lg:pt-40 xl:pt-44 2xl:pt-48">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0" style={{
@@ -35,7 +35,7 @@ export default function ConsultoriaPage() {
         <div className="absolute bottom-20 right-20 w-48 h-48 border border-white/10 rounded-full animate-pulse delay-1000"></div>
         <div className="absolute top-1/2 right-5 w-24 h-24 border border-white/30 rounded-full animate-pulse delay-2000"></div>
 
-        <div className="relative z-10 min-h-screen flex items-center">
+        <div className="relative z-10 min-h-[calc(100vh-8rem)] lg:min-h-[calc(100vh-10rem)] xl:min-h-[calc(100vh-11rem)] 2xl:min-h-[calc(100vh-12rem)] flex items-center">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               
@@ -91,15 +91,12 @@ export default function ConsultoriaPage() {
               <div className="order-1 lg:order-2">
                 <div className="relative">
                   <div className="bg-white/10 backdrop-blur-md rounded-3xl p-2 border border-white/20">
-                    <div className="aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl overflow-hidden flex items-center justify-center">
-                      {/* Placeholder para imagem corporativa */}
-                      <div className="text-center p-8">
-                        <div className="w-16 h-16 bg-[#98ab44]/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Users className="h-8 w-8 text-[#98ab44]" />
-                        </div>
-                        <p className="text-gray-600 text-sm">Consultor Profissional</p>
-                        <p className="text-gray-500 text-xs mt-1">Imagem corporativa aqui</p>
-                      </div>
+                    <div className="aspect-[4/3] rounded-2xl overflow-hidden">
+                      <img 
+                        src="/images/vitaly-gariev-RbYg6fKSfcY-unsplash.jpg"
+                        alt="Consultor Profissional LDC Capital"
+                        className="w-full h-full object-cover"
+                      />
                     </div>
                   </div>
                   
