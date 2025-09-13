@@ -57,13 +57,22 @@ export default function TestimonialsCarousel() {
   }, [emblaApi]);
 
   return (
-    <section className="py-16 lg:py-24 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-16 lg:py-24 bg-[#344645] relative overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(circle at 20% 20%, rgba(152, 171, 68, 0.1) 2px, transparent 2px),
+                           radial-gradient(circle at 80% 80%, rgba(190, 204, 106, 0.1) 2px, transparent 2px)`,
+          backgroundSize: '80px 80px'
+        }}></div>
+      </div>
+      
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="font-serif text-3xl lg:text-4xl font-bold text-[#262d3d] mb-4">
+          <h2 className="font-serif text-3xl lg:text-4xl font-bold text-white mb-4">
             O que nossos clientes dizem
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg text-white/80 max-w-2xl mx-auto">
             Depoimentos reais de quem já confia na LDC Capital para cuidar do seu patrimônio
           </p>
         </div>
@@ -92,33 +101,28 @@ export default function TestimonialsCarousel() {
                   key={testimonial.id}
                   className="flex-[0_0_100%] md:flex-[0_0_50%] lg:flex-[0_0_33.333%] pl-4"
                 >
-                  <Card className="h-full border-0 shadow-md hover:shadow-lg transition-shadow">
+                  <Card className="h-full border-0 bg-white/10 backdrop-blur-md shadow-md hover:shadow-lg transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex items-start mb-4">
-                        <Quote className="h-8 w-8 text-[#98ab44] flex-shrink-0" />
+                        <Quote className="h-8 w-8 text-[#becc6a] flex-shrink-0" />
                       </div>
                       
-                      <blockquote className="text-gray-700 mb-6 leading-relaxed">
+                      <blockquote className="text-white mb-6 leading-relaxed">
                         &ldquo;{testimonial.quote}&rdquo;
                       </blockquote>
                       
                       <div className="flex items-center">
-                        <div className="w-12 h-12 bg-[#98ab44]/10 rounded-full flex items-center justify-center mr-4">
-                          <span className="text-[#98ab44] font-semibold text-lg">
-                            {testimonial.author.charAt(0)}
-                          </span>
-                        </div>
                         <div>
-                          <div className="font-semibold text-[#262d3d]">
+                          <div className="font-semibold text-white">
                             {testimonial.author}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-white/70">
                             {testimonial.role}
                             {testimonial.location && (
                               <span> • {testimonial.location}</span>
                             )}
                           </div>
-                          <div className="text-xs text-[#98ab44] font-medium mt-1">
+                          <div className="text-xs text-[#becc6a] font-medium mt-1">
                             Cliente LDC Capital
                           </div>
                         </div>
@@ -131,6 +135,9 @@ export default function TestimonialsCarousel() {
           </div>
         </div>
       </div>
+      
+      {/* Elementos Decorativos */}
+      <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-[#98ab44]/30 to-transparent"></div>
     </section>
   );
 }

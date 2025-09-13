@@ -25,7 +25,7 @@ export default function MateriaisPage() {
       {/* Hero Section Premium */}
       <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
         {/* Background com cor uniforme conforme print */}
-        <div className="absolute inset-0 bg-[#becc6a]">
+        <div className="absolute inset-0 bg-[#262d3d]">
           {/* Padrão sutil para textura */}
           <div className="absolute inset-0 opacity-10">
             <div className="absolute inset-0" style={{

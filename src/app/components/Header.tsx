@@ -51,11 +51,11 @@ export default function Header() {
           <div className="flex-shrink-0">
             <Link href="/" className="flex items-center">
               <Image
-                src="/images/logo-ldc-principal.png"
+                src="/images/LDC Capital - Logo Final_Aplicação Branca + Colorida.png"
                 alt="LDC Capital"
                 width={640}
                 height={160}
-                className="h-24 lg:h-32 xl:h-36 w-auto"
+                className="h-28 lg:h-36 xl:h-40 2xl:h-44 w-auto transition-all duration-300"
                 priority
               />
             </Link>
@@ -70,7 +70,7 @@ export default function Header() {
                 className={`text-sm font-medium transition-colors hover:text-[#98ab44] ${
                   pathname === item.href
                     ? "text-[#98ab44]"
-                    : "text-[#262d3d]"
+                    : isScrolled ? "text-[#262d3d]" : "text-white"
                 }`}
               >
                 {item.name}
@@ -92,7 +92,9 @@ export default function Header() {
           <div className="lg:hidden">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 text-[#262d3d] hover:text-[#98ab44] transition-colors"
+              className={`p-2 hover:text-[#98ab44] transition-colors ${
+                isScrolled ? "text-[#262d3d]" : "text-white"
+              }`}
             >
               {isMobileMenuOpen ? (
                 <X className="h-6 w-6" />

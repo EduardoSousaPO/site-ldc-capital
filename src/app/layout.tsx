@@ -1,33 +1,22 @@
 import type { Metadata } from "next";
-import { Public_Sans } from "next/font/google";
-// import localFont from "next/font/local"; // Será usado quando os arquivos IvyMode estiverem disponíveis
+import localFont from "next/font/local";
 import "./globals.css";
 
-// Public Sans para textos (usando Google Fonts)
-const publicSans = Public_Sans({
-  subsets: ["latin"],
-  variable: "--font-public-sans",
-  display: "swap",
-  weight: ["400", "500", "600", "700"],
-});
-
-// IvyMode para títulos (configuração preparada - aguardando arquivos de fonte)
-// Quando os arquivos estiverem disponíveis, descomente as linhas abaixo:
-/*
+// IvyMode - Fonte oficial para títulos (conforme Manual da Marca LDC Capital)
 const ivyMode = localFont({
   src: [
     {
-      path: "../../../public/fonts/ivymode/IvyMode-Regular.woff2",
+      path: "../fonts/IvyMode-Regular.otf",
       weight: "400",
       style: "normal",
     },
     {
-      path: "../../../public/fonts/ivymode/IvyMode-SemiBold.woff2", 
+      path: "../fonts/IvyMode-SemiBold.otf", 
       weight: "600",
       style: "normal",
     },
     {
-      path: "../../../public/fonts/ivymode/IvyMode-Bold.woff2",
+      path: "../fonts/IvyMode-Bold.otf",
       weight: "700", 
       style: "normal",
     },
@@ -36,7 +25,36 @@ const ivyMode = localFont({
   display: "swap",
   fallback: ["Georgia", "Times New Roman", "serif"],
 });
-*/
+
+// Public Sans - Fonte oficial para textos (conforme Manual da Marca LDC Capital)
+const publicSans = localFont({
+  src: [
+    {
+      path: "../fonts/PublicSans-Regular.ttf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../fonts/PublicSans-Medium.ttf",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../fonts/PublicSans-SemiBold.ttf",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "../fonts/PublicSans-Bold.ttf",
+      weight: "700",
+      style: "normal",
+    },
+  ],
+  variable: "--font-public-sans",
+  display: "swap",
+  fallback: ["system-ui", "-apple-system", "sans-serif"],
+});
+
 
 export const metadata: Metadata = {
   title: "LDC Capital - Mais do que finanças, direção",
@@ -59,7 +77,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body
-        className={`${publicSans.variable} antialiased`}
+        className={`${publicSans.variable} ${ivyMode.variable} antialiased`}
       >
         {children}
       </body>

@@ -126,8 +126,8 @@ export default function LeadForm() {
 
       <div className="relative z-10 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
-          <h2 className="font-serif text-3xl lg:text-4xl font-bold mb-4">
-            Análise Gratuita
+          <h2 className="font-serif text-4xl lg:text-5xl font-bold mb-4">
+            Peça sua Análise de Carteira Gratuita
           </h2>
           <p className="text-xl text-gray-200">
             Descubra como podemos potencializar seus investimentos
@@ -263,7 +263,7 @@ export default function LeadForm() {
                     Enviando...
                   </>
                 ) : (
-                  "Solicitar Análise Gratuita"
+                  "Peça sua Análise de Carteira Gratuita"
                 )}
               </Button>
             </form>

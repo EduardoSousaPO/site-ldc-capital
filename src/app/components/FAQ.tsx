@@ -28,10 +28,10 @@ export default function FAQ() {
               value={item.id}
               className="bg-white rounded-lg border border-gray-200 px-6 shadow-sm"
             >
-              <AccordionTrigger className="text-left font-semibold text-[#262d3d] hover:text-[#98ab44] transition-colors py-6">
+              <AccordionTrigger className="text-left font-semibold text-[#262d3d] hover:text-[#98ab44] transition-colors py-6 text-base">
                 {item.question}
               </AccordionTrigger>
-              <AccordionContent className="text-gray-600 leading-relaxed pb-6">
+              <AccordionContent className="text-gray-600 leading-relaxed pb-6 text-base">
                 {item.answer}
               </AccordionContent>
             </AccordionItem>
@@ -39,7 +39,7 @@ export default function FAQ() {
         </Accordion>
 
         <div className="mt-12 text-center">
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-600 mb-6">
             Ainda tem dúvidas? Fale diretamente conosco.
           </p>
           <button
@@ -49,9 +49,9 @@ export default function FAQ() {
                 contactForm.scrollIntoView({ behavior: "smooth" });
               }
             }}
-            className="text-[#98ab44] hover:text-[#98ab44]/80 font-semibold transition-colors"
+            className="bg-[#98ab44] hover:bg-[#98ab44]/90 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
           >
-            Entre em contato →
+            Entre em contato
           </button>
         </div>
       </div>

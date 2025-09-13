@@ -74,6 +74,9 @@ export default function DirectionSection() {
               Na LDC Capital, acreditamos que grandes patrimônios não se constroem à deriva. 
               Assim como um barco precisa de leme para alcançar seu destino, 
               <span className="font-semibold text-[#262d3d]"> seus investimentos precisam de direção clara, segura e experiente.</span>
+              <br /><br />
+              Nascida no interior do Rio Grande do Sul, carregamos os valores de humildade, tranquilidade, identidade e trabalho duro em cada consultoria. 
+              Ser o parceiro de confiança de famílias, oferecendo-lhes soluções de investimentos de forma transparente e personalizada para ajudá-las na melhora do bem-estar, realização de sonhos, construção e gestão de seus patrimônios.
             </p>
           </div>
         </div>
@@ -133,22 +136,6 @@ export default function DirectionSection() {
           })}
         </div>
 
-        {/* Quote Premium */}
-        <div 
-          className={`mt-20 text-center transition-all duration-1000 delay-1000 ${
-            isVisible ? 'animate-slide-up opacity-100' : 'opacity-0 translate-y-10'
-          }`}
-        >
-          <div className="bg-white/10 backdrop-blur-md rounded-3xl p-12 border border-white/20 max-w-4xl mx-auto">
-            <blockquote className="text-2xl md:text-3xl font-light text-white leading-relaxed mb-6">
-              &ldquo;Porque quando você chega em um certo patamar, já não é sobre quanto você tem.{" "}
-              <span className="font-semibold text-[#262d3d]">É sobre com quem você conta.</span>&rdquo;
-            </blockquote>
-            <cite className="text-lg text-white/80 font-medium">
-              — Filosofia LDC Capital
-            </cite>
-          </div>
-        </div>
       </div>
 
       {/* Elementos Decorativos */}

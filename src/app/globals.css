@@ -7,7 +7,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-public-sans);
-  --font-serif: "IvyMode", "Georgia", "Times New Roman", serif;
+  --font-serif: var(--font-ivy-mode);
   --color-ldc-primary: #262d3d;
   --color-ldc-accent-1: #98ab44;
   --color-ldc-accent-2: #becc6a;

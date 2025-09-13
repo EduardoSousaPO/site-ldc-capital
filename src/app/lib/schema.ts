@@ -6,11 +6,12 @@ export const leadFormSchema = z.object({
   telefone: z.string().regex(/^\(\d{2}\)\s\d{4,5}-\d{4}$/, "Formato de telefone inválido"),
   email: z.string().email("Email inválido"),
   patrimonio: z.enum([
-    "ate-100k",
-    "100k-500k", 
-    "500k-1m",
+    "0-300k",
+    "300k-1m", 
     "1m-5m",
-    "acima-5m"
+    "5m-10m",
+    "10m-30m",
+    "acima-30m"
   ]),
   origem: z.enum([
     "youtube",
@@ -52,11 +53,12 @@ export const formatPhone = (value: string) => {
 };
 
 export const patrimonioOptions = [
-  { value: "ate-100k", label: "Até R$ 100.000" },
-  { value: "100k-500k", label: "R$ 100.000 - R$ 500.000" },
-  { value: "500k-1m", label: "R$ 500.000 - R$ 1.000.000" },
+  { value: "0-300k", label: "R$ 0 - R$ 300.000" },
+  { value: "300k-1m", label: "R$ 300.000 - R$ 1.000.000" },
   { value: "1m-5m", label: "R$ 1.000.000 - R$ 5.000.000" },
-  { value: "acima-5m", label: "Acima de R$ 5.000.000" }
+  { value: "5m-10m", label: "R$ 5.000.000 - R$ 10.000.000" },
+  { value: "10m-30m", label: "R$ 10.000.000 - R$ 30.000.000" },
+  { value: "acima-30m", label: "Acima de R$ 30.000.000" }
 ];
 
 export const origemOptions = [

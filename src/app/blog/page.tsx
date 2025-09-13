@@ -27,7 +27,7 @@ export default function BlogPage() {
       <Header />
       
       {/* Hero Section - Cor uniforme conforme print */}
-      <section className="relative pt-20 pb-16 lg:pt-32 lg:pb-24 bg-[#becc6a] text-white overflow-hidden">
+      <section className="relative pt-20 pb-16 lg:pt-32 lg:pb-24 bg-[#262d3d] text-white overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0" style={{
@@ -43,7 +43,7 @@ export default function BlogPage() {
 
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <div className="inline-block px-3 py-1.5 sm:px-4 sm:py-2 bg-white/20 text-white text-xs sm:text-sm font-medium rounded-full border border-white/30 mb-4 sm:mb-6">
+            <div className="inline-block px-3 py-1.5 sm:px-4 sm:py-2 bg-[#becc6a]/30 text-white text-xs sm:text-sm font-medium font-sans rounded-full border border-[#becc6a]/40 mb-4 sm:mb-6">
               BLOG LDC CAPITAL
             </div>
             
@@ -51,7 +51,7 @@ export default function BlogPage() {
               Confira nosso Blog
             </h1>
             
-            <p className="text-lg sm:text-xl md:text-2xl text-white/90 max-w-3xl mx-auto leading-relaxed px-2 sm:px-0">
+            <p className="font-sans text-lg sm:text-xl md:text-2xl text-white/90 max-w-3xl mx-auto leading-relaxed px-2 sm:px-0">
               Insights e conhecimento sobre investimentos, planejamento financeiro e consultoria
             </p>
           </div>
