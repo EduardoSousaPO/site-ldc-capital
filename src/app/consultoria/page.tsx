@@ -67,24 +67,6 @@ export default function ConsultoriaPage() {
                   </a>
                 </Button>
 
-                {/* Estatística de Famílias */}
-                <div className="flex items-center mt-8">
-                  <div className="flex -space-x-2 mr-4">
-                    <div className="w-10 h-10 rounded-full bg-white/20 border-2 border-white flex items-center justify-center">
-                      <Users className="h-5 w-5 text-white" />
-                    </div>
-                    <div className="w-10 h-10 rounded-full bg-white/20 border-2 border-white flex items-center justify-center">
-                      <TrendingUp className="h-5 w-5 text-white" />
-                    </div>
-                    <div className="w-10 h-10 rounded-full bg-white/20 border-2 border-white flex items-center justify-center">
-                      <Award className="h-5 w-5 text-white" />
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-white">+ 350</p>
-                    <p className="text-white/80 text-sm">Famílias atendidas</p>
-                  </div>
-                </div>
               </div>
 
               {/* Imagem Premium */}
@@ -131,42 +113,6 @@ export default function ConsultoriaPage() {
           </div>
         </div>
 
-        {/* Cards de Diferenciais na parte inferior */}
-        <div className="absolute bottom-0 left-0 right-0 bg-white/10 backdrop-blur-md border-t border-white/20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-              <div className="flex items-center justify-center gap-3 text-white">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                  <CheckCircle className="h-5 w-5" />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-sm">Transparência e sem</p>
-                  <p className="text-xs text-white/80">conflitos de interesse</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-center gap-3 text-white">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                  <Globe className="h-5 w-5" />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-sm">Consultoria personalizada</p>
-                  <p className="text-xs text-white/80">para a sua realidade</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-center gap-3 text-white">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                  <Award className="h-5 w-5" />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold text-sm">Equipe certificada pelos</p>
-                  <p className="text-xs text-white/80">principais órgãos do mercado.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* Seção Modelo de Consultoria */}
