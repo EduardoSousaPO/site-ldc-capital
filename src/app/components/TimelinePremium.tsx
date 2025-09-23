@@ -9,7 +9,6 @@ interface TimelineStep {
   subtitle: string;
   description: string;
   icon: React.ComponentType<{ className?: string }>;
-  duration: string;
   color: string;
 }
 
@@ -20,7 +19,6 @@ const timelineSteps: TimelineStep[] = [
     subtitle: "1ª reunião",
     description: "Coleta detalhada de objetivos, horizonte de investimento e tolerância ao risco para entender completamente seu perfil.",
     icon: Users,
-    duration: "1h",
     color: "bg-[#98ab44]"
   },
   {
@@ -29,7 +27,6 @@ const timelineSteps: TimelineStep[] = [
     subtitle: "Até 7 dias",
     description: "Nossa equipe desenvolve um plano personalizado adequado às suas necessidades específicas e objetivos financeiros.",
     icon: Search,
-    duration: "7 dias",
     color: "bg-[#becc6a]"
   },
   {
@@ -38,7 +35,6 @@ const timelineSteps: TimelineStep[] = [
     subtitle: "2ª reunião",
     description: "Explicação detalhada da estratégia proposta, carteira sugerida e possíveis ajustes conforme seu feedback.",
     icon: Presentation,
-    duration: "1h30",
     color: "bg-[#98ab44]"
   },
   {
@@ -47,7 +43,6 @@ const timelineSteps: TimelineStep[] = [
     subtitle: "1-2 semanas",
     description: "Execução das movimentações iniciais e estruturação completa da nova carteira de investimentos.",
     icon: Settings,
-    duration: "2 semanas",
     color: "bg-[#becc6a]"
   },
   {
@@ -56,7 +51,6 @@ const timelineSteps: TimelineStep[] = [
     subtitle: "Mensal",
     description: "Manutenção ativa da estratégia com reuniões mensais, rebalanceamentos e ajustes conforme necessário.",
     icon: BarChart3,
-    duration: "Contínuo",
     color: "bg-[#98ab44]"
   }
 ];
@@ -125,10 +119,6 @@ export default function TimelinePremium() {
                   <div className="flex items-center gap-4">
                     <div className={`w-12 h-12 ${step.color} rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg`}>
                       {step.id}
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Duração estimada</p>
-                      <p className="font-semibold text-[#262d3d]">{step.duration}</p>
                     </div>
                   </div>
                 </div>
