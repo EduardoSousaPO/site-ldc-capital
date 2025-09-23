@@ -20,7 +20,7 @@ export default function ConsultoriaPage() {
       <Header />
       
       {/* Hero Section Premium - Inspirado na Musa */}
-      <section className="relative min-h-screen bg-gradient-to-br from-[#98ab44] to-[#becc6a] overflow-hidden pt-32 lg:pt-40 xl:pt-44 2xl:pt-48">
+      <section className="relative min-h-screen bg-[#262d3d] overflow-hidden pt-32 lg:pt-40 xl:pt-44 2xl:pt-48">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0" style={{
@@ -47,7 +47,7 @@ export default function ConsultoriaPage() {
                 
                 <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
                   Consultoria de investimentos personalizada para{" "}
-                  <span className="text-[#262d3d]">maximizar seus resultados.</span>
+                  <span className="text-[#98ab44]">maximizar seus resultados.</span>
                 </h1>
                 
                 <p className="text-xl text-white/90 mb-8 leading-relaxed max-w-2xl">
@@ -58,7 +58,7 @@ export default function ConsultoriaPage() {
 
                 <Button 
                   size="lg"
-                  className="bg-white text-[#98ab44] hover:bg-white/90 px-8 py-4 text-lg font-semibold rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 group mr-4"
+                  className="bg-[#98ab44] text-white hover:bg-[#98ab44]/90 px-8 py-4 text-lg font-semibold rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 group mr-4"
                   asChild
                 >
                   <a href="#contact-form">

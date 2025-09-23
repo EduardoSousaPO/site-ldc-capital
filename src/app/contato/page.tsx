@@ -18,7 +18,7 @@ export default function ContatoPage() {
       {/* Hero Section Premium */}
       <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
         {/* Background com gradiente premium */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#262d3d] via-[#344645] to-[#577171]">
+        <div className="absolute inset-0 bg-[#262d3d]">
           {/* Padrão sutil para textura */}
           <div className="absolute inset-0 opacity-10">
             <div className="absolute inset-0" style={{
