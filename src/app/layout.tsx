@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import SupabaseListener from "@/components/SupabaseListener";
 // Removido NextAuth - usando Supabase Auth
 
 // IvyMode - Fonte oficial para títulos (conforme Manual da Marca LDC Capital)
@@ -80,6 +81,7 @@ export default function RootLayout({
       <body
         className={`${publicSans.variable} ${ivyMode.variable} antialiased`}
       >
+        <SupabaseListener />
         {children}
       </body>
     </html>
