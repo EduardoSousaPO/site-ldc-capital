@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import NextAuthSessionProvider from "./providers/SessionProvider";
 
 // IvyMode - Fonte oficial para títulos (conforme Manual da Marca LDC Capital)
 const ivyMode = localFont({
@@ -79,7 +80,9 @@ export default function RootLayout({
       <body
         className={`${publicSans.variable} ${ivyMode.variable} antialiased`}
       >
-        {children}
+        <NextAuthSessionProvider>
+          {children}
+        </NextAuthSessionProvider>
       </body>
     </html>
   );

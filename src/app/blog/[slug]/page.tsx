@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { MDXRemote } from "next-mdx-remote/rsc";
+import ReactMarkdown from "react-markdown";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,14 +12,14 @@ import { CalendarDays, Clock, User, ArrowLeft, Share2 } from "lucide-react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import CTAButton from "../../components/CTAButton";
-import { getBlogPostBySlug, getBlogPosts, getRelatedPosts } from "../../lib/mdx";
+import { getBlogPostBySlug, getBlogPosts } from "../../lib/blog";
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
 export async function generateStaticParams() {
-  const posts = getBlogPosts();
+  const posts = await getBlogPosts();
   return posts.map((post) => ({
     slug: post.slug,
   }));
@@ -27,7 +27,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const post = getBlogPostBySlug(slug);
+  const post = await getBlogPostBySlug(slug);
 
   if (!post) {
     return {
@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: post.summary,
       type: "article",
       publishedTime: post.date,
-      authors: [post.author],
+      authors: post.author.name ? [post.author.name] : [],
       images: post.cover ? [post.cover] : [],
     },
   };
@@ -51,13 +51,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params;
-  const post = getBlogPostBySlug(slug);
+  const post = await getBlogPostBySlug(slug);
 
   if (!post) {
     notFound();
   }
 
-  const relatedPosts = getRelatedPosts(post.slug, post.category, 3);
+  // Get related posts (simplified for now)
+  const allPosts = await getBlogPosts();
+  const relatedPosts = allPosts
+    .filter(p => p.slug !== post.slug && p.category === post.category)
+    .slice(0, 3);
 
   return (
     <main>
@@ -90,7 +94,7 @@ export default async function BlogPostPage({ params }: Props) {
             <div className="flex flex-wrap items-center gap-6 text-gray-300">
               <div className="flex items-center">
                 <User className="w-4 h-4 mr-2" />
-                {post.author}
+                {post.author.name || "Autor"}
               </div>
               <div className="flex items-center">
                 <CalendarDays className="w-4 h-4 mr-2" />
@@ -108,7 +112,7 @@ export default async function BlogPostPage({ params }: Props) {
         <section className="py-16">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="prose prose-lg max-w-none prose-headings:font-serif prose-headings:text-[#262d3d] prose-a:text-[#98ab44] prose-a:no-underline hover:prose-a:underline">
-              <MDXRemote source={post.content} />
+              <ReactMarkdown>{post.content}</ReactMarkdown>
             </div>
 
             {/* Share Section */}

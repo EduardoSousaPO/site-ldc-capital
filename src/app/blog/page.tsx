@@ -10,16 +10,16 @@ import { Input } from "@/components/ui/input";
 import { CalendarDays, Clock, Search, ArrowRight } from "lucide-react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { getBlogPosts, getBlogCategories } from "../lib/mdx";
+import { getBlogPosts, getBlogCategories } from "../lib/blog";
 
 export const metadata: Metadata = {
   title: "Blog - LDC Capital",
   description: "Artigos e insights sobre investimentos, planejamento financeiro e consultoria. Conteúdo especializado para ajudar você a tomar melhores decisões financeiras.",
 };
 
-export default function BlogPage() {
-  const posts = getBlogPosts();
-  const categories = getBlogCategories();
+export default async function BlogPage() {
+  const posts = await getBlogPosts();
+  const categories = await getBlogCategories();
   const featuredPosts = posts.slice(0, 3); // Posts mais lidos
 
   return (
