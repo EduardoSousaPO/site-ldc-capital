@@ -8,7 +8,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 let browserClient: ReturnType<typeof createClient> | null = null
 let adminClient: ReturnType<typeof createClient> | null = null
 
-// Cliente básico para uso geral
+// Cliente básico para uso geral (deprecated - use createSupabaseBrowserClient)
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Cliente para componentes do browser (singleton)
@@ -29,6 +29,7 @@ export const createSupabaseBrowserClient = () => {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
+        flowType: 'pkce'
       }
     })
   }

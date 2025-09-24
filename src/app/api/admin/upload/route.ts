@@ -82,13 +82,54 @@ export async function POST(request: NextRequest) {
     const supabaseAdmin = createSupabaseAdminClient();
     const bucket = process.env.SUPABASE_STORAGE_BUCKET;
 
+    console.log("Upload attempt:", {
+      bucket,
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      type
+    });
+
     if (!bucket) {
+      console.error("Storage bucket not configured");
       return NextResponse.json({ error: "Storage bucket not configured" }, { status: 500 });
+    }
+
+    // Check if bucket exists, create if not
+    const { data: buckets, error: listError } = await supabaseAdmin.storage.listBuckets();
+    console.log("Available buckets:", buckets);
+    
+    if (listError) {
+      console.error("Error listing buckets:", listError);
+    }
+
+    const bucketExists = buckets?.find(b => b.name === bucket);
+    if (!bucketExists) {
+      console.log(`Creating bucket: ${bucket}`);
+      const { error: createError } = await supabaseAdmin.storage.createBucket(bucket, {
+        public: true,
+        allowedMimeTypes: [
+          'image/jpeg', 'image/jpg', 'image/png', 'image/webp',
+          'application/pdf', 'application/msword', 
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'application/vnd.ms-excel',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        ]
+      });
+
+      if (createError) {
+        console.error("Error creating bucket:", createError);
+        return NextResponse.json({ 
+          error: `Failed to create storage bucket: ${createError.message}` 
+        }, { status: 500 });
+      }
     }
 
     const sanitizedName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '');
     const folder = (type === 'image' || type === 'cover') ? 'images' : 'materials';
     const filePath = `${folder}/${randomUUID()}-${Date.now()}-${sanitizedName}`;
+
+    console.log("Uploading to:", filePath);
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from(bucket)
@@ -99,7 +140,10 @@ export async function POST(request: NextRequest) {
 
     if (uploadError) {
       console.error('Supabase upload error:', uploadError);
-      return NextResponse.json({ error: "Failed to upload file" }, { status: 500 });
+      return NextResponse.json({ 
+        error: `Failed to upload file: ${uploadError.message}`,
+        details: uploadError
+      }, { status: 500 });
     }
 
     const { data: publicUrlData } = supabaseAdmin.storage.from(bucket).getPublicUrl(filePath);
