@@ -10,7 +10,7 @@ interface AuthCallbackPayload {
 
 export async function POST(request: Request) {
   const { event, session }: AuthCallbackPayload = await request.json();
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const response = NextResponse.json({ success: true });
 
   const supabase = createServerClient(
