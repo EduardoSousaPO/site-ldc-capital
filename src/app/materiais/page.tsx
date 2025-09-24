@@ -7,16 +7,16 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import CTAButton from "../components/CTAButton";
 import DownloadButton from "../components/DownloadButton";
-import { getMaterials, getMaterialCategories } from "../lib/mdx";
+import { getMaterials, getMaterialCategories } from "../lib/materials";
 
 export const metadata: Metadata = {
   title: "Materiais Gratuitos - LDC Capital",
   description: "E-books, guias e cartilhas gratuitas sobre investimentos e planejamento financeiro. Conteúdo especializado para ajudar você a tomar melhores decisões financeiras.",
 };
 
-export default function MateriaisPage() {
-  const materials = getMaterials();
-  const categories = getMaterialCategories();
+export default async function MateriaisPage() {
+  const materials = await getMaterials();
+  const categories = await getMaterialCategories();
 
   return (
     <main>

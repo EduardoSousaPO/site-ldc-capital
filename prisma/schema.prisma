@@ -50,6 +50,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   posts         BlogPost[]
+  materials     Material[]
 }
 
 model VerificationToken {
@@ -83,4 +84,27 @@ model Category {
   slug  String @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Material {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String?
+  content     String?
+  category    String
+  type        String   // "Cartilha", "Guia", "E-book", "Planilha", etc.
+  cover       String?  // URL da imagem de capa
+  fileUrl     String?  // URL do arquivo para download
+  fileName    String?  // Nome original do arquivo
+  fileSize    String?  // Tamanho do arquivo
+  pages       Int?     // Número de páginas (para PDFs)
+  published   Boolean  @default(false)
+  featured    Boolean  @default(false) // Material em destaque
+  downloadCount Int    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  publishedAt DateTime?
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
 }

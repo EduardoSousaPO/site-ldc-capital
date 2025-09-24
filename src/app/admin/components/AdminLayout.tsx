@@ -15,7 +15,8 @@ import {
   Menu,
   X,
   User,
-  Home
+  Home,
+  BookOpen
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -46,6 +47,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       href: "/admin/posts/new",
       icon: Plus,
       current: pathname === "/admin/posts/new"
+    },
+    {
+      name: "Materiais",
+      href: "/admin/materials",
+      icon: BookOpen,
+      current: pathname.startsWith("/admin/materials")
     },
     {
       name: "Configurações",

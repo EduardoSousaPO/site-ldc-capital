@@ -99,6 +99,98 @@ Estamos muito felizes em dar as boas-vindas ao nosso novo blog! Aqui você encon
     slug: examplePost.slug
   });
 
+  // Criar materiais de exemplo
+  const exampleMaterials = [
+    {
+      title: 'Cartilha do Investidor Iniciante',
+      slug: 'cartilha-investidor-iniciante',
+      description: 'Tudo que você precisa saber para dar os primeiros passos no mundo dos investimentos',
+      content: `# Cartilha do Investidor Iniciante
+
+## O que você vai aprender:
+
+### 1. Conceitos Básicos
+- O que são investimentos
+- Diferença entre poupança e investimento
+- Risco x Retorno
+
+### 2. Primeiros Passos
+- Como começar a investir
+- Documentos necessários
+- Escolhendo uma corretora
+
+### 3. Tipos de Investimentos
+- Renda Fixa
+- Renda Variável
+- Fundos de Investimento
+
+### 4. Estratégias
+- Diversificação
+- Perfil de investidor
+- Metas financeiras
+
+---
+
+**Baixe agora e comece sua jornada como investidor!**`,
+      category: 'GUIAS',
+      type: 'Cartilha',
+      pages: 28,
+      published: true,
+      featured: true
+    },
+    {
+      title: 'Guia de Planejamento Financeiro Pessoal',
+      slug: 'guia-planejamento-financeiro-pessoal',
+      description: 'Aprenda a organizar suas finanças e criar um planejamento sólido para o futuro',
+      content: `# Guia de Planejamento Financeiro Pessoal
+
+## Organize sua vida financeira:
+
+### 1. Diagnóstico Financeiro
+- Levantamento de receitas
+- Mapeamento de gastos
+- Análise de dívidas
+
+### 2. Orçamento Pessoal
+- Como criar um orçamento
+- Regra 50-30-20
+- Controle de gastos
+
+### 3. Reserva de Emergência
+- Importância da reserva
+- Quanto guardar
+- Onde investir
+
+### 4. Metas Financeiras
+- Definindo objetivos
+- Prazos e valores
+- Estratégias de alcance
+
+---
+
+**Transforme sua relação com o dinheiro!**`,
+      category: 'Planejamento Financeiro',
+      type: 'Guia',
+      pages: 35,
+      published: true,
+      featured: true
+    }
+  ];
+
+  for (const materialData of exampleMaterials) {
+    await prisma.material.upsert({
+      where: { slug: materialData.slug },
+      update: {},
+      create: {
+        ...materialData,
+        publishedAt: new Date(),
+        authorId: admin.id,
+      },
+    });
+  }
+
+  console.log('✅ Materiais de exemplo criados');
+
   console.log('\n🎉 Seed executado com sucesso!');
   console.log('\n📝 Credenciais de acesso:');
   console.log(`Email: ${adminEmail}`);
