@@ -1,28 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { createSupabaseServerClient } from "@/lib/supabase";
 import { prisma } from "@/lib/prisma";
+import readingTime from "reading-time";
+
+async function checkAuth() {
+  const supabase = createSupabaseServerClient();
+  
+  const { data: { user }, error } = await supabase.auth.getUser();
+  
+  if (error || !user) {
+    return null;
+  }
+
+  const userRole = user.user_metadata?.role;
+  if (userRole !== 'ADMIN' && userRole !== 'EDITOR') {
+    return null;
+  }
+
+  return {
+    id: user.id,
+    email: user.email || '',
+    name: user.user_metadata?.name,
+    role: userRole
+  };
+}
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
+    const user = await checkAuth();
     
-    if (!session || (session.user?.role !== "ADMIN" && session.user?.role !== "EDITOR")) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const posts = await prisma.blogPost.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
       include: {
         author: {
           select: {
             name: true,
-            email: true
-          }
-        }
+            email: true,
+          },
+        },
       },
-      orderBy: {
-        createdAt: "desc"
-      }
     });
 
     return NextResponse.json(posts);
@@ -34,55 +56,52 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session || (session.user?.role !== "ADMIN" && session.user?.role !== "EDITOR")) {
+    const user = await checkAuth();
+
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { title, content, summary, category, cover, published = false } = body;
+    const { title, content, summary, category, cover, published } = await request.json();
 
-    // Generate slug from title
+    if (!title || !content) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
     const slug = title
       .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-z0-9\s-]/g, "")
-      .trim()
-      .replace(/\s+/g, "-");
+      .replace(/[^a-z0-9 -]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-");
 
-    // Calculate reading time (rough estimate: 200 words per minute)
-    const wordCount = content.split(/\s+/).length;
-    const readingTime = Math.ceil(wordCount / 200) + " min";
+    const stats = readingTime(content);
 
-    const post = await prisma.blogPost.create({
+    const newPost = await prisma.blogPost.create({
       data: {
         title,
         slug,
         content,
         summary,
-        category,
+        category: category || 'Geral',
         cover,
-        published,
-        readingTime,
+        published: published || false,
+        readingTime: stats.text,
+        authorId: user.id,
         publishedAt: published ? new Date() : null,
-        authorId: session.user.id
       },
       include: {
         author: {
           select: {
             name: true,
-            email: true
-          }
-        }
-      }
+            email: true,
+          },
+        },
+      },
     });
 
-    return NextResponse.json(post, { status: 201 });
+    return NextResponse.json(newPost, { status: 201 });
   } catch (error) {
     console.error("Error creating post:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
-

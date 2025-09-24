@@ -1,54 +1,70 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { createSupabaseServerClient } from "@/lib/supabase";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
 
+async function checkAuth() {
+  const supabase = createSupabaseServerClient();
+  
+  const { data: { user }, error } = await supabase.auth.getUser();
+  
+  if (error || !user) {
+    return null;
+  }
+
+  const userRole = user.user_metadata?.role;
+  if (userRole !== 'ADMIN' && userRole !== 'EDITOR') {
+    return null;
+  }
+
+  return {
+    id: user.id,
+    email: user.email || '',
+    name: user.user_metadata?.name,
+    role: userRole
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const user = await checkAuth();
     
-    if (!session || (session.user?.role !== "ADMIN" && session.user?.role !== "EDITOR")) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const data = await request.formData();
     const file: File | null = data.get("file") as unknown as File;
-    const type = data.get("type") as string; // "material" or "cover"
+    const type = data.get("type") as string; // 'image' or 'document'
 
     if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    // Validate file size (max 50MB)
-    const maxSize = 50 * 1024 * 1024; // 50MB
+    // Validate file type and size
+    const maxSize = type === 'image' ? 5 * 1024 * 1024 : 50 * 1024 * 1024; // 5MB for images, 50MB for documents
+    
     if (file.size > maxSize) {
-      return NextResponse.json({ error: "File too large. Max size is 50MB" }, { status: 400 });
+      const maxSizeMB = maxSize / (1024 * 1024);
+      return NextResponse.json({ 
+        error: `File size too large. Maximum size: ${maxSizeMB}MB` 
+      }, { status: 400 });
     }
 
     // Validate file types
-    const allowedTypes = {
-      material: [
-        "application/pdf",
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // xlsx
-        "application/vnd.ms-excel", // xls
-        "application/msword", // doc
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // docx
-        "text/plain"
-      ],
-      cover: [
-        "image/jpeg",
-        "image/png",
-        "image/webp",
-        "image/gif"
-      ]
-    };
-
-    const validTypes = type === "cover" ? allowedTypes.cover : allowedTypes.material;
-    if (!validTypes.includes(file.type)) {
+    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const allowedDocTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+    
+    if (type === 'image' && !allowedImageTypes.includes(file.type)) {
       return NextResponse.json({ 
-        error: `Invalid file type. Allowed types: ${validTypes.join(", ")}` 
+        error: "Invalid image type. Allowed: JPG, PNG, WebP" 
+      }, { status: 400 });
+    }
+    
+    if (type === 'document' && !allowedDocTypes.includes(file.type)) {
+      return NextResponse.json({ 
+        error: "Invalid document type. Allowed: PDF, DOC, DOCX, XLS, XLSX" 
       }, { status: 400 });
     }
 
@@ -57,46 +73,38 @@ export async function POST(request: NextRequest) {
 
     // Generate unique filename
     const timestamp = Date.now();
-    const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-    const filename = `${timestamp}_${cleanName}`;
-
-    // Create directory structure
-    const uploadDir = type === "cover" 
-      ? join(process.cwd(), "public", "uploads", "covers")
-      : join(process.cwd(), "public", "uploads", "materials");
-
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
+    const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '');
+    const filename = `${timestamp}-${originalName}`;
+    
+    // Determine upload directory
+    const uploadDir = type === 'image' ? 'images' : 'uploads';
+    const uploadsDir = join(process.cwd(), 'public', uploadDir);
+    
+    // Ensure upload directory exists
+    if (!existsSync(uploadsDir)) {
+      await mkdir(uploadsDir, { recursive: true });
     }
 
     // Save file
-    const filepath = join(uploadDir, filename);
+    const filepath = join(uploadsDir, filename);
     await writeFile(filepath, buffer);
 
-    // Return public URL
-    const publicUrl = type === "cover"
-      ? `/uploads/covers/${filename}`
-      : `/uploads/materials/${filename}`;
-
-    // Format file size
-    const formatFileSize = (bytes: number): string => {
-      if (bytes === 0) return "0 Bytes";
-      const k = 1024;
-      const sizes = ["Bytes", "KB", "MB", "GB"];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-    };
-
+    // Return file URL
+    const fileUrl = `/${uploadDir}/${filename}`;
+    
     return NextResponse.json({
       success: true,
-      url: publicUrl,
-      filename: file.name,
-      size: formatFileSize(file.size),
+      url: fileUrl,
+      filename: filename,
+      originalName: file.name,
+      size: file.size,
       type: file.type
     });
 
   } catch (error) {
-    console.error("Error uploading file:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error("Upload error:", error);
+    return NextResponse.json({ 
+      error: "Failed to upload file" 
+    }, { status: 500 });
   }
 }
