@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+// Auth será verificada pelo AdminLayout
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +19,7 @@ import {
 import AdminLayout from "../components/AdminLayout";
 
 export default function SettingsPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status } = getCurrentUser();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { getCurrentUser } from "@/lib/auth-supabase";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,7 +41,7 @@ interface Material {
 }
 
 export default function MaterialsPage() {
-  const { data: session, status } = useSession();
+  // Auth será verificada pelo AdminLayout
   const router = useRouter();
   const [materials, setMaterials] = useState<Material[]>([]);
   const [filteredMaterials, setFilteredMaterials] = useState<Material[]>([]);
@@ -51,15 +51,8 @@ export default function MaterialsPage() {
   const [filterCategory, setFilterCategory] = useState("all");
 
   useEffect(() => {
-    if (status === "loading") return;
-    
-    if (!session || (session.user?.role !== "ADMIN" && session.user?.role !== "EDITOR")) {
-      router.push("/admin/login");
-      return;
-    }
-
     fetchMaterials();
-  }, [session, status, router]);
+  }, []);
 
   useEffect(() => {
     filterMaterials();

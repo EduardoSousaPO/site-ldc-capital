@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "next-auth/react";
+// Auth será verificada pelo AdminLayout
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ const categories = [
 ];
 
 export default function NewPost() {
-  const { data: session } = useSession();
+  // Auth será verificada pelo AdminLayout
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({

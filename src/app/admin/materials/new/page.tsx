@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "next-auth/react";
+// Auth será verificada pelo AdminLayout
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +34,7 @@ const materialTypes = [
 ];
 
 export default function NewMaterial() {
-  const { data: session } = useSession();
+  const { data: session } = getCurrentUser();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
