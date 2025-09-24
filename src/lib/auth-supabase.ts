@@ -1,5 +1,5 @@
-import { createSupabaseServerClient, createSupabaseBrowserClient } from '@/lib/supabase'
-import { redirect } from 'next/navigation'
+import { createSupabaseBrowserClient } from '@/lib/supabase'
+import { createSupabaseServerClient } from '@/lib/supabase-server'
 
 export interface User {
   id: string
@@ -10,35 +10,25 @@ export interface User {
 
 // Servidor - verificar se usuário está autenticado
 export async function getUser(): Promise<User | null> {
-  const supabase = createSupabaseServerClient()
-  
-  const { data: { user }, error } = await supabase.auth.getUser()
-  
-  if (error || !user) {
+  try {
+    const supabase = createSupabaseServerClient()
+    
+    const { data: { user }, error } = await supabase.auth.getUser()
+    
+    if (error || !user) {
+      return null
+    }
+
+    return {
+      id: user.id,
+      email: user.email || '',
+      name: user.user_metadata?.name,
+      role: user.user_metadata?.role || 'USER'
+    }
+  } catch (error) {
+    console.error('Error getting user:', error)
     return null
   }
-
-  return {
-    id: user.id,
-    email: user.email || '',
-    name: user.user_metadata?.name,
-    role: user.user_metadata?.role || 'USER'
-  }
-}
-
-// Servidor - verificar se usuário é admin
-export async function requireAuth() {
-  const user = await getUser()
-  
-  if (!user) {
-    redirect('/admin/login')
-  }
-
-  if (user.role !== 'ADMIN' && user.role !== 'EDITOR') {
-    redirect('/admin/login')
-  }
-
-  return user
 }
 
 // Cliente - fazer login
@@ -68,18 +58,23 @@ export async function signOut() {
 
 // Cliente - verificar usuário atual
 export async function getCurrentUser(): Promise<User | null> {
-  const supabase = createSupabaseBrowserClient()
-  
-  const { data: { user }, error } = await supabase.auth.getUser()
-  
-  if (error || !user) {
-    return null
-  }
+  try {
+    const supabase = createSupabaseBrowserClient()
+    
+    const { data: { user }, error } = await supabase.auth.getUser()
+    
+    if (error || !user) {
+      return null
+    }
 
-  return {
-    id: user.id,
-    email: user.email || '',
-    name: user.user_metadata?.name,
-    role: user.user_metadata?.role || 'USER'
+    return {
+      id: user.id,
+      email: user.email || '',
+      name: user.user_metadata?.name,
+      role: user.user_metadata?.role || 'USER'
+    }
+  } catch (error) {
+    console.error('Error getting current user:', error)
+    return null
   }
 }
