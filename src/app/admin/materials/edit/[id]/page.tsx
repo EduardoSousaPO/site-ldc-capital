@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
-// Auth será verificada pelo AdminLayout
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,9 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Save, Eye, Upload, FileText, Image as ImageIcon, X } from "lucide-react";
+import { ArrowLeft, Save, Eye, Upload, FileText, Image as ImageIcon, X, Download } from "lucide-react";
 import Link from "next/link";
-import AdminLayout from "../../components/AdminLayout";
+import AdminLayout from "../../../components/AdminLayout";
 import { toast } from "sonner";
 
 const categories = [
@@ -34,12 +33,39 @@ const materialTypes = [
   "Manual"
 ];
 
-export default function NewMaterial() {
-  // Auth será verificada pelo AdminLayout
+interface Material {
+  id: string;
+  title: string;
+  description: string | null;
+  content: string | null;
+  category: string;
+  type: string;
+  cover: string | null;
+  fileUrl: string | null;
+  fileName: string | null;
+  fileSize: string | null;
+  pages: number | null;
+  published: boolean;
+  featured: boolean;
+  downloadCount: number;
+  createdAt: string;
+  updatedAt: string;
+  author: {
+    name: string | null;
+    email: string;
+  };
+}
+
+export default function EditMaterial() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const params = useParams();
+  const materialId = params.id as string;
+  
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [material, setMaterial] = useState<Material | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -55,26 +81,69 @@ export default function NewMaterial() {
     featured: false
   });
 
-  const handleSubmit = async (e: React.FormEvent, publish = false) => {
+  useEffect(() => {
+    fetchMaterial();
+  }, [materialId]);
+
+  const fetchMaterial = async () => {
+    try {
+      const response = await fetch(`/api/admin/materials/${materialId}`);
+      if (response.ok) {
+        const materialData = await response.json();
+        setMaterial(materialData);
+        setFormData({
+          title: materialData.title,
+          description: materialData.description || "",
+          content: materialData.content || "",
+          category: materialData.category,
+          type: materialData.type,
+          cover: materialData.cover || "",
+          fileUrl: materialData.fileUrl || "",
+          fileName: materialData.fileName || "",
+          fileSize: materialData.fileSize || "",
+          pages: materialData.pages?.toString() || "",
+          published: materialData.published,
+          featured: materialData.featured
+        });
+      } else {
+        toast.error("Erro ao carregar material");
+        router.push("/admin/materials");
+      }
+    } catch (error) {
+      console.error("Erro:", error);
+      toast.error("Erro ao carregar material");
+      router.push("/admin/materials");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent, publish?: boolean) => {
     e.preventDefault();
-    setLoading(true);
+    setSaving(true);
 
     try {
-      const response = await fetch("/api/admin/materials", {
-        method: "POST",
+      const response = await fetch(`/api/admin/materials/${materialId}`, {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           ...formData,
-          published: publish,
+          published: publish !== undefined ? publish : formData.published,
           pages: formData.pages ? parseInt(formData.pages) : null
         }),
       });
 
       if (response.ok) {
-        toast.success(publish ? "Material publicado com sucesso!" : "Material salvo como rascunho!");
-        router.push("/admin/materials");
+        const updatedMaterial = await response.json();
+        setMaterial(updatedMaterial);
+        setFormData(prev => ({ 
+          ...prev, 
+          published: updatedMaterial.published,
+          featured: updatedMaterial.featured 
+        }));
+        toast.success(publish ? "Material publicado com sucesso!" : "Material salvo com sucesso!");
       } else {
         const error = await response.json();
         toast.error(error.error || "Erro ao salvar material");
@@ -83,7 +152,7 @@ export default function NewMaterial() {
       console.error("Erro:", error);
       toast.error("Erro ao salvar material");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -102,13 +171,13 @@ export default function NewMaterial() {
     }
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("type", type);
+      const formDataUpload = new FormData();
+      formDataUpload.append("file", file);
+      formDataUpload.append("type", type === "material" ? "document" : "cover");
 
       const response = await fetch("/api/admin/upload", {
         method: "POST",
-        body: formData,
+        body: formDataUpload,
       });
 
       if (response.ok) {
@@ -119,18 +188,20 @@ export default function NewMaterial() {
             ...prev,
             fileUrl: result.url,
             fileName: result.filename,
-            fileSize: result.size
+            fileSize: `${(result.size / 1024 / 1024).toFixed(2)} MB`
           }));
+          toast.success("Arquivo enviado com sucesso!");
         } else {
           setFormData(prev => ({
             ...prev,
             cover: result.url
           }));
+          toast.success("Imagem enviada com sucesso!");
         }
-        } else {
-          const error = await response.json();
-          toast.error(`Erro no upload: ${error.error}`);
-        }
+      } else {
+        const error = await response.json();
+        toast.error(`Erro no upload: ${error.error}`);
+      }
     } catch (error) {
       console.error("Erro no upload:", error);
       toast.error("Erro no upload do arquivo");
@@ -159,6 +230,29 @@ export default function NewMaterial() {
     }
   };
 
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="w-8 h-8 border-4 border-[#262d3d]/30 border-t-[#262d3d] rounded-full animate-spin"></div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (!material) {
+    return (
+      <AdminLayout>
+        <div className="text-center py-12">
+          <h2 className="text-2xl font-bold text-gray-600">Material não encontrado</h2>
+          <Link href="/admin/materials">
+            <Button className="mt-4">Voltar para Materiais</Button>
+          </Link>
+        </div>
+      </AdminLayout>
+    );
+  }
+
   return (
     <AdminLayout>
       <div className="max-w-4xl mx-auto space-y-6">
@@ -173,10 +267,10 @@ export default function NewMaterial() {
             </Link>
             <div>
               <h1 className="text-3xl font-serif font-bold text-[#262d3d]">
-                Novo Material
+                Editar Material
               </h1>
               <p className="text-gray-600 mt-1">
-                Crie um novo material educativo
+                Editando: {material.title}
               </p>
             </div>
           </div>
@@ -184,10 +278,10 @@ export default function NewMaterial() {
           <div className="flex gap-2">
             <Button
               onClick={(e) => handleSubmit(e, false)}
-              disabled={loading || !formData.title}
+              disabled={saving || !formData.title}
               variant="outline"
             >
-              {loading ? (
+              {saving ? (
                 <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mr-2" />
               ) : (
                 <Save className="w-4 h-4 mr-2" />
@@ -197,15 +291,15 @@ export default function NewMaterial() {
             
             <Button
               onClick={(e) => handleSubmit(e, true)}
-              disabled={loading || !formData.title || !formData.category || !formData.type}
+              disabled={saving || !formData.title || !formData.category || !formData.type}
               className="bg-[#98ab44] hover:bg-[#98ab44]/90"
             >
-              {loading ? (
+              {saving ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
               ) : (
                 <Eye className="w-4 h-4 mr-2" />
               )}
-              Publicar
+              {formData.published ? "Atualizar" : "Publicar"}
             </Button>
           </div>
         </div>
@@ -320,14 +414,26 @@ export default function NewMaterial() {
                           <p className="text-sm text-green-600">{formData.fileSize}</p>
                         </div>
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeFile("material")}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
+                      <div className="flex gap-2">
+                        {material?.fileUrl && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(material.fileUrl!, '_blank')}
+                            className="text-green-600 hover:text-green-700"
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeFile("material")}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -482,14 +588,36 @@ export default function NewMaterial() {
               <CardContent className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Status:</span>
-                  <Badge variant="secondary" className="bg-orange-100 text-orange-800">
-                    Novo Material
+                  <Badge 
+                    variant={formData.published ? "default" : "secondary"} 
+                    className={formData.published ? "bg-green-100 text-green-800" : "bg-orange-100 text-orange-800"}
+                  >
+                    {formData.published ? "Publicado" : "Rascunho"}
                   </Badge>
                 </div>
                 
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Autor:</span>
-                  <span className="font-medium">Administrador</span>
+                  <span className="font-medium">{material.author.name || material.author.email}</span>
+                </div>
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Downloads:</span>
+                  <span className="font-medium">{material.downloadCount}</span>
+                </div>
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Criado:</span>
+                  <span className="font-medium">
+                    {new Date(material.createdAt).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Atualizado:</span>
+                  <span className="font-medium">
+                    {new Date(material.updatedAt).toLocaleDateString('pt-BR')}
+                  </span>
                 </div>
                 
                 <div className="flex justify-between text-sm">
@@ -500,6 +628,35 @@ export default function NewMaterial() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Actions */}
+            {formData.published && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-serif text-lg">Ações</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => window.open(`/materiais`, '_blank')}
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    Ver no Site
+                  </Button>
+                  {material.fileUrl && (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => window.open(material.fileUrl!, '_blank')}
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download Arquivo
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>

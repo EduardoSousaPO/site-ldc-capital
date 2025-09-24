@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import AdminLayout from "../components/AdminLayout";
+import { toast } from "sonner";
 
 interface BlogPost {
   id: string;
@@ -115,9 +116,14 @@ export default function PostsPage() {
 
       if (response.ok) {
         setPosts(posts.filter(post => post.id !== id));
+        toast.success("Post excluído com sucesso!");
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Erro ao excluir post");
       }
     } catch (error) {
       console.error("Erro ao excluir post:", error);
+      toast.error("Erro ao excluir post");
     }
   };
 

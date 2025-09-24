@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import SupabaseListener from "@/components/SupabaseListener";
+import { AdminToaster } from "@/components/ui/toaster";
 // Removido NextAuth - usando Supabase Auth
 
 // IvyMode - Fonte oficial para títulos (conforme Manual da Marca LDC Capital)
@@ -82,6 +83,7 @@ export default function RootLayout({
         className={`${publicSans.variable} ${ivyMode.variable} antialiased`}
       >
         <SupabaseListener />
+        <AdminToaster />
         {children}
       </body>
     </html>

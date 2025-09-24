@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import AdminLayout from "../components/AdminLayout";
+import { toast } from "sonner";
 
 interface Material {
   id: string;
@@ -112,9 +113,14 @@ export default function MaterialsPage() {
 
       if (response.ok) {
         setMaterials(materials.filter(material => material.id !== id));
+        toast.success("Material excluído com sucesso!");
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Erro ao excluir material");
       }
     } catch (error) {
       console.error("Erro ao excluir material:", error);
+      toast.error("Erro ao excluir material");
     }
   };
 
@@ -132,9 +138,14 @@ export default function MaterialsPage() {
         setMaterials(materials.map(material => 
           material.id === id ? { ...material, published: !published } : material
         ));
+        toast.success(`Material ${!published ? 'publicado' : 'despublicado'} com sucesso!`);
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Erro ao atualizar status");
       }
     } catch (error) {
       console.error("Erro ao atualizar status:", error);
+      toast.error("Erro ao atualizar status");
     }
   };
 
@@ -152,9 +163,14 @@ export default function MaterialsPage() {
         setMaterials(materials.map(material => 
           material.id === id ? { ...material, featured: !featured } : material
         ));
+        toast.success(`Material ${!featured ? 'destacado' : 'removido do destaque'} com sucesso!`);
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Erro ao atualizar destaque");
       }
     } catch (error) {
       console.error("Erro ao atualizar destaque:", error);
+      toast.error("Erro ao atualizar destaque");
     }
   };
 

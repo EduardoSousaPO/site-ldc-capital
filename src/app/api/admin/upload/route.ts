@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
+import { createSupabaseAdminClient } from "@/lib/supabase";
+import { randomUUID } from "crypto";
 
 async function checkAuth() {
   const supabase = await createSupabaseServerClient();
@@ -35,8 +34,8 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await request.formData();
-    const file: File | null = data.get("file") as unknown as File;
-    const type = data.get("type") as string; // 'image' or 'document'
+    const file: File | null = data.get("file") as File | null;
+    const type = (data.get("type") as string) || "image";
 
     if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
@@ -54,15 +53,24 @@ export async function POST(request: NextRequest) {
 
     // Validate file types
     const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    const allowedDocTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+    const allowedDocTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ];
     
-    if (type === 'image' && !allowedImageTypes.includes(file.type)) {
+    const isImageType = type === 'image' || type === 'cover';
+    const isDocType = type === 'document' || type === 'material';
+    
+    if (isImageType && !allowedImageTypes.includes(file.type)) {
       return NextResponse.json({ 
         error: "Invalid image type. Allowed: JPG, PNG, WebP" 
       }, { status: 400 });
     }
     
-    if (type === 'document' && !allowedDocTypes.includes(file.type)) {
+    if (isDocType && !allowedDocTypes.includes(file.type)) {
       return NextResponse.json({ 
         error: "Invalid document type. Allowed: PDF, DOC, DOCX, XLS, XLSX" 
       }, { status: 400 });
@@ -71,32 +79,36 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Generate unique filename
-    const timestamp = Date.now();
-    const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, '');
-    const filename = `${timestamp}-${originalName}`;
-    
-    // Determine upload directory
-    const uploadDir = type === 'image' ? 'images' : 'uploads';
-    const uploadsDir = join(process.cwd(), 'public', uploadDir);
-    
-    // Ensure upload directory exists
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
+    const supabaseAdmin = createSupabaseAdminClient();
+    const bucket = process.env.SUPABASE_STORAGE_BUCKET;
+
+    if (!bucket) {
+      return NextResponse.json({ error: "Storage bucket not configured" }, { status: 500 });
     }
 
-    // Save file
-    const filepath = join(uploadsDir, filename);
-    await writeFile(filepath, buffer);
+    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '');
+    const folder = (type === 'image' || type === 'cover') ? 'images' : 'materials';
+    const filePath = `${folder}/${randomUUID()}-${Date.now()}-${sanitizedName}`;
 
-    // Return file URL
-    const fileUrl = `/${uploadDir}/${filename}`;
-    
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from(bucket)
+      .upload(filePath, buffer, {
+        contentType: file.type,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error('Supabase upload error:', uploadError);
+      return NextResponse.json({ error: "Failed to upload file" }, { status: 500 });
+    }
+
+    const { data: publicUrlData } = supabaseAdmin.storage.from(bucket).getPublicUrl(filePath);
+
     return NextResponse.json({
       success: true,
-      url: fileUrl,
-      filename: filename,
-      originalName: file.name,
+      url: publicUrlData.publicUrl,
+      path: filePath,
+      filename: sanitizedName,
       size: file.size,
       type: file.type
     });
