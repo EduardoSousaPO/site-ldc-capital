@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { signIn, getSession } from "next-auth/react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import Image from "next/image";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Lock, Mail, Eye, EyeOff } from "lucide-react";
-import Image from "next/image";
+import { signIn, getCurrentUser } from "@/lib/auth-supabase";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -18,23 +18,31 @@ export default function AdminLogin() {
   const [error, setError] = useState("");
   const router = useRouter();
 
+  useEffect(() => {
+    // Verificar se já está logado
+    const checkAuth = async () => {
+      const user = await getCurrentUser();
+      if (user && (user.role === 'ADMIN' || user.role === 'EDITOR')) {
+        router.push('/admin/dashboard');
+      }
+    };
+    checkAuth();
+  }, [router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
     try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
+      const { data, error: signInError } = await signIn(email, password);
 
-      if (result?.error) {
+      if (signInError) {
         setError("Credenciais inválidas. Verifique seu email e senha.");
-      } else {
-        const session = await getSession();
-        if (session?.user?.role === "ADMIN" || session?.user?.role === "EDITOR") {
+      } else if (data.user) {
+        // Verificar role do usuário
+        const userRole = data.user.user_metadata?.role;
+        if (userRole === 'ADMIN' || userRole === 'EDITOR') {
           router.push("/admin/dashboard");
         } else {
           setError("Você não tem permissão para acessar o painel administrativo.");
@@ -163,4 +171,3 @@ export default function AdminLogin() {
     </div>
   );
 }
-

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import NextAuthSessionProvider from "./providers/SessionProvider";
+// Removido NextAuth - usando Supabase Auth
 
 // IvyMode - Fonte oficial para títulos (conforme Manual da Marca LDC Capital)
 const ivyMode = localFont({
@@ -80,9 +80,7 @@ export default function RootLayout({
       <body
         className={`${publicSans.variable} ${ivyMode.variable} antialiased`}
       >
-        <NextAuthSessionProvider>
-          {children}
-        </NextAuthSessionProvider>
+        {children}
       </body>
     </html>
   );
