@@ -152,11 +152,11 @@ export default function Footer() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="text-white space-y-1 font-sans">
             <p className="text-[10px]">
-              <strong>CNPJ:</strong> 00.000.000/0001-00 (placeholder) | 
+              <strong>CNPJ:</strong> 58.321.323/0001-67 | 
               <strong> Registro CVM:</strong> 000000 (placeholder)
             </p>
             <p className="text-[10px]">
-              <strong>Endereço:</strong> Rua Exemplo, 123 - Bairro - Cidade/UF - CEP 00000-000
+              <strong>Endereço:</strong> Rua Rio Branco, 2393, sal 02, Centro de Taquara-RS - CEP 95600-074
             </p>
             <p className="text-xs mt-3 font-sans">
               © {new Date().getFullYear()} LDC Capital. Todos os direitos reservados.
