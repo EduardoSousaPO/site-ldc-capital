@@ -6,8 +6,7 @@ import PillarGrid from "../components/PillarGrid";
 import LeadForm from "../components/LeadForm";
 import CTAButton from "../components/CTAButton";
 import { Button } from "@/components/ui/button";
-import { Shield, Target, ArrowRight, CheckCircle, Users, TrendingUp, Award, Globe } from "lucide-react";
-import Image from "next/image";
+import { Shield, Target, ArrowRight, CheckCircle } from "lucide-react";
 
 export const metadata = {
   title: "Consultoria de Investimentos - LDC Capital",

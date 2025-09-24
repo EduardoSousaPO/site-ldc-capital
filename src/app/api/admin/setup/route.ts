@@ -50,6 +50,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Criar post de exemplo
+    const educacaoCategory = await prisma.category.findUnique({ 
+      where: { slug: 'educacao-financeira' } 
+    });
+
     const examplePost = await prisma.blogPost.create({
       data: {
         title: 'Bem-vindo ao Blog LDC Capital',
@@ -77,7 +81,11 @@ Navegue pelas categorias, deixe seus comentários e compartilhe o conhecimento. 
         readingTime: '2 min de leitura',
         publishedAt: new Date(),
         authorId: admin.id,
-        categoryId: (await prisma.category.findUnique({ where: { slug: 'educacao-financeira' } }))?.id,
+        ...(educacaoCategory && {
+          category: {
+            connect: { id: educacaoCategory.id }
+          }
+        })
       },
     });
 

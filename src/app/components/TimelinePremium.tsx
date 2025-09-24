@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, Search, Presentation, Settings, BarChart3 } from "lucide-react";
+import { Search, Presentation, Settings, BarChart3 } from "lucide-react";
 
 interface TimelineStep {
   id: number;
