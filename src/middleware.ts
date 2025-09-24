@@ -1,48 +1,64 @@
-import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { createServerClient } from '@supabase/ssr';
 
-export default withAuth(
-  function middleware(req) {
-    // Verificar se é rota admin
-    if (req.nextUrl.pathname.startsWith("/admin")) {
-      // Permitir acesso à página de login
-      if (req.nextUrl.pathname === "/admin/login") {
-        return NextResponse.next();
+export async function middleware(request: NextRequest) {
+  const response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+
+  // Verificar se é rota admin
+  if (request.nextUrl.pathname.startsWith("/admin")) {
+    // Permitir acesso à página de login
+    if (request.nextUrl.pathname === "/admin/login") {
+      return response;
+    }
+
+    try {
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return request.cookies.getAll()
+            },
+            setAll(cookiesToSet) {
+              cookiesToSet.forEach(({ name, value, options }) => {
+                response.cookies.set(name, value, options)
+              })
+            },
+          },
+        }
+      );
+
+      const { data: { user }, error } = await supabase.auth.getUser();
+
+      // Se não há usuário ou erro, redirecionar para login
+      if (error || !user) {
+        return NextResponse.redirect(new URL("/admin/login", request.url));
       }
 
       // Verificar se o usuário tem permissão
-      const token = req.nextauth.token;
-      if (!token || (token.role !== "ADMIN" && token.role !== "EDITOR")) {
-        return NextResponse.redirect(new URL("/admin/login", req.url));
+      const userRole = user.user_metadata?.role;
+      if (userRole !== "ADMIN" && userRole !== "EDITOR") {
+        return NextResponse.redirect(new URL("/admin/login", request.url));
       }
 
       // Verificar se apenas ADMIN pode acessar configurações
-      if (req.nextUrl.pathname.startsWith("/admin/settings") && token.role !== "ADMIN") {
-        return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+      if (request.nextUrl.pathname.startsWith("/admin/settings") && userRole !== "ADMIN") {
+        return NextResponse.redirect(new URL("/admin/dashboard", request.url));
       }
+    } catch (error) {
+      console.error('Middleware error:', error);
+      return NextResponse.redirect(new URL("/admin/login", request.url));
     }
-
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token, req }) => {
-        // Permitir acesso à página de login sem token
-        if (req.nextUrl.pathname === "/admin/login") {
-          return true;
-        }
-
-        // Para outras rotas admin, verificar se tem token
-        if (req.nextUrl.pathname.startsWith("/admin")) {
-          return !!token && (token.role === "ADMIN" || token.role === "EDITOR");
-        }
-
-        // Permitir acesso a todas as outras rotas
-        return true;
-      },
-    },
   }
-);
+
+  return response;
+}
 
 export const config = {
   matcher: ["/admin/:path*"]

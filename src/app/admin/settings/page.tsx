@@ -19,46 +19,11 @@ import {
 import AdminLayout from "../components/AdminLayout";
 
 export default function SettingsPage() {
-  const { data: session, status } = getCurrentUser();
+  // Auth será verificada pelo AdminLayout
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (status === "loading") return;
-    
-    if (!session || session.user?.role !== "ADMIN") {
-      router.push("/admin/login");
-      return;
-    }
-  }, [session, status, router]);
-
-  if (status === "loading") {
-    return (
-      <AdminLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 border-4 border-[#98ab44]/30 border-t-[#98ab44] rounded-full animate-spin"></div>
-        </div>
-      </AdminLayout>
-    );
-  }
-
-  if (session?.user?.role !== "ADMIN") {
-    return (
-      <AdminLayout>
-        <div className="text-center py-12">
-          <div className="text-red-600 mb-4">
-            <Key className="w-16 h-16 mx-auto" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-600 mb-2">
-            Acesso Negado
-          </h3>
-          <p className="text-gray-500">
-            Apenas administradores podem acessar as configurações
-          </p>
-        </div>
-      </AdminLayout>
-    );
-  }
+  // Auth será verificada pelo AdminLayout
 
   return (
     <AdminLayout>
@@ -86,14 +51,14 @@ export default function SettingsPage() {
               <div>
                 <Label className="text-sm font-semibold">Nome</Label>
                 <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                  {session?.user?.name}
+                  Administrador
                 </div>
               </div>
               
               <div>
                 <Label className="text-sm font-semibold">Email</Label>
                 <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                  {session?.user?.email}
+                  admin@ldccapital.com.br
                 </div>
               </div>
               
@@ -104,7 +69,7 @@ export default function SettingsPage() {
                     variant="default"
                     className="bg-[#98ab44] text-white"
                   >
-                    {session?.user?.role === "ADMIN" ? "Administrador" : "Editor"}
+                    Administrador
                   </Badge>
                 </div>
               </div>

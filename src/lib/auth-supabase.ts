@@ -1,34 +1,10 @@
 import { createSupabaseBrowserClient } from '@/lib/supabase'
-import { createSupabaseServerClient } from '@/lib/supabase-server'
 
 export interface User {
   id: string
   email: string
   name?: string
   role: string
-}
-
-// Servidor - verificar se usuário está autenticado
-export async function getUser(): Promise<User | null> {
-  try {
-    const supabase = createSupabaseServerClient()
-    
-    const { data: { user }, error } = await supabase.auth.getUser()
-    
-    if (error || !user) {
-      return null
-    }
-
-    return {
-      id: user.id,
-      email: user.email || '',
-      name: user.user_metadata?.name,
-      role: user.user_metadata?.role || 'USER'
-    }
-  } catch (error) {
-    console.error('Error getting user:', error)
-    return null
-  }
 }
 
 // Cliente - fazer login

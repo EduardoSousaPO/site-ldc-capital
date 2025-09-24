@@ -5,7 +5,7 @@ import { join } from "path";
 import { existsSync } from "fs";
 
 async function checkAuth() {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   
   const { data: { user }, error } = await supabase.auth.getUser();
   

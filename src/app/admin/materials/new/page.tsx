@@ -34,7 +34,7 @@ const materialTypes = [
 ];
 
 export default function NewMaterial() {
-  const { data: session } = getCurrentUser();
+  // Auth será verificada pelo AdminLayout
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -486,7 +486,7 @@ export default function NewMaterial() {
                 
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Autor:</span>
-                  <span className="font-medium">{session?.user?.name}</span>
+                  <span className="font-medium">Administrador</span>
                 </div>
                 
                 <div className="flex justify-between text-sm">

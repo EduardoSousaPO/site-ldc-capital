@@ -158,7 +158,7 @@ export default function MaterialsPage() {
     }
   };
 
-  if (status === "loading" || loading) {
+  if (loading) {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-64">

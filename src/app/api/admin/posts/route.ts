@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import readingTime from "reading-time";
 
 async function checkAuth() {
-  const supabase = createSupabaseServerClient();
+  const supabase = await createSupabaseServerClient();
   
   const { data: { user }, error } = await supabase.auth.getUser();
   

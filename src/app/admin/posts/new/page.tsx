@@ -267,7 +267,7 @@ export default function NewPost() {
                 
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Autor:</span>
-                  <span className="font-medium">{session?.user?.name}</span>
+                  <span className="font-medium">Administrador</span>
                 </div>
                 
                 <div className="flex justify-between text-sm">

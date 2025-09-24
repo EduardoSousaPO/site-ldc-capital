@@ -40,7 +40,7 @@ interface DashboardStats {
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ id: string; email: string; name?: string; role: string } | null>(null);
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
     totalPosts: 0,
