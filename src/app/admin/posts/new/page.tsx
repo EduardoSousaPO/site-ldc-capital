@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Save, Eye, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Save, Eye, Image as ImageIcon, Upload, X } from "lucide-react";
 import Link from "next/link";
 import AdminLayout from "../../components/AdminLayout";
 import { toast } from "sonner";
@@ -31,6 +31,8 @@ export default function NewPost() {
   // Auth será verificada pelo AdminLayout
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     content: "",
@@ -77,6 +79,65 @@ export default function NewPost() {
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleImageUpload = async (file: File) => {
+    setUploadingCover(true);
+
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append("file", file);
+      formDataUpload.append("type", "cover");
+
+      const response = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: formDataUpload,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        handleInputChange("cover", result.url);
+        toast.success("Imagem enviada com sucesso!");
+      } else {
+        const error = await response.json();
+        toast.error(`Erro no upload: ${error.error}`);
+      }
+    } catch (error) {
+      console.error("Erro no upload:", error);
+      toast.error("Erro no upload da imagem");
+    } finally {
+      setUploadingCover(false);
+    }
+  };
+
+  const removeCover = () => {
+    handleInputChange("cover", "");
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!uploadingCover) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    if (uploadingCover) return;
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0 && files[0].type.startsWith('image/')) {
+      handleImageUpload(files[0]);
+    } else {
+      toast.error("Por favor, solte apenas arquivos de imagem");
+    }
   };
 
   return (
@@ -224,34 +285,95 @@ export default function NewPost() {
                   </Select>
                 </div>
 
-                <div>
-                  <Label htmlFor="cover" className="text-sm font-semibold">
-                    Imagem de Capa
-                  </Label>
-                  <Input
-                    id="cover"
-                    placeholder="/images/blog/minha-imagem.jpg"
-                    value={formData.cover}
-                    onChange={(e) => handleInputChange("cover", e.target.value)}
-                    className="mt-2"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    URL da imagem de capa (opcional)
-                  </p>
-                </div>
+              </CardContent>
+            </Card>
 
-                {formData.cover && (
-                  <div className="border rounded-lg p-2">
+            {/* Cover Image Upload */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-serif text-lg flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5 text-[#98ab44]" />
+                  Imagem de Capa
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {!formData.cover ? (
+                  <div 
+                    className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all duration-200 ${
+                      isDragging 
+                        ? 'border-[#98ab44] bg-[#98ab44]/5' 
+                        : 'border-gray-300 hover:border-[#98ab44]/50 hover:bg-gray-50'
+                    } ${uploadingCover ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
+                    <ImageIcon className={`w-8 h-8 mx-auto mb-2 ${isDragging ? 'text-[#98ab44]' : 'text-gray-400'}`} />
+                    <p className="text-sm text-gray-600 mb-1 font-medium">
+                      {isDragging ? 'Solte a imagem aqui' : 'Arraste e solte uma imagem'}
+                    </p>
+                    <p className="text-xs text-gray-500 mb-3">
+                      ou clique para selecionar (JPG, PNG, WebP - máx. 5MB)
+                    </p>
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageUpload(file);
+                        }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        disabled={uploadingCover}
+                      />
+                      <Button 
+                        size="sm" 
+                        className="bg-[#98ab44] hover:bg-[#98ab44]/90 text-white"
+                        disabled={uploadingCover}
+                      >
+                        {uploadingCover ? (
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                        ) : (
+                          <Upload className="w-4 h-4 mr-2" />
+                        )}
+                        {uploadingCover ? "Enviando..." : "Selecionar Arquivo"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative">
                     <img
                       src={formData.cover}
                       alt="Preview"
-                      className="w-full h-32 object-cover rounded"
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                      }}
+                      className="w-full h-32 object-cover rounded-lg"
                     />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={removeCover}
+                      className="absolute top-2 right-2 text-red-600 hover:text-red-700 bg-white/90"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Manual URL Input (fallback) */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-serif text-lg">URL da Imagem (Alternativa)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Input
+                  placeholder="/images/blog/minha-imagem.jpg"
+                  value={formData.cover}
+                  onChange={(e) => handleInputChange("cover", e.target.value)}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Ou cole a URL de uma imagem externa
+                </p>
               </CardContent>
             </Card>
 
