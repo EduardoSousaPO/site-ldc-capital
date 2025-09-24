@@ -62,10 +62,21 @@ export default function MaterialsPage() {
   const fetchMaterials = async () => {
     try {
       const response = await fetch("/api/admin/materials");
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error response:", errorData);
+        toast.error(`Erro ao carregar materiais: ${errorData.error || 'Erro desconhecido'}`);
+        setMaterials([]);
+        return;
+      }
+      
       const data = await response.json();
-      setMaterials(data);
+      setMaterials(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Erro ao carregar materiais:", error);
+      toast.error("Erro ao conectar com o servidor");
+      setMaterials([]);
     } finally {
       setLoading(false);
     }
