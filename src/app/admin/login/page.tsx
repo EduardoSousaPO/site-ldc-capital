@@ -43,7 +43,11 @@ export default function AdminLogin() {
         // Verificar role do usuário
         const userRole = data.user.user_metadata?.role;
         if (userRole === 'ADMIN' || userRole === 'EDITOR') {
-          router.push("/admin/dashboard");
+          // Aguardar um pouco para os cookies serem definidos
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Usar window.location para forçar um refresh completo
+          window.location.href = "/admin/dashboard";
         } else {
           setError("Você não tem permissão para acessar o painel administrativo.");
         }
