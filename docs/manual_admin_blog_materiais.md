@@ -282,3 +282,4 @@
 ---
 
 *Manual atualizado em Janeiro 2025 - LDC Capital*
+

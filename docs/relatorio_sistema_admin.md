@@ -366,3 +366,4 @@ O sistema está **100% pronto para uso em produção**, com todas as funcionalid
 ---
 
 *Desenvolvido com ❤️ para LDC Capital - Janeiro 2025*
+

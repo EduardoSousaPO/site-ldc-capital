@@ -198,3 +198,4 @@ npm run dev (no terminal)
 Todos os erros de compilação foram corrigidos e o sistema está funcionalmente completo. Agora é possível testar todas as funcionalidades do CMS administrativo.
 
 **Próximo passo**: Executar os testes funcionais seguindo este checklist!
+
