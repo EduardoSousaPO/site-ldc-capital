@@ -9,7 +9,7 @@ let browserClient: ReturnType<typeof createClient> | null = null
 let adminClient: ReturnType<typeof createClient> | null = null
 
 // Cliente básico para uso geral (deprecated - use createSupabaseBrowserClient)
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Cliente para componentes do browser (singleton)
 export const createSupabaseBrowserClient = () => {

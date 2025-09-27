@@ -47,8 +47,8 @@ export default function NewPost() {
     setLoading(true);
 
     try {
-      // TEMPORÁRIO: Usando API sem autenticação até configurar environment variables
-      const response = await fetch("/api/admin/posts-temp", {
+      // Usando API principal de posts
+      const response = await fetch("/api/admin/posts", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

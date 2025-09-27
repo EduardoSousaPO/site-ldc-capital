@@ -141,6 +141,11 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     console.log('📝 Creating new post...');
+    console.log('🔍 Environment check:', {
+      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      nodeEnv: process.env.NODE_ENV
+    });
     
     const user = await checkAuth();
 
