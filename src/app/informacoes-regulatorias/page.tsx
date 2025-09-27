@@ -6,37 +6,37 @@ import { ArrowLeft, FileText, Download, ExternalLink } from "lucide-react";
 const documentos = [
   {
     id: 1,
-    titulo: "Manual de Compliance e de Controles Internos",
-    descricao: "Documento que estabelece as diretrizes de compliance e controles internos da LDC Capital.",
-    arquivo: "/documentos/regulatorios/codigo-etica-conduta.pdf",
-    categoria: "Compliance"
-  },
-  {
-    id: 2,
-    titulo: "Código de Ética",
+    titulo: "Código de Ética e de Conduta",
     descricao: "Princípios éticos e de conduta que norteiam as atividades da LDC Capital.",
-    arquivo: "/documentos/regulatorios/codigo-etica-conduta.pdf",
+    arquivo: "/documentos/regulatorios/CÓDIGO_DE_ÉTICA_E_CONDUTA_LDC_OFICIAL[1].pdf",
     categoria: "Ética"
   },
   {
-    id: 3,
-    titulo: "Política de Suitability",
-    descricao: "Política para verificação da adequação dos produtos e serviços aos perfis dos clientes.",
-    arquivo: "/documentos/regulatorios/politica-suitability.pdf",
-    categoria: "Investimentos"
-  },
-  {
-    id: 4,
+    id: 2,
     titulo: "Formulário de Referência",
     descricao: "Informações detalhadas sobre a estrutura, atividades e governança da LDC Capital.",
     arquivo: "/documentos/regulatorios/FORMULÁRIO_DE_REFERÊNCIA_LDC_OFICIAL[1].pdf",
     categoria: "Governança"
   },
   {
-    id: 5,
-    titulo: "Política de Investimento Pessoal",
-    descricao: "Diretrizes para investimentos pessoais de colaboradores e pessoas relacionadas.",
+    id: 3,
+    titulo: "Política de Negociação de Valores Mobiliários",
+    descricao: "Diretrizes para negociação de valores mobiliários por colaboradores e pessoas relacionadas.",
     arquivo: "/documentos/regulatorios/POLÍTICA_DE_NEGOCIAÇÃO_DE_VALORES_MOBILIÁRIOS_LDC_OFICIAL[1].pdf",
+    categoria: "Investimentos"
+  },
+  {
+    id: 4,
+    titulo: "Política de Prevenção à Lavagem de Dinheiro e ao Financiamento do Terrorismo",
+    descricao: "Políticas e procedimentos para prevenção à lavagem de dinheiro e financiamento do terrorismo.",
+    arquivo: "/documentos/regulatorios/POLÍTICA_DE_PREVENÇÃO_À_LAVAGEM_DE_DINHEIRO_LDC_OFICIAL[1].pdf",
+    categoria: "Compliance"
+  },
+  {
+    id: 5,
+    titulo: "Política de Suitability",
+    descricao: "Política para verificação da adequação dos produtos e serviços aos perfis dos clientes.",
+    arquivo: "/documentos/regulatorios/POLÍTICA_DE_SUITABILITY_LDC_OFICIAL[1].pdf",
     categoria: "Investimentos"
   }
 ];
@@ -56,38 +56,9 @@ export default function InformacoesRegulatorias() {
             <p className="text-sm font-sans tracking-wider uppercase mb-4 opacity-90">
               LDC CAPITAL
             </p>
-            <h1 className="font-serif text-4xl md:text-5xl font-bold mb-6">
+            <h1 className="font-serif text-4xl md:text-5xl font-bold">
               Informações Regulatórias
             </h1>
-            
-            {/* Lista de documentos no header */}
-            <div className="max-w-2xl mx-auto text-left space-y-3 mt-8">
-              <div className="text-white/90 font-sans">
-                <p className="mb-4 text-lg">Documentos disponíveis:</p>
-                <ul className="space-y-2 text-base">
-                  <li className="flex items-center">
-                    <FileText className="h-4 w-4 mr-2 text-[#98ab44]" />
-                    Manual de Compliance e de Controles Internos
-                  </li>
-                  <li className="flex items-center">
-                    <FileText className="h-4 w-4 mr-2 text-[#98ab44]" />
-                    Código de Ética
-                  </li>
-                  <li className="flex items-center">
-                    <FileText className="h-4 w-4 mr-2 text-[#98ab44]" />
-                    Política de Suitability
-                  </li>
-                  <li className="flex items-center">
-                    <FileText className="h-4 w-4 mr-2 text-[#98ab44]" />
-                    Formulário de Referência
-                  </li>
-                  <li className="flex items-center">
-                    <FileText className="h-4 w-4 mr-2 text-[#98ab44]" />
-                    Política de Investimento Pessoal
-                  </li>
-                </ul>
-              </div>
-            </div>
           </div>
         </div>
       </div>
