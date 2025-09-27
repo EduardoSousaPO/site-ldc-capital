@@ -1,11 +1,7 @@
-import { Metadata } from "next";
+"use client";
+
 import Link from "next/link";
 import { ArrowLeft, FileText, Download, ExternalLink } from "lucide-react";
-
-export const metadata: Metadata = {
-  title: "Informações Regulatórias | LDC Capital",
-  description: "Documentos regulatórios e políticas de compliance da LDC Capital",
-};
 
 const documentos = [
   {
