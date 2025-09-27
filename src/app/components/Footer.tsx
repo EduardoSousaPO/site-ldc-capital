@@ -22,7 +22,7 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Navegação - Links do Site */}
+          {/* Navegação - Links Legais */}
           <div className="mt-4">
             <h3 className="font-serif text-lg font-semibold mb-4 text-white">
               Navegação
@@ -30,12 +30,45 @@ export default function Footer() {
             <ul className="space-y-2">
               <li>
                 <Link
-                  href="/"
+                  href="/termos-de-uso"
                   className="text-gray-300 hover:text-[#98ab44] transition-colors font-sans"
                 >
-                  Home
+                  Termos de uso
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/politica-privacidade"
+                  className="text-gray-300 hover:text-[#98ab44] transition-colors font-sans"
+                >
+                  Política de privacidade
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/informacoes-regulatorias"
+                  className="text-gray-300 hover:text-[#98ab44] transition-colors font-sans"
+                >
+                  Informações regulatórias
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/trabalhe-conosco"
+                  className="text-gray-300 hover:text-[#98ab44] transition-colors font-sans"
+                >
+                  Trabalhe conosco
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Links Úteis - Páginas do Site */}
+          <div className="mt-4">
+            <h3 className="font-serif text-lg font-semibold mb-4 text-white">
+              Links Úteis
+            </h3>
+            <ul className="space-y-2">
               <li>
                 <Link
                   href="/consultoria"
@@ -58,47 +91,6 @@ export default function Footer() {
                   className="text-gray-300 hover:text-[#98ab44] transition-colors font-sans"
                 >
                   Materiais
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/contato"
-                  className="text-gray-300 hover:text-[#98ab44] transition-colors font-sans"
-                >
-                  Contato
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Link Úteis - Informações Legais */}
-          <div className="mt-4">
-            <h3 className="font-serif text-lg font-semibold mb-4 text-white">
-              Link Úteis
-            </h3>
-            <ul className="space-y-2">
-              <li>
-                <Link
-                  href="/trabalhe-conosco"
-                  className="text-gray-300 hover:text-[#98ab44] transition-colors font-sans"
-                >
-                  Trabalhe Conosco
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/compliance"
-                  className="text-gray-300 hover:text-[#98ab44] transition-colors font-sans"
-                >
-                  Compliance
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/politica-privacidade"
-                  className="text-gray-300 hover:text-[#98ab44] transition-colors font-sans"
-                >
-                  Política de Privacidade
                 </Link>
               </li>
             </ul>
