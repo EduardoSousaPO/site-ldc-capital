@@ -13,3 +13,5 @@ export default function InformacoesRegulatorias({
   return <>{children}</>;
 }
 
+
+
