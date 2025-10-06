@@ -29,16 +29,16 @@ export async function POST(request: NextRequest) {
     };
     
     // Integração com Google Sheets (opcional - só executa se configurado)
-    let sheetsResult = { success: false };
-    let emailResult = { success: false };
-    let confirmationResult = { success: false };
+    let sheetsResult: { success: boolean; error?: string } = { success: false };
+    let emailResult: { success: boolean; error?: string } = { success: false };
+    let confirmationResult: { success: boolean; error?: string } = { success: false };
     
     if (process.env.GOOGLE_SHEETS_ID && process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
       try {
         const { addToGoogleSheets } = await import("@/lib/google-sheets");
         
         sheetsResult = await addToGoogleSheets(sheetsData);
-        if (!sheetsResult.success) {
+        if (!sheetsResult.success && sheetsResult.error) {
           console.error('Erro ao salvar no Google Sheets:', sheetsResult.error);
         }
         
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
           const { sendNewLeadEmail, sendConfirmationEmail } = await import("@/lib/email");
           
           emailResult = await sendNewLeadEmail(sheetsData);
-          if (!emailResult.success) {
+          if (!emailResult.success && emailResult.error) {
             console.error('Erro ao enviar email:', emailResult.error);
           }
           
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
             email: validatedData.email,
             origemFormulario: 'Fale Conosco',
           });
-          if (!confirmationResult.success) {
+          if (!confirmationResult.success && confirmationResult.error) {
             console.error('Erro ao enviar email de confirmação:', confirmationResult.error);
           }
         }
