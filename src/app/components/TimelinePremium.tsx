@@ -40,7 +40,7 @@ const timelineSteps: TimelineStep[] = [
   {
     id: 4,
     title: "Implementação",
-    subtitle: "1-2 semanas",
+    subtitle: "Após assinatura do contrato",
     description: "Execução das movimentações iniciais e estruturação completa da nova carteira de investimentos.",
     icon: Settings,
     color: "bg-[#becc6a]"
@@ -156,7 +156,15 @@ export default function TimelinePremium() {
           <p className="text-white/90 mb-6 text-lg">
             Nossa metodologia comprovada já ajudou mais de 350 famílias a alcançarem seus objetivos financeiros.
           </p>
-          <button className="bg-white text-[#98ab44] hover:bg-white/90 px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-300 shadow-lg hover:shadow-xl">
+          <button 
+            onClick={() => {
+              const contactForm = document.getElementById("contact-form");
+              if (contactForm) {
+                contactForm.scrollIntoView({ behavior: "smooth" });
+              }
+            }}
+            className="bg-white text-[#98ab44] hover:bg-white/90 px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-300 shadow-lg hover:shadow-xl"
+          >
             Iniciar Análise Gratuita
           </button>
         </div>

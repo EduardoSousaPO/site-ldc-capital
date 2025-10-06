@@ -131,15 +131,6 @@ export default function ServicesGridPremium() {
                       ))}
                     </div>
 
-                    {/* Hover CTA */}
-                    <div className={`mt-6 transition-all duration-300 ${
-                      hoveredCard === service.id ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
-                    }`}>
-                      <div className="flex items-center gap-2 text-[#98ab44] font-medium cursor-pointer group/cta">
-                        <span>Saiba mais</span>
-                        <ArrowRight className="h-4 w-4 group-hover/cta:translate-x-1 transition-transform" />
-                      </div>
-                    </div>
                   </CardContent>
                   
                   {/* Decorative Border */}

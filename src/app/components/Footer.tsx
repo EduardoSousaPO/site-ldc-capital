@@ -148,7 +148,7 @@ export default function Footer() {
               <strong> Registro CVM:</strong> 000000 (placeholder)
             </p>
             <p className="text-[10px]">
-              <strong>Endereço:</strong> Rua Rio Branco, 2393, sal 02, Centro de Taquara-RS - CEP 95600-074
+              <strong>Endereço:</strong> Rua Rio Branco, 1290, sala 02, Centro de Taquara-RS - CEP 95600-074
             </p>
             <p className="text-xs mt-3 font-sans">
               © {new Date().getFullYear()} LDC Capital. Todos os direitos reservados.

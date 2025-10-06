@@ -185,7 +185,7 @@ export default function TermosDeUso() {
             <ul className="list-disc list-inside text-gray-600 font-sans space-y-2 ml-4">
               <li><strong>CNPJ:</strong> 58.321.323/0001-67</li>
               <li><strong>Registro CVM:</strong> Em processo de regularização</li>
-              <li><strong>Endereço:</strong> Rua Rio Branco, 2393, sala 02, Centro - Taquara/RS - CEP 95600-074</li>
+              <li><strong>Endereço:</strong> Rua Rio Branco, 1290, sala 02, Centro - Taquara/RS - CEP 95600-074</li>
             </ul>
           </section>
 
@@ -232,6 +232,8 @@ export default function TermosDeUso() {
     </div>
   );
 }
+
+
 
 
 

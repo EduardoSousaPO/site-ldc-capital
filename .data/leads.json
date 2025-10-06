@@ -1,0 +1,14 @@
+[
+  {
+    "id": "1759500112315",
+    "nome": "Teste",
+    "telefone": "(51) 99999-9999",
+    "email": "teste@teste.com",
+    "patrimonio": "300k-1m",
+    "origem": "outros",
+    "consentimento": true,
+    "createdAt": "2025-10-03T14:01:52.315Z",
+    "ip": "::1",
+    "userAgent": "node"
+  }
+]

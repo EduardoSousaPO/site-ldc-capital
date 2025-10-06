@@ -138,7 +138,7 @@ export default function InformacoesRegulatorias() {
                 <li><strong>Razão Social:</strong> LDC Capital Consultoria de Investimentos</li>
                 <li><strong>CNPJ:</strong> 58.321.323/0001-67</li>
                 <li><strong>Registro CVM:</strong> Em processo de regularização</li>
-                <li><strong>Endereço:</strong> Rua Rio Branco, 2393, sala 02, Centro - Taquara/RS</li>
+                <li><strong>Endereço:</strong> Rua Rio Branco, 1290, sala 02, Centro - Taquara/RS</li>
                 <li><strong>CEP:</strong> 95600-074</li>
               </ul>
             </div>
@@ -148,7 +148,7 @@ export default function InformacoesRegulatorias() {
               </h3>
               <ul className="space-y-2 text-gray-600 font-sans">
                 <li><strong>Email:</strong> <a href="mailto:contato@ldccapital.com.br" className="text-[#98ab44] hover:text-[#262d3d] underline">contato@ldccapital.com.br</a></li>
-                <li><strong>Telefone:</strong> Em breve</li>
+                <li><strong>Telefone:</strong> (51) 98930-1511</li>
                 <li><strong>Ouvidoria:</strong> Em implementação</li>
               </ul>
             </div>

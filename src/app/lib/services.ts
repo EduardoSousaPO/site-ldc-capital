@@ -63,7 +63,7 @@ export const services: Service[] = [
     features: [
       "Diversificação internacional",
       "Proteção patrimonial",
-      "Minimização de riscos país",
+      "Minimização de riscos geográficos",
       "Otimização de rentabilidade global"
     ]
   },

@@ -63,7 +63,7 @@ export default function Hero() {
           {/* Badge Premium */}
           <div className="inline-flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 bg-white/10 backdrop-blur-md rounded-full border border-[#98ab44]/30 mb-6 sm:mb-8 animate-slide-up">
             <Compass className="h-4 w-4 sm:h-5 sm:w-5 text-[#98ab44]" />
-            <span className="text-[#98ab44] font-medium text-sm sm:text-base">Raízes no interior, olhos no horizonte</span>
+            <span className="text-[#98ab44] font-medium text-sm sm:text-base">Raízes no Interior. Olhos no Horizonte</span>
           </div>
           
           {/* Título Principal com tipografia premium responsiva */}
@@ -75,7 +75,7 @@ export default function Hero() {
           </h1>
           
           {/* Subtítulo Premium com melhor responsividade */}
-          <p className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl mb-8 sm:mb-12 lg:mb-16 text-gray-200 max-w-5xl mx-auto leading-relaxed font-light animate-slide-up delay-300 px-4 sm:px-0">
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl mb-8 sm:mb-12 lg:mb-16 text-gray-200 max-w-5xl mx-auto leading-relaxed font-light animate-slide-up delay-300 px-4 sm:px-0">
             Ajudamos você a alcançar o melhor nível de bem-estar na sua vida através do mercado financeiro com o 
             <span className="text-[#98ab44] font-medium"> melhor modelo de serviço financeiro disponível.</span>
           </p>
@@ -93,7 +93,7 @@ export default function Hero() {
             </div>
             <p className="text-gray-300 leading-relaxed text-sm sm:text-base lg:text-sm xl:text-base">
               Ser o parceiro de confiança de famílias, oferecendo-lhes 
-              <span className="text-[#98ab44] font-medium"> soluções de investimentos de forma transparente e personalizada</span> 
+              <span className="text-[#98ab44] font-medium"> soluções de investimentos de forma transparente e personalizada </span> 
               para ajudá-las na melhora do bem-estar, realização de sonhos, construção e gestão de seus patrimônios.
             </p>
           </div>
@@ -108,7 +108,7 @@ export default function Hero() {
             </div>
             <p className="text-gray-300 leading-relaxed text-sm sm:text-base lg:text-sm xl:text-base">
               Ser referência de 
-              <span className="text-[#becc6a] font-medium"> autoridade confiável, íntegra e de expertise</span> 
+              <span className="text-[#becc6a] font-medium"> autoridade confiável, íntegra e de expertise </span> 
               no mercado de consultoria de investimentos para famílias de alto patrimônio no âmbito nacional, protegendo os interesses de nossos clientes e fortalecendo uma cultura organizacional baseada em valores éticos.
             </p>
           </div>
@@ -142,10 +142,13 @@ export default function Hero() {
           
           <Button
             size="lg"
-            className="w-full sm:w-auto bg-[#577171] hover:bg-[#577171]/90 text-white px-8 sm:px-10 lg:px-12 xl:px-16 py-4 sm:py-5 lg:py-6 xl:py-8 text-base sm:text-lg lg:text-xl xl:text-2xl rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border-0"
+            className="w-full sm:w-auto bg-[#577171] hover:bg-[#577171]/90 text-white px-8 sm:px-10 lg:px-12 xl:px-16 py-4 sm:py-5 lg:py-6 xl:py-8 text-base sm:text-lg lg:text-xl xl:text-2xl rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border-0 group"
             asChild
           >
-            <a href="#services">Conheça nossos serviços</a>
+            <a href="/consultoria">
+              Conheça nossos serviços
+              <ArrowRight className="ml-2 sm:ml-3 lg:ml-4 xl:ml-5 h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 xl:h-7 xl:w-7 group-hover:translate-x-1 transition-transform" />
+            </a>
           </Button>
         </div>
       </div>

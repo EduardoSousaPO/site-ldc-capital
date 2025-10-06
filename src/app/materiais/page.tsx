@@ -43,11 +43,6 @@ export default async function MateriaisPage() {
 
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-white">
           <div className="text-center max-w-5xl mx-auto">
-            {/* Badge Premium */}
-            <div className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-md rounded-full border border-[#98ab44]/30 mb-8 animate-slide-up">
-              <FileText className="h-5 w-5 text-[#98ab44]" />
-              <span className="text-[#98ab44] font-medium">Conteúdo Especializado</span>
-            </div>
             
             {/* Título com gradiente */}
             <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6 sm:mb-8 leading-tight animate-slide-up delay-200 px-2 sm:px-0">
@@ -64,15 +59,15 @@ export default async function MateriaisPage() {
             {/* Stats premium */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 animate-slide-up delay-500 max-w-3xl mx-auto px-4 sm:px-0">
               <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-white/10">
-                <div className="text-2xl sm:text-3xl font-bold text-white mb-2">100%</div>
+                <div className="text-2xl sm:text-3xl font-bold text-[#98ab44] mb-2">100%</div>
                 <div className="text-white/80 text-sm sm:text-base">Gratuito</div>
               </div>
               <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-white/10">
-                <div className="text-2xl sm:text-3xl font-bold text-white mb-2">Especializado</div>
+                <div className="text-2xl sm:text-3xl font-bold text-[#98ab44] mb-2">Especializado</div>
                 <div className="text-white/80 text-sm sm:text-base">Por consultores</div>
               </div>
               <div className="bg-white/5 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-white/10">
-                <div className="text-2xl sm:text-3xl font-bold text-white mb-2">Prático</div>
+                <div className="text-2xl sm:text-3xl font-bold text-[#98ab44] mb-2">Prático</div>
                 <div className="text-white/80 text-sm sm:text-base">Aplicação imediata</div>
               </div>
             </div>

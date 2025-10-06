@@ -45,11 +45,53 @@ export async function POST(request: NextRequest) {
     // Save back to file
     await fs.writeFile(leadsFile, JSON.stringify(leads, null, 2));
     
-    // In a real application, you would integrate with:
-    // - Email service (Mailchimp, SendGrid, etc.)
-    // - CRM (HubSpot, Salesforce, etc.)
-    // - Database (PostgreSQL, MongoDB, etc.)
-    // - Notification service (Slack, Discord, etc.)
+    // Integração com Google Sheets (opcional - só executa se configurado)
+    let sheetsResult = { success: false };
+    let emailResult = { success: false };
+    let confirmationResult = { success: false };
+    
+    if (process.env.GOOGLE_SHEETS_ID && process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
+      try {
+        const { addToGoogleSheets } = await import("@/lib/google-sheets");
+        
+        const sheetsData = {
+          nome: validatedData.nome,
+          email: validatedData.email,
+          telefone: validatedData.telefone,
+          patrimonio: validatedData.patrimonio,
+          origem: validatedData.origem,
+          origemFormulario: 'Home' as const,
+        };
+        
+        sheetsResult = await addToGoogleSheets(sheetsData);
+        if (!sheetsResult.success) {
+          console.error('Erro ao salvar no Google Sheets:', sheetsResult.error);
+        }
+        
+        // Enviar email para a equipe
+        if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+          const { sendNewLeadEmail, sendConfirmationEmail } = await import("@/lib/email");
+          
+          emailResult = await sendNewLeadEmail(sheetsData);
+          if (!emailResult.success) {
+            console.error('Erro ao enviar email:', emailResult.error);
+          }
+          
+          // Enviar email de confirmação para o lead
+          confirmationResult = await sendConfirmationEmail({
+            nome: validatedData.nome,
+            email: validatedData.email,
+            origemFormulario: 'Home',
+          });
+          if (!confirmationResult.success) {
+            console.error('Erro ao enviar email de confirmação:', confirmationResult.error);
+          }
+        }
+      } catch (error) {
+        console.error('Erro nas integrações externas:', error);
+        // Não falha a API se as integrações não funcionarem
+      }
+    }
     
     console.log("New lead received:", {
       id: lead.id,
@@ -57,6 +99,9 @@ export async function POST(request: NextRequest) {
       email: lead.email,
       patrimonio: lead.patrimonio,
       origem: lead.origem,
+      sheetsIntegration: sheetsResult.success,
+      emailSent: emailResult.success,
+      confirmationSent: confirmationResult.success,
     });
     
     return NextResponse.json(

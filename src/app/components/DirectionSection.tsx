@@ -72,11 +72,9 @@ export default function DirectionSection() {
             
             <p className="text-xl md:text-2xl text-white/90 max-w-4xl mx-auto leading-relaxed font-light">
               Na LDC Capital, acreditamos que grandes patrimônios não se constroem à deriva. 
-              Assim como um barco precisa de leme para alcançar seu destino, 
-              <span className="font-semibold text-[#262d3d]"> seus investimentos precisam de direção clara, segura e experiente.</span>
+              Assim como um barco precisa de leme para alcançar seu destino, seus investimentos precisam de direção clara, segura e experiente.
               <br /><br />
-              Nascida no interior do Rio Grande do Sul, carregamos os valores de humildade, tranquilidade, identidade e trabalho duro em cada consultoria. 
-              Ser o parceiro de confiança de famílias, oferecendo-lhes soluções de investimentos de forma transparente e personalizada para ajudá-las na melhora do bem-estar, realização de sonhos, construção e gestão de seus patrimônios.
+              Nascida no interior do Rio Grande do Sul, carregamos os valores de humildade, tranquilidade, identidade e trabalho duro em cada consultoria. Mais do que finanças, oferecemos direção clara e segura para grandes patrimônios, sem atalhos, mas com estrutura sólida.
             </p>
           </div>
         </div>

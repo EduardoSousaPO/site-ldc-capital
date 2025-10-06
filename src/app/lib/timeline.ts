@@ -33,7 +33,7 @@ export const consultingTimeline: TimelineStep[] = [
     title: "Implementação",
     description: "Execução das movimentações iniciais e estruturação completa da nova carteira de investimentos.",
     icon: "Play",
-    duration: "1-2 semanas"
+    duration: "Após assinatura do contrato"
   },
   {
     id: "5",

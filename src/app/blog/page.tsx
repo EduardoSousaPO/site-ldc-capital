@@ -43,9 +43,6 @@ export default async function BlogPage() {
 
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <div className="inline-block px-3 py-1.5 sm:px-4 sm:py-2 bg-[#becc6a]/30 text-white text-xs sm:text-sm font-medium font-sans rounded-full border border-[#becc6a]/40 mb-4 sm:mb-6">
-              BLOG LDC CAPITAL
-            </div>
             
             <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-4 sm:mb-6 leading-tight px-2 sm:px-0">
               Confira nosso Blog

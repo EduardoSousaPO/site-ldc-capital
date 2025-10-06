@@ -1,28 +1,25 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 interface CTAButtonProps {
   children: React.ReactNode;
   className?: string;
   size?: "default" | "sm" | "lg" | "icon";
+  href?: string;
 }
 
-export default function CTAButton({ children, className, size }: CTAButtonProps) {
-  const scrollToContact = () => {
-    const contactForm = document.getElementById("contact-form");
-    if (contactForm) {
-      contactForm.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
+export default function CTAButton({ children, className, size, href = "/#contact-form" }: CTAButtonProps) {
   return (
     <Button
-      onClick={scrollToContact}
       size={size}
       className={className}
+      asChild
     >
-      {children}
+      <Link href={href}>
+        {children}
+      </Link>
     </Button>
   );
 }
