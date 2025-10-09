@@ -1,4 +1,6 @@
-import { Metadata } from "next";
+'use client';
+
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,16 +9,54 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import CTAButton from "../components/CTAButton";
 import DownloadButton from "../components/DownloadButton";
-import { getMaterials, getMaterialCategories } from "../lib/materials";
+import { Material } from "../lib/materials";
 
-export const metadata: Metadata = {
-  title: "Materiais Gratuitos - LDC Capital",
-  description: "E-books, guias e cartilhas gratuitas sobre investimentos e planejamento financeiro. Conteúdo especializado para ajudar você a tomar melhores decisões financeiras.",
-};
+export default function MateriaisPage() {
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export default async function MateriaisPage() {
-  const materials = await getMaterials();
-  const categories = await getMaterialCategories();
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [materialsRes, categoriesRes] = await Promise.all([
+          fetch('/api/materials'),
+          fetch('/api/material-categories')
+        ]);
+        
+        if (materialsRes.ok) {
+          const materialsData = await materialsRes.json();
+          setMaterials(materialsData);
+        }
+        
+        if (categoriesRes.ok) {
+          const categoriesData = await categoriesRes.json();
+          setCategories(categoriesData);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <main>
+        <Header />
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-[#98ab44] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Carregando materiais...</p>
+          </div>
+        </div>
+        <Footer />
+      </main>
+    );
+  }
 
   return (
     <main>

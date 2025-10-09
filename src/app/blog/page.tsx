@@ -1,4 +1,6 @@
-import { Metadata } from "next";
+'use client';
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { format } from "date-fns";
@@ -10,17 +12,56 @@ import { Input } from "@/components/ui/input";
 import { CalendarDays, Clock, Search, ArrowRight } from "lucide-react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { getBlogPosts, getBlogCategories } from "../lib/blog";
+import { BlogPost } from "../lib/blog";
 
-export const metadata: Metadata = {
-  title: "Blog - LDC Capital",
-  description: "Artigos e insights sobre investimentos, planejamento financeiro e consultoria. Conteúdo especializado para ajudar você a tomar melhores decisões financeiras.",
-};
+export default function BlogPage() {
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export default async function BlogPage() {
-  const posts = await getBlogPosts();
-  const categories = await getBlogCategories();
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [postsRes, categoriesRes] = await Promise.all([
+          fetch('/api/blog/posts'),
+          fetch('/api/blog/categories')
+        ]);
+        
+        if (postsRes.ok) {
+          const postsData = await postsRes.json();
+          setPosts(postsData);
+        }
+        
+        if (categoriesRes.ok) {
+          const categoriesData = await categoriesRes.json();
+          setCategories(categoriesData);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
+
   const featuredPosts = posts.slice(0, 3); // Posts mais lidos
+
+  if (loading) {
+    return (
+      <main>
+        <Header />
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-[#98ab44] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Carregando posts...</p>
+          </div>
+        </div>
+        <Footer />
+      </main>
+    );
+  }
 
   return (
     <main>

@@ -18,12 +18,8 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
-export async function generateStaticParams() {
-  const posts = await getBlogPosts();
-  return posts.map((post) => ({
-    slug: post.slug,
-  }));
-}
+// Removido generateStaticParams para evitar consultas ao banco durante build
+// A página será renderizada dinamicamente no servidor
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
