@@ -45,22 +45,17 @@ function buildDatabaseUrl() {
 
 const datasourceUrl = buildDatabaseUrl();
 
-// Configuração otimizada para serverless
-const prismaConfig = {
-  datasources: {
-    db: {
-      url: datasourceUrl,
-    },
-  },
-  log: process.env.NODE_ENV === "development" 
-    ? ["query", "error", "warn"] as const
-    : ["error"] as const,
-  errorFormat: "minimal" as const,
-};
-
 export const prisma =
   globalForPrisma.prisma ??
-  new PrismaClient(prismaConfig);
+  new PrismaClient({
+    datasources: {
+      db: {
+        url: datasourceUrl,
+      },
+    },
+    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+    errorFormat: "minimal",
+  });
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
