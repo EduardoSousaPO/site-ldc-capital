@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, withRetry, ensurePrismaConnection } from "@/lib/prisma";
 import readingTime from "reading-time";
 import { checkAdminAuth } from "@/lib/auth-check";
 
@@ -11,18 +11,21 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const posts = await prisma.blogPost.findMany({
-      orderBy: {
-        createdAt: "desc",
-      },
-      include: {
-        author: {
-          select: {
-            name: true,
-            email: true,
+    const posts = await withRetry(async () => {
+      await ensurePrismaConnection();
+      return await prisma.blogPost.findMany({
+        orderBy: {
+          createdAt: "desc",
+        },
+        include: {
+          author: {
+            select: {
+              name: true,
+              email: true,
+            },
           },
         },
-      },
+      });
     });
 
     return NextResponse.json(posts);
@@ -78,27 +81,30 @@ export async function POST(request: NextRequest) {
     console.log('📊 Reading time:', stats.text);
 
     console.log('💾 Creating post in database...');
-    const newPost = await prisma.blogPost.create({
-      data: {
-        title: title.trim(),
-        slug,
-        content,
-        summary: summary?.trim() || null,
-        category: category || 'Geral',
-        cover: cover || null,
-        published: published || false,
-        readingTime: stats.text,
-        authorId: user.id,
-        publishedAt: published ? new Date() : null,
-      },
-      include: {
-        author: {
-          select: {
-            name: true,
-            email: true,
+    const newPost = await withRetry(async () => {
+      await ensurePrismaConnection();
+      return await prisma.blogPost.create({
+        data: {
+          title: title.trim(),
+          slug,
+          content,
+          summary: summary?.trim() || null,
+          category: category || 'Geral',
+          cover: cover || null,
+          published: published || false,
+          readingTime: stats.text,
+          authorId: user.id,
+          publishedAt: published ? new Date() : null,
+        },
+        include: {
+          author: {
+            select: {
+              name: true,
+              email: true,
+            },
           },
         },
-      },
+      });
     });
 
     console.log('✅ Post created successfully:', newPost.id);
