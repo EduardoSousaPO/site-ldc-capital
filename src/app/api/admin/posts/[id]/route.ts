@@ -25,6 +25,11 @@ type AuthorInfo = {
   email: string | null;
 };
 
+type PostMeta = Pick<
+  RawPost,
+  "id" | "title" | "slug" | "content" | "readingTime" | "published" | "authorId"
+>;
+
 const postSelection = `
   id,
   title,
@@ -59,7 +64,7 @@ export async function GET(
       .from("BlogPost")
       .select(postSelection)
       .eq("id", id)
-      .maybeSingle();
+      .maybeSingle<RawPost>();
 
     if (error) {
       console.error("Error fetching post via Supabase:", error);
@@ -99,7 +104,7 @@ export async function PATCH(
       .from("BlogPost")
       .select("id, title, slug, content, readingTime, published, authorId")
       .eq("id", id)
-      .maybeSingle();
+      .maybeSingle<PostMeta>();
 
     if (fetchError) {
       console.error("Error fetching post before update:", fetchError);
@@ -110,7 +115,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    let slug = existingPost.slug as string;
+    let slug = existingPost.slug;
     if (title && title !== existingPost.title) {
       slug = title
         .toLowerCase()
@@ -119,7 +124,7 @@ export async function PATCH(
         .replace(/-+/g, "-");
     }
 
-    let newReadingTime = existingPost.readingTime as string | null;
+    let newReadingTime = existingPost.readingTime;
     if (content && content !== existingPost.content) {
       const stats = readingTime(content);
       newReadingTime = stats.text;
@@ -152,7 +157,7 @@ export async function PATCH(
       .update(updateData)
       .eq("id", id)
       .select(postSelection)
-      .single();
+      .single<RawPost>();
 
     if (updateError) {
       console.error("Error updating post via Supabase:", updateError);

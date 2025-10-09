@@ -24,6 +24,8 @@ type RawMaterial = {
   authorId: string | null;
 };
 
+type MaterialMeta = Pick<RawMaterial, "id" | "title" | "slug" | "published" | "authorId">;
+
 type AuthorInfo = {
   id: string;
   name: string | null;
@@ -70,7 +72,7 @@ export async function GET(
       .from("Material")
       .select(materialSelection)
       .eq("id", id)
-      .maybeSingle();
+      .maybeSingle<RawMaterial>();
 
     if (error) {
       console.error("Error fetching material via Supabase:", error);
@@ -126,7 +128,7 @@ export async function PATCH(
       .from("Material")
       .select("id, title, slug, published, authorId")
       .eq("id", id)
-      .maybeSingle();
+      .maybeSingle<MaterialMeta>();
 
     if (fetchError) {
       console.error("Error fetching material before update:", fetchError);
@@ -137,7 +139,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Material not found" }, { status: 404 });
     }
 
-    let slug = existingMaterial.slug as string;
+    let slug = existingMaterial.slug;
     if (title && title !== existingMaterial.title) {
       slug = title
         .toLowerCase()
@@ -176,7 +178,7 @@ export async function PATCH(
       .update(updateData)
       .eq("id", id)
       .select(materialSelection)
-      .single();
+      .single<RawMaterial>();
 
     if (updateError) {
       console.error("Error updating material via Supabase:", updateError);
