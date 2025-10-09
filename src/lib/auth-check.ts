@@ -56,6 +56,14 @@ export async function checkAdminAuth(): Promise<AuthUser | null> {
   }
 }
 
+// Tipo para o retorno da consulta Supabase
+interface UserFromDB {
+  id: string;
+  email: string | null;
+  name: string | null;
+  role: string;
+}
+
 async function resolveUserRoleFromDatabase(
   userId: string,
   email: string
@@ -66,7 +74,7 @@ async function resolveUserRoleFromDatabase(
     .from("User")
     .select("id,email,name,role")
     .eq("id", userId)
-    .maybeSingle();
+    .maybeSingle() as { data: UserFromDB | null; error: any };
 
   if (!idError && userById) {
     if (userById.role === "ADMIN" || userById.role === "EDITOR") {
@@ -91,7 +99,7 @@ async function resolveUserRoleFromDatabase(
       .from("User")
       .select("id,email,name,role")
       .eq("email", email)
-      .maybeSingle();
+      .maybeSingle() as { data: UserFromDB | null; error: any };
 
     if (emailError) {
       console.warn("⚠️ DB lookup by email failed:", emailError.message);
