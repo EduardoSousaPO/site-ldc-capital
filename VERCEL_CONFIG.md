@@ -29,8 +29,8 @@ O erro "Internal Server Error" ao criar posts no admin em produção é causado 
 ### **Passo 2: Adicionar/Atualizar Variáveis**
 
 ```bash
-# Database
-DATABASE_URL = "postgresql://postgres:Catolico0202@db.xvbpqlojxwbvqizmixrr.supabase.co:5432/postgres"
+# Database (usar string com SSL + pooling para Vercel)
+DATABASE_URL = "postgresql://postgres:Catolico0202@db.xvbpqlojxwbvqizmixrr.supabase.co:5432/postgres?sslmode=require&pgbouncer=true&connection_limit=1"
 
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL = "https://xvbpqlojxwbvqizmixrr.supabase.co"

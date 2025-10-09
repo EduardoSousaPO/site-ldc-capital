@@ -30,8 +30,8 @@ Acesse: https://vercel.com/dashboard → Seu Projeto → Settings → Environmen
 **Adicione/Atualize estas variáveis:**
 
 ```bash
-# Database
-DATABASE_URL = "postgresql://postgres:Catolico0202@db.xvbpqlojxwbvqizmixrr.supabase.co:5432/postgres"
+# Database (usar string com SSL + pgbouncer para ambientes serverless)
+DATABASE_URL = "postgresql://postgres:Catolico0202@db.xvbpqlojxwbvqizmixrr.supabase.co:5432/postgres?sslmode=require&pgbouncer=true&connection_limit=1"
 
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL = "https://xvbpqlojxwbvqizmixrr.supabase.co"
