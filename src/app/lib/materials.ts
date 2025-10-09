@@ -143,15 +143,19 @@ export async function getMaterialBySlug(slug: string): Promise<Material | null> 
     }
 
     // Increment download count asynchronously
-    await supabase
-      .from("Material")
-      .update({ downloadCount: (data.downloadCount ?? 0) + 1 })
-      .eq("id", data.id);
+    // Supabase client sem tipos de schema; cast para evitar erros de compilação.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const materialBuilder = supabase.from("Material") as any;
 
-    const row = data as MaterialRow;
-    const authorMap = await fetchAuthorMap([row], supabase);
-    const transformed = transformMaterial(row, authorMap);
-    transformed.downloadCount = (data.downloadCount ?? 0) + 1;
+    const materialData = data as MaterialRow;
+
+    await materialBuilder
+      .update({ downloadCount: (materialData.downloadCount ?? 0) + 1 })
+      .eq("id", materialData.id);
+
+    const authorMap = await fetchAuthorMap([materialData], supabase);
+    const transformed = transformMaterial(materialData, authorMap);
+    transformed.downloadCount = (materialData.downloadCount ?? 0) + 1;
     return transformed;
   } catch (error) {
     console.error("Error fetching material by slug:", error);
@@ -205,8 +209,11 @@ async function fetchAuthorMap(rows: MaterialRow[], supabase = createSupabaseAdmi
     return {};
   }
 
-  return (data ?? []).reduce<Record<string, AuthorRecord>>((map, author) => {
-    if (author?.id) {
+  const authorRows =
+    (data as Array<{ id: string; name: string | null; email: string | null }> | null) ?? [];
+
+  return authorRows.reduce<Record<string, AuthorRecord>>((map, author) => {
+    if (author.id) {
       map[author.id] = {
         name: author.name ?? null,
         email: author.email ?? "",

@@ -148,18 +148,18 @@ async function fetchAuthorMap(rows: BlogPostRow[], supabase = createSupabaseAdmi
     return {};
   }
 
-  return (data ?? []).reduce<Record<string, { name: string | null; email: string }>>(
-    (map, author) => {
-      if (author?.id) {
-        map[author.id] = {
-          name: author.name ?? null,
-          email: author.email ?? "",
-        };
-      }
-      return map;
-    },
-    {}
-  );
+  const authorRows =
+    (data as Array<{ id: string; name: string | null; email: string | null }> | null) ?? [];
+
+  return authorRows.reduce<Record<string, { name: string | null; email: string }>>((map, author) => {
+    if (author.id) {
+      map[author.id] = {
+        name: author.name ?? null,
+        email: author.email ?? "",
+      };
+    }
+    return map;
+  }, {});
 }
 
 function transformPost(

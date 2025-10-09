@@ -64,7 +64,7 @@ export async function GET(
       .from("BlogPost")
       .select(postSelection)
       .eq("id", id)
-      .maybeSingle<RawPost>();
+      .maybeSingle();
 
     if (error) {
       console.error("Error fetching post via Supabase:", error);
@@ -75,7 +75,8 @@ export async function GET(
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    const enriched = await attachAuthors([data as RawPost], supabase);
+    const postRow = data as RawPost;
+    const enriched = await attachAuthors([postRow], supabase);
     return NextResponse.json(enriched[0]);
   } catch (error) {
     console.error("Error fetching post:", error);
@@ -100,20 +101,22 @@ export async function PATCH(
 
     const supabase = createSupabaseAdminClient();
 
-    const { data: existingPost, error: fetchError } = await supabase
+    const { data: existingPostRow, error: fetchError } = await supabase
       .from("BlogPost")
       .select("id, title, slug, content, readingTime, published, authorId")
       .eq("id", id)
-      .maybeSingle<PostMeta>();
+      .maybeSingle();
 
     if (fetchError) {
       console.error("Error fetching post before update:", fetchError);
       return NextResponse.json({ error: "Failed to load post" }, { status: 500 });
     }
 
-    if (!existingPost) {
+    if (!existingPostRow) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
+
+    const existingPost = existingPostRow as PostMeta;
 
     let slug = existingPost.slug;
     if (title && title !== existingPost.title) {
@@ -152,19 +155,22 @@ export async function PATCH(
       }
     }
 
-    const { data, error: updateError } = await supabase
-      .from("BlogPost")
+    // Supabase client no Database types available here; cast to preserve DX.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updateBuilder = supabase.from("BlogPost") as any;
+    const { data, error: updateError } = await updateBuilder
       .update(updateData)
       .eq("id", id)
       .select(postSelection)
-      .single<RawPost>();
+      .single();
 
     if (updateError) {
       console.error("Error updating post via Supabase:", updateError);
       return NextResponse.json({ error: "Failed to update post" }, { status: 500 });
     }
 
-    const enriched = await attachAuthors([data as RawPost], supabase);
+    const postRow = data as RawPost;
+    const enriched = await attachAuthors([postRow], supabase);
     return NextResponse.json(enriched[0]);
   } catch (error) {
     console.error("Error updating post:", error);
@@ -216,8 +222,11 @@ async function attachAuthors(posts: RawPost[], supabase = createSupabaseAdminCli
     if (error) {
       console.warn("Failed to fetch authors for posts:", error.message);
     } else {
-      (authors ?? []).forEach((author) => {
-        if (author?.id) {
+      const authorRows =
+        (authors as Array<{ id: string; name: string | null; email: string | null }> | null) ?? [];
+
+      authorRows.forEach((author) => {
+        if (author.id) {
           authorsMap[author.id] = {
             id: author.id,
             name: author.name ?? null,

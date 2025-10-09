@@ -72,7 +72,7 @@ export async function GET(
       .from("Material")
       .select(materialSelection)
       .eq("id", id)
-      .maybeSingle<RawMaterial>();
+      .maybeSingle();
 
     if (error) {
       console.error("Error fetching material via Supabase:", error);
@@ -86,7 +86,8 @@ export async function GET(
       return NextResponse.json({ error: "Material not found" }, { status: 404 });
     }
 
-    const enriched = await attachAuthors([data as RawMaterial], supabase);
+    const materialRow = data as RawMaterial;
+    const enriched = await attachAuthors([materialRow], supabase);
     return NextResponse.json(enriched[0]);
   } catch (error) {
     console.error("Error fetching material:", error);
@@ -124,20 +125,22 @@ export async function PATCH(
 
     const supabase = createSupabaseAdminClient();
 
-    const { data: existingMaterial, error: fetchError } = await supabase
+    const { data: existingMaterialRow, error: fetchError } = await supabase
       .from("Material")
       .select("id, title, slug, published, authorId")
       .eq("id", id)
-      .maybeSingle<MaterialMeta>();
+      .maybeSingle();
 
     if (fetchError) {
       console.error("Error fetching material before update:", fetchError);
       return NextResponse.json({ error: "Failed to load material" }, { status: 500 });
     }
 
-    if (!existingMaterial) {
+    if (!existingMaterialRow) {
       return NextResponse.json({ error: "Material not found" }, { status: 404 });
     }
+
+    const existingMaterial = existingMaterialRow as MaterialMeta;
 
     let slug = existingMaterial.slug;
     if (title && title !== existingMaterial.title) {
@@ -148,7 +151,7 @@ export async function PATCH(
         .replace(/-+/g, "-");
     }
 
-    const updateData: Record<string, unknown> = {
+    const updateData: Partial<RawMaterial> & { updatedAt: string } = {
       updatedAt: new Date().toISOString(),
     };
 
@@ -173,12 +176,14 @@ export async function PATCH(
     }
     if (featured !== undefined) updateData.featured = featured;
 
-    const { data, error: updateError } = await supabase
-      .from("Material")
+    // Supabase client no Database types available here; cast to preserve DX.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updateBuilder = supabase.from("Material") as any;
+    const { data, error: updateError } = await updateBuilder
       .update(updateData)
       .eq("id", id)
       .select(materialSelection)
-      .single<RawMaterial>();
+      .single();
 
     if (updateError) {
       console.error("Error updating material via Supabase:", updateError);
@@ -188,7 +193,8 @@ export async function PATCH(
       );
     }
 
-    const enriched = await attachAuthors([data as RawMaterial], supabase);
+    const materialRow = data as RawMaterial;
+    const enriched = await attachAuthors([materialRow], supabase);
     return NextResponse.json(enriched[0]);
   } catch (error) {
     console.error("Error updating material:", error);
@@ -243,8 +249,12 @@ async function attachAuthors(materials: RawMaterial[], supabase = createSupabase
     if (error) {
       console.warn("Failed to fetch authors for materials:", error.message);
     } else {
-      (authors ?? []).forEach((author) => {
-        if (author?.id) {
+      const authorRows =
+        (authors as Array<{ id: string; name: string | null; email: string | null }> | null) ??
+        [];
+
+      authorRows.forEach((author) => {
+        if (author.id) {
           authorsMap[author.id] = {
             id: author.id,
             name: author.name ?? null,

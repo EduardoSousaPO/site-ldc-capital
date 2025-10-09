@@ -128,8 +128,11 @@ export async function POST(request: NextRequest) {
     console.log("Reading time:", stats.text);
 
     const supabase = createSupabaseAdminClient();
-    const { data, error } = await supabase
-      .from("BlogPost")
+    // Supabase client no Database types available here; cast to preserve DX.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const postBuilder = supabase.from("BlogPost") as any;
+
+    const { data, error } = await postBuilder
       .insert({
         title: title.trim(),
         slug,
@@ -194,8 +197,11 @@ async function attachAuthors(posts: RawPost[], supabase = createSupabaseAdminCli
     if (error) {
       console.warn("Failed to fetch authors for posts:", error.message);
     } else {
-      authorMap = (authors ?? []).reduce<AuthorMap>((map, author) => {
-        if (author && author.id) {
+      const authorRows =
+        (authors as Array<{ id: string; name: string | null; email: string | null }> | null) ?? [];
+
+      authorMap = authorRows.reduce<AuthorMap>((map, author) => {
+        if (author.id) {
           map[author.id] = {
             id: author.id,
             name: author.name ?? null,

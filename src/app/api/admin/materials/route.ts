@@ -126,8 +126,11 @@ export async function POST(request: NextRequest) {
       .replace(/-+/g, "-");
 
     const supabase = createSupabaseAdminClient();
-    const { data, error } = await supabase
-      .from("Material")
+    // Supabase client no Database types available here; cast to preserve DX.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const materialBuilder = supabase.from("Material") as any;
+
+    const { data, error } = await materialBuilder
       .insert({
         title,
         slug,
@@ -180,8 +183,11 @@ async function attachAuthors(materials: RawMaterial[], supabase = createSupabase
     if (error) {
       console.warn("Failed to fetch authors for materials:", error.message);
     } else {
-      (authors ?? []).forEach((author) => {
-        if (author?.id) {
+      const authorRows =
+        (authors as Array<{ id: string; name: string | null; email: string | null }> | null) ?? [];
+
+      authorRows.forEach((author) => {
+        if (author.id) {
           authorsMap[author.id] = {
             id: author.id,
             name: author.name ?? null,
