@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, LogLevel } from "@prisma/client";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -52,7 +52,9 @@ const prismaConfig = {
       url: datasourceUrl,
     },
   },
-  log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] as const : ["error"],
+  log: process.env.NODE_ENV === "development" 
+    ? (["query", "error", "warn"] as LogLevel[])
+    : (["error"] as LogLevel[]),
   errorFormat: "minimal" as const,
 };
 
