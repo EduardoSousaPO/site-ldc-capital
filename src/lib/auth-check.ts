@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { prisma } from "@/lib/prisma";
+import { createSupabaseAdminClient } from "@/lib/supabase";
 
 export interface AuthUser {
   id: string;
@@ -9,176 +9,107 @@ export interface AuthUser {
 }
 
 /**
- * Função centralizada para verificar autenticação em APIs admin
- * Garante consistência em todas as rotas
+ * Verifica autenticação de administradores usando apenas Supabase (Auth + PostgREST).
+ * Remove a dependência direta do Prisma neste fluxo para evitar erros de conexão em produção.
  */
 export async function checkAdminAuth(): Promise<AuthUser | null> {
   try {
-    console.log('🔐 Checking admin authentication...');
-    console.log('Environment check:', {
+    console.log("🔐 Checking admin authentication...");
+    console.log("Environment check:", {
       hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      nodeEnv: process.env.NODE_ENV
+      nodeEnv: process.env.NODE_ENV,
     });
 
-    // Tentar autenticação via servidor primeiro
-    try {
-      const supabase = await createSupabaseServerClient();
-      const { data: { user }, error } = await supabase.auth.getUser();
-      
-      if (!error && user) {
-        console.log('✅ User found in Supabase via server client:', { 
-          id: user.id, 
-          email: user.email,
-          metadata_role: user.user_metadata?.role 
-        });
-        
-        // Verificar no banco de dados
-        const authResult = await validateUserInDatabase(user);
-        if (authResult) {
-          return authResult;
-        }
-      } else {
-        console.log('⚠️ Server client auth failed:', error?.message || 'No user');
-      }
-    } catch (serverError) {
-      console.error('⚠️ Server client error:', serverError);
-    }
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
 
-    // Fallback para autenticação direta
-    console.log('🔄 Trying fallback authentication...');
-    return await fallbackAuth();
-  } catch (error) {
-    console.error('❌ Error in checkAdminAuth:', error);
-    return await fallbackAuth();
-  }
-}
-
-/**
- * Valida usuário no banco de dados
- */
-async function validateUserInDatabase(user: { id: string; email?: string }): Promise<AuthUser | null> {
-  try {
-    // Buscar usuário no banco de dados para pegar o role correto
-    const dbUser = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { id: true, email: true, name: true, role: true }
-    });
-
-    if (!dbUser) {
-      console.error('❌ User not found in database by ID, trying by email...');
-      
-      // Tentar encontrar por email
-      const userByEmail = await prisma.user.findUnique({
-        where: { email: user.email || '' },
-        select: { id: true, email: true, name: true, role: true }
-      });
-      
-      if (userByEmail) {
-        console.log('✅ Found user by email:', userByEmail);
-        
-        // Verificar permissões
-        if (userByEmail.role !== 'ADMIN' && userByEmail.role !== 'EDITOR') {
-          console.error('❌ Insufficient permissions:', userByEmail.role);
-          return null;
-        }
-        
-        return {
-          id: userByEmail.id,
-          email: userByEmail.email || '',
-          name: userByEmail.name,
-          role: userByEmail.role
-        };
-      }
-      
-      console.error('❌ User not found in database by email either');
+    if (error || !user) {
+      console.log("ℹ️ No authenticated user found via Supabase server client");
       return null;
     }
 
-    console.log('✅ Database user found:', dbUser);
-
-    // Verificar permissões
-    if (dbUser.role !== 'ADMIN' && dbUser.role !== 'EDITOR') {
-      console.error('❌ Insufficient permissions:', dbUser.role);
-      return null;
-    }
-
-    return {
-      id: dbUser.id,
-      email: dbUser.email || '',
-      name: dbUser.name,
-      role: dbUser.role
-    };
-  } catch (error) {
-    console.error('❌ Error validating user in database:', error);
-    return null;
-  }
-}
-
-/**
- * Função de fallback para autenticação em caso de problemas
- * Usa o usuário admin padrão como último recurso
- */
-async function fallbackAuth(): Promise<AuthUser | null> {
-  try {
-    console.log('🔄 Trying fallback authentication...');
-    
-    // Buscar qualquer usuário admin disponível
-    const adminUser = await prisma.user.findFirst({
-      where: { 
-        role: 'ADMIN'
-      },
-      select: { id: true, email: true, name: true, role: true },
-      orderBy: { createdAt: 'asc' } // Pegar o primeiro admin criado
+    console.log("✅ User found in Supabase via server client:", {
+      id: user.id,
+      email: user.email,
+      metadata_role: user.user_metadata?.role,
     });
-    
-    if (adminUser) {
-      console.log('✅ Using admin fallback user:', {
-        id: adminUser.id,
-        email: adminUser.email,
-        role: adminUser.role
-      });
+
+    const metadataRole = user.user_metadata?.role;
+
+    if (metadataRole === "ADMIN" || metadataRole === "EDITOR") {
       return {
-        id: adminUser.id,
-        email: adminUser.email || '',
-        name: adminUser.name,
-        role: adminUser.role
+        id: user.id,
+        email: user.email || "",
+        name: user.user_metadata?.name,
+        role: metadataRole,
       };
     }
-    
-    console.error('❌ No admin user found in fallback');
-    
-    // Última tentativa: criar um usuário admin temporário se não existir
-    console.log('🆘 Creating emergency admin user...');
-    const emergencyAdmin = await prisma.user.upsert({
-      where: { email: 'admin@ldccapital.com.br' },
-      update: { role: 'ADMIN' },
-      create: {
-        id: '5258d21b-9dfa-4eea-8ef8-7fd3eed8748a', // ID conhecido do Supabase
-        email: 'admin@ldccapital.com.br',
-        name: 'Administrador LDC Capital',
-        role: 'ADMIN'
-      },
-      select: { id: true, email: true, name: true, role: true }
-    });
-    
-    console.log('✅ Emergency admin created/updated:', emergencyAdmin);
-    return {
-      id: emergencyAdmin.id,
-      email: emergencyAdmin.email || '',
-      name: emergencyAdmin.name,
-      role: emergencyAdmin.role
-    };
-    
+
+    return await resolveUserRoleFromDatabase(user.id, user.email || "");
   } catch (error) {
-    console.error('❌ Error in fallback auth:', error);
+    console.error("❌ Error in checkAdminAuth:", error);
     return null;
   }
 }
 
+async function resolveUserRoleFromDatabase(
+  userId: string,
+  email: string
+): Promise<AuthUser | null> {
+  const supabaseAdmin = createSupabaseAdminClient();
 
+  const { data: userById, error: idError } = await supabaseAdmin
+    .from("User")
+    .select("id,email,name,role")
+    .eq("id", userId)
+    .maybeSingle();
 
+  if (!idError && userById) {
+    if (userById.role === "ADMIN" || userById.role === "EDITOR") {
+      return {
+        id: userById.id,
+        email: userById.email || "",
+        name: userById.name,
+        role: userById.role,
+      };
+    }
 
+    console.error("❌ Insufficient permissions via DB lookup:", userById.role);
+    return null;
+  }
 
+  if (idError) {
+    console.warn("⚠️ DB lookup by ID failed:", idError.message);
+  }
 
+  if (email) {
+    const { data: userByEmail, error: emailError } = await supabaseAdmin
+      .from("User")
+      .select("id,email,name,role")
+      .eq("email", email)
+      .maybeSingle();
 
+    if (emailError) {
+      console.warn("⚠️ DB lookup by email failed:", emailError.message);
+    }
+
+    if (
+      userByEmail &&
+      (userByEmail.role === "ADMIN" || userByEmail.role === "EDITOR")
+    ) {
+      return {
+        id: userByEmail.id,
+        email: userByEmail.email || "",
+        name: userByEmail.name,
+        role: userByEmail.role,
+      };
+    }
+  }
+
+  console.error("❌ No authorized user found via Supabase admin lookup");
+  return null;
+}
