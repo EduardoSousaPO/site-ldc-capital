@@ -57,7 +57,7 @@ export async function checkAdminAuth(): Promise<AuthUser | null> {
 /**
  * Valida usuário no banco de dados
  */
-async function validateUserInDatabase(user: any): Promise<AuthUser | null> {
+async function validateUserInDatabase(user: { id: string; email?: string }): Promise<AuthUser | null> {
   try {
     // Buscar usuário no banco de dados para pegar o role correto
     const dbUser = await prisma.user.findUnique({
