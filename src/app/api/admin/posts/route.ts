@@ -1,34 +1,72 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma, withRetry, ensurePrismaConnection } from "@/lib/prisma";
 import readingTime from "reading-time";
 import { checkAdminAuth } from "@/lib/auth-check";
+import { createSupabaseAdminClient } from "@/lib/supabase";
+
+type RawPost = {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  summary: string | null;
+  category: string;
+  cover: string | null;
+  published: boolean;
+  readingTime: string | null;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string | null;
+  authorId: string | null;
+};
+
+type AuthorMap = Record<
+  string,
+  {
+    id: string;
+    name: string | null;
+    email: string | null;
+  }
+>;
+
+const postSelection = `
+  id,
+  title,
+  slug,
+  content,
+  summary,
+  category,
+  cover,
+  published,
+  readingTime,
+  createdAt,
+  updatedAt,
+  publishedAt,
+  authorId
+`;
 
 export async function GET() {
   try {
     const user = await checkAdminAuth();
-    
+
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const posts = await withRetry(async () => {
-      await ensurePrismaConnection();
-      return await prisma.blogPost.findMany({
-        orderBy: {
-          createdAt: "desc",
-        },
-        include: {
-          author: {
-            select: {
-              name: true,
-              email: true,
-            },
-          },
-        },
-      });
-    });
+    const supabase = createSupabaseAdminClient();
+    const { data, error } = await supabase
+      .from("BlogPost")
+      .select(postSelection)
+      .order("createdAt", { ascending: false });
 
-    return NextResponse.json(posts);
+    if (error) {
+      console.error("Error fetching posts via Supabase:", error);
+      return NextResponse.json({ error: "Failed to load posts" }, { status: 500 });
+    }
+
+    const posts = (data as RawPost[] | null) ?? [];
+    const enriched = await attachAuthors(posts, supabase);
+
+    return NextResponse.json(enriched);
   } catch (error) {
     console.error("Error fetching posts:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -37,92 +75,144 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('📝 Creating new post...');
-    console.log('🔍 Environment check:', {
+    console.log("📝 Creating new post (Supabase)...");
+    console.log("Environment check:", {
       hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      nodeEnv: process.env.NODE_ENV
+      nodeEnv: process.env.NODE_ENV,
     });
-    
+
     const user = await checkAdminAuth();
 
     if (!user) {
-      console.log('❌ Unauthorized access attempt');
+      console.log("🚫 Unauthorized access attempt");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log('✅ User authorized:', user.email);
+    console.log("✅ User authorized:", user.email);
 
     const body = await request.json();
-    console.log('📋 Request body:', { ...body, content: body.content ? 'Content provided' : 'No content' });
-    
+    console.log("Payload received:", {
+      ...body,
+      content: body.content ? "Content provided" : "No content",
+    });
+
     const { title, content, summary, category, cover, published } = body;
 
     if (!title || !content) {
-      console.log('❌ Missing required fields:', { title: !!title, content: !!content });
-      return NextResponse.json({ 
-        error: "Missing required fields", 
-        details: { title: !!title, content: !!content }
-      }, { status: 400 });
+      console.log("⚠️ Missing required fields:", {
+        title: !!title,
+        content: !!content,
+      });
+      return NextResponse.json(
+        {
+          error: "Missing required fields",
+          details: { title: !!title, content: !!content },
+        },
+        { status: 400 }
+      );
     }
 
     const slug = title
       .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9 -]/g, "")
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-")
-      .replace(/^-|-$/g, ''); // Remove hífens do início e fim
+      .replace(/^-|-$/g, "");
 
-    console.log('📝 Generated slug:', slug);
+    console.log("Slug generated:", slug);
 
     const stats = readingTime(content);
-    console.log('📊 Reading time:', stats.text);
+    console.log("Reading time:", stats.text);
 
-    console.log('💾 Creating post in database...');
-    const newPost = await withRetry(async () => {
-      await ensurePrismaConnection();
-      return await prisma.blogPost.create({
-        data: {
-          title: title.trim(),
-          slug,
-          content,
-          summary: summary?.trim() || null,
-          category: category || 'Geral',
-          cover: cover || null,
-          published: published || false,
-          readingTime: stats.text,
-          authorId: user.id,
-          publishedAt: published ? new Date() : null,
-        },
-        include: {
-          author: {
-            select: {
-              name: true,
-              email: true,
-            },
-          },
-        },
-      });
-    });
+    const supabase = createSupabaseAdminClient();
+    const { data, error } = await supabase
+      .from("BlogPost")
+      .insert({
+        title: title.trim(),
+        slug,
+        content,
+        summary: summary?.trim() || null,
+        category: category || "Geral",
+        cover: cover || null,
+        published: published || false,
+        readingTime: stats.text,
+        authorId: user.id,
+        publishedAt: published ? new Date().toISOString() : null,
+      })
+      .select(postSelection)
+      .single();
 
-    console.log('✅ Post created successfully:', newPost.id);
-    return NextResponse.json(newPost, { status: 201 });
+    if (error) {
+      console.error("Error inserting post via Supabase:", error);
+      return NextResponse.json(
+        { error: "Failed to create post", details: error.message },
+        { status: 500 }
+      );
+    }
+
+    const enriched = await attachAuthors([(data as RawPost)], supabase);
+    const createdPost = enriched[0] ?? data;
+
+    console.log("✅ Post created successfully:", createdPost?.id);
+    return NextResponse.json(createdPost, { status: 201 });
   } catch (error) {
     console.error("❌ Error creating post:", error);
-    
-    // Log mais detalhado do erro
+
     if (error instanceof Error) {
       console.error("Error name:", error.name);
       console.error("Error message:", error.message);
       console.error("Error stack:", error.stack);
     }
-    
-    return NextResponse.json({ 
-      error: "Internal server error",
-      details: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
-    }, { status: 500 });
+
+    return NextResponse.json(
+      {
+        error: "Internal server error",
+        details: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
   }
+}
+
+async function attachAuthors(posts: RawPost[], supabase = createSupabaseAdminClient()) {
+  const authorIds = Array.from(
+    new Set(posts.map((post) => post.authorId).filter((id): id is string => !!id))
+  );
+
+  let authorMap: AuthorMap = {};
+
+  if (authorIds.length > 0) {
+    const { data: authors, error } = await supabase
+      .from("User")
+      .select("id, name, email")
+      .in("id", authorIds);
+
+    if (error) {
+      console.warn("Failed to fetch authors for posts:", error.message);
+    } else {
+      authorMap = (authors ?? []).reduce<AuthorMap>((map, author) => {
+        if (author && author.id) {
+          map[author.id] = {
+            id: author.id,
+            name: author.name ?? null,
+            email: author.email ?? null,
+          };
+        }
+        return map;
+      }, {});
+    }
+  }
+
+  return posts.map((post) => ({
+    ...post,
+    author: authorMap[post.authorId ?? ""] ?? {
+      id: post.authorId ?? "",
+      name: null,
+      email: "",
+    },
+  }));
 }

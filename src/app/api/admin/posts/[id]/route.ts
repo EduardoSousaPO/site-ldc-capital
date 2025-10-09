@@ -1,37 +1,77 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import readingTime from "reading-time";
 import { checkAdminAuth } from "@/lib/auth-check";
+import { createSupabaseAdminClient } from "@/lib/supabase";
+
+type RawPost = {
+  id: string;
+  title: string;
+  slug: string;
+  content: string;
+  summary: string | null;
+  category: string;
+  cover: string | null;
+  published: boolean;
+  readingTime: string | null;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string | null;
+  authorId: string | null;
+};
+
+type AuthorInfo = {
+  id: string;
+  name: string | null;
+  email: string | null;
+};
+
+const postSelection = `
+  id,
+  title,
+  slug,
+  content,
+  summary,
+  category,
+  cover,
+  published,
+  readingTime,
+  createdAt,
+  updatedAt,
+  publishedAt,
+  authorId
+`;
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await checkAdminAuth();
-    
+
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { id } = await params;
-    const post = await prisma.blogPost.findUnique({
-      where: { id },
-      include: {
-        author: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
-      },
-    });
+    const supabase = createSupabaseAdminClient();
 
-    if (!post) {
+    const { data, error } = await supabase
+      .from("BlogPost")
+      .select(postSelection)
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Error fetching post via Supabase:", error);
+      return NextResponse.json({ error: "Failed to fetch post" }, { status: 500 });
+    }
+
+    if (!data) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    return NextResponse.json(post);
+    const enriched = await attachAuthors([data as RawPost], supabase);
+    return NextResponse.json(enriched[0]);
   } catch (error) {
     console.error("Error fetching post:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -50,19 +90,27 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const { title, content, summary, category, cover, published } = await request.json();
+    const payload = await request.json();
+    const { title, content, summary, category, cover, published } = payload;
 
-    // Check if post exists
-    const existingPost = await prisma.blogPost.findUnique({
-      where: { id },
-    });
+    const supabase = createSupabaseAdminClient();
+
+    const { data: existingPost, error: fetchError } = await supabase
+      .from("BlogPost")
+      .select("id, title, slug, content, readingTime, published, authorId")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error("Error fetching post before update:", fetchError);
+      return NextResponse.json({ error: "Failed to load post" }, { status: 500 });
+    }
 
     if (!existingPost) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    // Generate new slug if title changed
-    let slug = existingPost.slug;
+    let slug = existingPost.slug as string;
     if (title && title !== existingPost.title) {
       slug = title
         .toLowerCase()
@@ -71,45 +119,48 @@ export async function PATCH(
         .replace(/-+/g, "-");
     }
 
-    // Calculate reading time if content changed
-    let newReadingTime = existingPost.readingTime;
+    let newReadingTime = existingPost.readingTime as string | null;
     if (content && content !== existingPost.content) {
       const stats = readingTime(content);
       newReadingTime = stats.text;
     }
 
     const updateData: Record<string, unknown> = {
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString(),
     };
 
-    if (title) updateData.title = title;
-    if (title) updateData.slug = slug;
-    if (content) updateData.content = content;
-    if (content) updateData.readingTime = newReadingTime;
+    if (title) {
+      updateData.title = title;
+      updateData.slug = slug;
+    }
+    if (content) {
+      updateData.content = content;
+      updateData.readingTime = newReadingTime;
+    }
     if (summary !== undefined) updateData.summary = summary;
     if (category) updateData.category = category;
     if (cover !== undefined) updateData.cover = cover;
     if (published !== undefined) {
       updateData.published = published;
       if (published && !existingPost.published) {
-        updateData.publishedAt = new Date();
+        updateData.publishedAt = new Date().toISOString();
       }
     }
 
-    const updatedPost = await prisma.blogPost.update({
-      where: { id },
-      data: updateData,
-      include: {
-        author: {
-          select: {
-            name: true,
-            email: true,
-          },
-        },
-      },
-    });
+    const { data, error: updateError } = await supabase
+      .from("BlogPost")
+      .update(updateData)
+      .eq("id", id)
+      .select(postSelection)
+      .single();
 
-    return NextResponse.json(updatedPost);
+    if (updateError) {
+      console.error("Error updating post via Supabase:", updateError);
+      return NextResponse.json({ error: "Failed to update post" }, { status: 500 });
+    }
+
+    const enriched = await attachAuthors([data as RawPost], supabase);
+    return NextResponse.json(enriched[0]);
   } catch (error) {
     console.error("Error updating post:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -117,7 +168,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -128,23 +179,56 @@ export async function DELETE(
     }
 
     const { id } = await params;
+    const supabase = createSupabaseAdminClient();
 
-    // Check if post exists
-    const existingPost = await prisma.blogPost.findUnique({
-      where: { id },
-    });
+    const { error } = await supabase.from("BlogPost").delete().eq("id", id);
 
-    if (!existingPost) {
-      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+    if (error) {
+      console.error("Error deleting post via Supabase:", error);
+      return NextResponse.json({ error: "Failed to delete post" }, { status: 500 });
     }
-
-    await prisma.blogPost.delete({
-      where: { id },
-    });
 
     return NextResponse.json({ message: "Post deleted successfully" });
   } catch (error) {
     console.error("Error deleting post:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
+}
+
+async function attachAuthors(posts: RawPost[], supabase = createSupabaseAdminClient()) {
+  const authorIds = Array.from(
+    new Set(posts.map((post) => post.authorId).filter((id): id is string => !!id))
+  );
+
+  const authorsMap: Record<string, AuthorInfo> = {};
+
+  if (authorIds.length > 0) {
+    const { data: authors, error } = await supabase
+      .from("User")
+      .select("id, name, email")
+      .in("id", authorIds);
+
+    if (error) {
+      console.warn("Failed to fetch authors for posts:", error.message);
+    } else {
+      (authors ?? []).forEach((author) => {
+        if (author?.id) {
+          authorsMap[author.id] = {
+            id: author.id,
+            name: author.name ?? null,
+            email: author.email ?? null,
+          };
+        }
+      });
+    }
+  }
+
+  return posts.map((post) => ({
+    ...post,
+    author: authorsMap[post.authorId ?? ""] ?? {
+      id: post.authorId ?? "",
+      name: null,
+      email: "",
+    },
+  }));
 }

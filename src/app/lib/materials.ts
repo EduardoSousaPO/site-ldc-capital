@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { createSupabaseAdminClient } from "@/lib/supabase";
 
 export interface Material {
   id: string;
@@ -25,180 +25,225 @@ export interface Material {
   };
 }
 
+type MaterialRow = {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  content: string | null;
+  category: string;
+  type: string;
+  cover: string | null;
+  fileUrl: string | null;
+  fileName: string | null;
+  fileSize: string | null;
+  pages: number | null;
+  published: boolean;
+  featured: boolean;
+  downloadCount: number | null;
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string | null;
+  authorId: string | null;
+};
+
+type AuthorRecord = {
+  name: string | null;
+  email: string;
+};
+
+const materialSelection = `
+  id,
+  title,
+  slug,
+  description,
+  content,
+  category,
+  type,
+  cover,
+  fileUrl,
+  fileName,
+  fileSize,
+  pages,
+  published,
+  featured,
+  downloadCount,
+  createdAt,
+  updatedAt,
+  publishedAt,
+  authorId
+`;
+
 export async function getMaterials(): Promise<Material[]> {
   try {
-    const materials = await prisma.material.findMany({
-      where: {
-        published: true
-      },
-      include: {
-        author: {
-          select: {
-            name: true,
-            email: true
-          }
-        }
-      },
-      orderBy: [
-        { featured: 'desc' }, // Featured materials first
-        { publishedAt: 'desc' }
-      ]
-    });
+    const supabase = createSupabaseAdminClient();
+    const { data, error } = await supabase
+      .from("Material")
+      .select(materialSelection)
+      .eq("published", true)
+      .order("featured", { ascending: false })
+      .order("publishedAt", { ascending: false });
 
-    return materials.map(material => ({
-      id: material.id,
-      title: material.title,
-      slug: material.slug,
-      description: material.description || '',
-      content: material.content || '',
-      category: material.category,
-      type: material.type,
-      cover: material.cover || '',
-      fileUrl: material.fileUrl || '',
-      fileName: material.fileName || '',
-      fileSize: material.fileSize || '',
-      pages: material.pages || undefined,
-      published: material.published,
-      featured: material.featured,
-      downloadCount: material.downloadCount,
-      createdAt: material.createdAt.toISOString(),
-      updatedAt: material.updatedAt.toISOString(),
-      publishedAt: material.publishedAt?.toISOString(),
-      author: material.author
-    }));
+    if (error) {
+      console.error("Error fetching materials:", error);
+      return [];
+    }
+
+    const rows = (data as MaterialRow[] | null) ?? [];
+    const authorMap = await fetchAuthorMap(rows, supabase);
+    return rows.map((row) => transformMaterial(row, authorMap));
   } catch (error) {
-    console.error('Error fetching materials:', error);
+    console.error("Error fetching materials:", error);
     return [];
   }
 }
 
 export async function getFeaturedMaterials(): Promise<Material[]> {
   try {
-    const materials = await prisma.material.findMany({
-      where: {
-        published: true,
-        featured: true
-      },
-      include: {
-        author: {
-          select: {
-            name: true,
-            email: true
-          }
-        }
-      },
-      orderBy: {
-        publishedAt: 'desc'
-      },
-      take: 3
-    });
+    const supabase = createSupabaseAdminClient();
+    const { data, error } = await supabase
+      .from("Material")
+      .select(materialSelection)
+      .eq("published", true)
+      .eq("featured", true)
+      .order("publishedAt", { ascending: false })
+      .limit(3);
 
-    return materials.map(material => ({
-      id: material.id,
-      title: material.title,
-      slug: material.slug,
-      description: material.description || '',
-      content: material.content || '',
-      category: material.category,
-      type: material.type,
-      cover: material.cover || '',
-      fileUrl: material.fileUrl || '',
-      fileName: material.fileName || '',
-      fileSize: material.fileSize || '',
-      pages: material.pages || undefined,
-      published: material.published,
-      featured: material.featured,
-      downloadCount: material.downloadCount,
-      createdAt: material.createdAt.toISOString(),
-      updatedAt: material.updatedAt.toISOString(),
-      publishedAt: material.publishedAt?.toISOString(),
-      author: material.author
-    }));
+    if (error) {
+      console.error("Error fetching featured materials:", error);
+      return [];
+    }
+
+    const rows = (data as MaterialRow[] | null) ?? [];
+    const authorMap = await fetchAuthorMap(rows, supabase);
+    return rows.map((row) => transformMaterial(row, authorMap));
   } catch (error) {
-    console.error('Error fetching featured materials:', error);
+    console.error("Error fetching featured materials:", error);
     return [];
   }
 }
 
 export async function getMaterialBySlug(slug: string): Promise<Material | null> {
   try {
-    const material = await prisma.material.findUnique({
-      where: {
-        slug: slug,
-        published: true
-      },
-      include: {
-        author: {
-          select: {
-            name: true,
-            email: true
-          }
-        }
-      }
-    });
+    const supabase = createSupabaseAdminClient();
+    const { data, error } = await supabase
+      .from("Material")
+      .select(materialSelection)
+      .eq("slug", slug)
+      .eq("published", true)
+      .maybeSingle();
 
-    if (!material) return null;
+    if (error) {
+      console.error("Error fetching material by slug:", error);
+      return null;
+    }
 
-    // Increment download count
-    await prisma.material.update({
-      where: { id: material.id },
-      data: { downloadCount: { increment: 1 } }
-    });
+    if (!data) {
+      return null;
+    }
 
-    return {
-      id: material.id,
-      title: material.title,
-      slug: material.slug,
-      description: material.description || '',
-      content: material.content || '',
-      category: material.category,
-      type: material.type,
-      cover: material.cover || '',
-      fileUrl: material.fileUrl || '',
-      fileName: material.fileName || '',
-      fileSize: material.fileSize || '',
-      pages: material.pages || undefined,
-      published: material.published,
-      featured: material.featured,
-      downloadCount: material.downloadCount + 1,
-      createdAt: material.createdAt.toISOString(),
-      updatedAt: material.updatedAt.toISOString(),
-      publishedAt: material.publishedAt?.toISOString(),
-      author: material.author
-    };
+    // Increment download count asynchronously
+    await supabase
+      .from("Material")
+      .update({ downloadCount: (data.downloadCount ?? 0) + 1 })
+      .eq("id", data.id);
+
+    const row = data as MaterialRow;
+    const authorMap = await fetchAuthorMap([row], supabase);
+    const transformed = transformMaterial(row, authorMap);
+    transformed.downloadCount = (data.downloadCount ?? 0) + 1;
+    return transformed;
   } catch (error) {
-    console.error('Error fetching material by slug:', error);
+    console.error("Error fetching material by slug:", error);
     return null;
   }
 }
 
 export async function getMaterialCategories(): Promise<string[]> {
   try {
-    const categories = await prisma.material.findMany({
-      where: {
-        published: true
-      },
-      select: {
-        category: true
-      },
-      distinct: ['category']
+    const supabase = createSupabaseAdminClient();
+    const { data, error } = await supabase
+      .from("Material")
+      .select("category")
+      .eq("published", true);
+
+    if (error) {
+      console.error("Error fetching material categories:", error);
+      return [];
+    }
+
+    const categories = new Set<string>();
+    ((data as { category: string | null }[] | null) ?? []).forEach((row) => {
+      if (row.category) {
+        categories.add(row.category);
+      }
     });
 
-    return categories.map(cat => cat.category);
+    return Array.from(categories);
   } catch (error) {
-    console.error('Error fetching material categories:', error);
+    console.error("Error fetching material categories:", error);
     return [];
   }
 }
 
+async function fetchAuthorMap(rows: MaterialRow[], supabase = createSupabaseAdminClient()) {
+  const authorIds = Array.from(
+    new Set(rows.map((row) => row.authorId).filter((id): id is string => !!id))
+  );
 
+  if (authorIds.length === 0) {
+    return {};
+  }
 
+  const { data, error } = await supabase
+    .from("User")
+    .select("id, name, email")
+    .in("id", authorIds);
 
+  if (error) {
+    console.warn("Failed to load authors for materials:", error.message);
+    return {};
+  }
 
+  return (data ?? []).reduce<Record<string, AuthorRecord>>((map, author) => {
+    if (author?.id) {
+      map[author.id] = {
+        name: author.name ?? null,
+        email: author.email ?? "",
+      };
+    }
+    return map;
+  }, {});
+}
 
+function transformMaterial(
+  material: MaterialRow,
+  authorMap: Record<string, AuthorRecord>
+): Material {
+  const author = authorMap[material.authorId ?? ""];
 
-
-
-
-
-
+  return {
+    id: material.id,
+    title: material.title,
+    slug: material.slug,
+    description: material.description || "",
+    content: material.content || "",
+    category: material.category,
+    type: material.type,
+    cover: material.cover || "",
+    fileUrl: material.fileUrl || "",
+    fileName: material.fileName || "",
+    fileSize: material.fileSize || "",
+    pages: material.pages ?? undefined,
+    published: material.published,
+    featured: material.featured,
+    downloadCount: material.downloadCount ?? 0,
+    createdAt: material.createdAt,
+    updatedAt: material.updatedAt,
+    publishedAt: material.publishedAt ?? undefined,
+    author: {
+      name: author?.name ?? null,
+      email: author?.email ?? "",
+    },
+  };
+}
