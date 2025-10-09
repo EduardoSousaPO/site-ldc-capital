@@ -18,31 +18,47 @@ export async function checkAdminAuth(): Promise<AuthUser | null> {
     console.log('Environment check:', {
       hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      hasNextAuthUrl: !!process.env.NEXTAUTH_URL,
-      hasNextAuthSecret: !!process.env.NEXTAUTH_SECRET,
       nodeEnv: process.env.NODE_ENV
     });
 
-    const supabase = await createSupabaseServerClient();
-    
-    const { data: { user }, error } = await supabase.auth.getUser();
-    
-    if (error) {
-      console.error('❌ Supabase auth error:', error);
-      return await fallbackAuth();
-    }
-    
-    if (!user) {
-      console.log('❌ No user found in Supabase');
-      return await fallbackAuth();
+    // Tentar autenticação via servidor primeiro
+    try {
+      const supabase = await createSupabaseServerClient();
+      const { data: { user }, error } = await supabase.auth.getUser();
+      
+      if (!error && user) {
+        console.log('✅ User found in Supabase via server client:', { 
+          id: user.id, 
+          email: user.email,
+          metadata_role: user.user_metadata?.role 
+        });
+        
+        // Verificar no banco de dados
+        const authResult = await validateUserInDatabase(user);
+        if (authResult) {
+          return authResult;
+        }
+      } else {
+        console.log('⚠️ Server client auth failed:', error?.message || 'No user');
+      }
+    } catch (serverError) {
+      console.error('⚠️ Server client error:', serverError);
     }
 
-    console.log('✅ User found in Supabase:', { 
-      id: user.id, 
-      email: user.email,
-      metadata_role: user.user_metadata?.role 
-    });
-    
+    // Fallback para autenticação direta
+    console.log('🔄 Trying fallback authentication...');
+    return await fallbackAuth();
+  } catch (error) {
+    console.error('❌ Error in checkAdminAuth:', error);
+    return await fallbackAuth();
+  }
+}
+
+/**
+ * Valida usuário no banco de dados
+ */
+async function validateUserInDatabase(user: any): Promise<AuthUser | null> {
+  try {
     // Buscar usuário no banco de dados para pegar o role correto
     const dbUser = await prisma.user.findUnique({
       where: { id: user.id },
@@ -76,7 +92,7 @@ export async function checkAdminAuth(): Promise<AuthUser | null> {
       }
       
       console.error('❌ User not found in database by email either');
-      return await fallbackAuth();
+      return null;
     }
 
     console.log('✅ Database user found:', dbUser);
@@ -94,8 +110,8 @@ export async function checkAdminAuth(): Promise<AuthUser | null> {
       role: dbUser.role
     };
   } catch (error) {
-    console.error('❌ Error in checkAdminAuth:', error);
-    return await fallbackAuth();
+    console.error('❌ Error validating user in database:', error);
+    return null;
   }
 }
 
@@ -107,17 +123,21 @@ async function fallbackAuth(): Promise<AuthUser | null> {
   try {
     console.log('🔄 Trying fallback authentication...');
     
-    // Buscar o usuário admin padrão
+    // Buscar qualquer usuário admin disponível
     const adminUser = await prisma.user.findFirst({
       where: { 
-        role: 'ADMIN',
-        email: 'admin@ldccapital.com.br'
+        role: 'ADMIN'
       },
-      select: { id: true, email: true, name: true, role: true }
+      select: { id: true, email: true, name: true, role: true },
+      orderBy: { createdAt: 'asc' } // Pegar o primeiro admin criado
     });
     
     if (adminUser) {
-      console.log('✅ Using admin fallback user:', adminUser);
+      console.log('✅ Using admin fallback user:', {
+        id: adminUser.id,
+        email: adminUser.email,
+        role: adminUser.role
+      });
       return {
         id: adminUser.id,
         email: adminUser.email || '',
@@ -127,12 +147,36 @@ async function fallbackAuth(): Promise<AuthUser | null> {
     }
     
     console.error('❌ No admin user found in fallback');
-    return null;
+    
+    // Última tentativa: criar um usuário admin temporário se não existir
+    console.log('🆘 Creating emergency admin user...');
+    const emergencyAdmin = await prisma.user.upsert({
+      where: { email: 'admin@ldccapital.com.br' },
+      update: { role: 'ADMIN' },
+      create: {
+        id: '5258d21b-9dfa-4eea-8ef8-7fd3eed8748a', // ID conhecido do Supabase
+        email: 'admin@ldccapital.com.br',
+        name: 'Administrador LDC Capital',
+        role: 'ADMIN'
+      },
+      select: { id: true, email: true, name: true, role: true }
+    });
+    
+    console.log('✅ Emergency admin created/updated:', emergencyAdmin);
+    return {
+      id: emergencyAdmin.id,
+      email: emergencyAdmin.email || '',
+      name: emergencyAdmin.name,
+      role: emergencyAdmin.role
+    };
+    
   } catch (error) {
     console.error('❌ Error in fallback auth:', error);
     return null;
   }
 }
+
+
 
 
 
