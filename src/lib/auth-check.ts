@@ -74,7 +74,7 @@ async function resolveUserRoleFromDatabase(
     .from("User")
     .select("id,email,name,role")
     .eq("id", userId)
-    .maybeSingle() as { data: UserFromDB | null; error: any };
+    .maybeSingle() as { data: UserFromDB | null; error: Error | null };
 
   if (!idError && userById) {
     if (userById.role === "ADMIN" || userById.role === "EDITOR") {
@@ -99,7 +99,7 @@ async function resolveUserRoleFromDatabase(
       .from("User")
       .select("id,email,name,role")
       .eq("email", email)
-      .maybeSingle() as { data: UserFromDB | null; error: any };
+      .maybeSingle() as { data: UserFromDB | null; error: Error | null };
 
     if (emailError) {
       console.warn("⚠️ DB lookup by email failed:", emailError.message);
