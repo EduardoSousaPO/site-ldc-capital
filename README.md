@@ -1,5 +1,7 @@
 # LDC Capital - Site Institucional
 
+> Deploy test - TypeScript build fix applied
+
 Site institucional da LDC Capital desenvolvido com Next.js 15, seguindo as especificações da identidade visual e estrutura equivalente à Musa Capital.
 
 ## 🎯 Visão Geral
