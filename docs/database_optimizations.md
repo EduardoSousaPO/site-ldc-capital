@@ -257,5 +257,15 @@ await prisma.blogPost.create({
 ## ✅ Status
 **Todas as migrações foram aplicadas com sucesso em 10/10/2025**
 
+### 🔄 Migração Consolidada Aplicada
+**Nome**: `consolidated_database_optimizations`  
+**Data**: 10/10/2025
+
+Esta migração consolidou todas as otimizações em um único script SQL executável, garantindo:
+- ✅ Extensão `pgcrypto` habilitada
+- ✅ Todos os defaults configurados
+- ✅ Triggers funcionando (2 por tabela)
+- ✅ Índices de performance criados
+
 🎉 Banco de dados otimizado e pronto para produção!
 
