@@ -83,6 +83,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       current: pathname === "/admin/posts/new"
     },
     {
+      name: "Categorias",
+      href: "/admin/categories",
+      icon: FileText,
+      current: pathname.startsWith("/admin/categories")
+    },
+    {
       name: "Materiais",
       href: "/admin/materials",
       icon: BookOpen,

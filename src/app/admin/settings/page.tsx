@@ -2,26 +2,18 @@
 
 // Auth será verificada pelo AdminLayout
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+ 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Settings, 
-  User, 
-  Key, 
-  Database,
-  Info,
-  Save
-} from "lucide-react";
+import { Settings, User, Key, Database, Info } from "lucide-react";
 import AdminLayout from "../components/AdminLayout";
 
 export default function SettingsPage() {
   // Auth será verificada pelo AdminLayout
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  // página estática por ora; futuras configs podem usar estado
 
   // Auth será verificada pelo AdminLayout
 
@@ -234,4 +226,3 @@ export default function SettingsPage() {
     </AdminLayout>
   );
 }
-

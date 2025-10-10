@@ -120,11 +120,29 @@ export async function PATCH(
 
     let slug = existingPost.slug;
     if (title && title !== existingPost.title) {
-      slug = title
+      const baseSlug = title
         .toLowerCase()
         .replace(/[^a-z0-9 -]/g, "")
         .replace(/\s+/g, "-")
         .replace(/-+/g, "-");
+      // ensure uniqueness excluding current post
+      const { data: existing } = await supabase
+        .from("BlogPost")
+        .select("slug")
+        .ilike("slug", `${baseSlug}%`)
+        .neq("id", id);
+      const rows = (existing as Array<{ slug: string }> | null) ?? [];
+      const taken = new Set(rows.map((r) => (r.slug || "").toLowerCase()));
+      slug = baseSlug;
+      if (taken.has(baseSlug.toLowerCase())) {
+        let maxN = 1;
+        rows.forEach((r) => {
+          const v = (r.slug || "").toLowerCase();
+          const m = v.match(new RegExp(`^${baseSlug.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")}-(\\d+)$`));
+          if (m) maxN = Math.max(maxN, parseInt(m[1], 10));
+        });
+        slug = `${baseSlug}-${maxN + 1}`;
+      }
     }
 
     let newReadingTime = existingPost.readingTime;
@@ -133,9 +151,7 @@ export async function PATCH(
       newReadingTime = stats.text;
     }
 
-    const updateData: Record<string, unknown> = {
-      updatedAt: new Date().toISOString(),
-    };
+    const updateData: Record<string, unknown> = {};
 
     if (title) {
       updateData.title = title;

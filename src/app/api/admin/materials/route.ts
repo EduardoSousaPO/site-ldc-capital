@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkAdminAuth } from "@/lib/auth-check";
 import { createSupabaseAdminClient } from "@/lib/supabase";
-import { randomUUID } from "crypto";
+// rely on DB defaults for id/timestamps
 
 type RawMaterial = {
   id: string;
@@ -120,20 +120,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const slug = title
+    const supabase = createSupabaseAdminClient();
+    const baseSlug = title
       .toLowerCase()
       .replace(/[^a-z0-9 -]/g, "")
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-");
-
-    const supabase = createSupabaseAdminClient();
+    const { data: existing } = await supabase
+      .from("Material")
+      .select("slug")
+      .ilike("slug", `${baseSlug}%`);
+    const existingSlugs = (existing as Array<{ slug: string }> | null) ?? [];
+    const taken = new Set(existingSlugs.map((s) => (s.slug || "").toLowerCase()));
+    let slug = baseSlug;
+    if (taken.has(baseSlug.toLowerCase())) {
+      let maxN = 1;
+      existingSlugs.forEach((s) => {
+        const v = (s.slug || "").toLowerCase();
+        const m = v.match(new RegExp(`^${baseSlug.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")}-(\\d+)$`));
+        if (m) maxN = Math.max(maxN, parseInt(m[1], 10));
+      });
+      slug = `${baseSlug}-${maxN + 1}`;
+    }
+    
     // Supabase client no Database types available here; cast to preserve DX.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const materialBuilder = supabase.from("Material") as any;
 
     const { data, error } = await materialBuilder
       .insert({
-        id: randomUUID(),
         title,
         slug,
         description,

@@ -1,9 +1,7 @@
 "use client";
 
-import { getCurrentUser } from "@/lib/auth-supabase";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useState, useCallback } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -43,7 +41,6 @@ interface Material {
 
 export default function MaterialsPage() {
   // Auth será verificada pelo AdminLayout
-  const router = useRouter();
   const [materials, setMaterials] = useState<Material[]>([]);
   const [filteredMaterials, setFilteredMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,9 +52,38 @@ export default function MaterialsPage() {
     fetchMaterials();
   }, []);
 
+  const filterMaterials = useCallback(() => {
+    let filtered = materials;
+
+    if (searchTerm) {
+      filtered = filtered.filter(material =>
+        material.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        material.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        material.type.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (filterStatus !== "all") {
+      filtered = filtered.filter(material => {
+        if (filterStatus === "published") return material.published;
+        if (filterStatus === "draft") return !material.published;
+        if (filterStatus === "featured") return material.featured;
+        return true;
+      });
+    }
+
+    if (filterCategory !== "all") {
+      filtered = filtered.filter(material => 
+        material.category.toLowerCase() === filterCategory.toLowerCase()
+      );
+    }
+
+    setFilteredMaterials(filtered);
+  }, [materials, searchTerm, filterStatus, filterCategory]);
+
   useEffect(() => {
     filterMaterials();
-  }, [materials, searchTerm, filterStatus, filterCategory]);
+  }, [filterMaterials]);
 
   const fetchMaterials = async () => {
     try {
@@ -82,37 +108,7 @@ export default function MaterialsPage() {
     }
   };
 
-  const filterMaterials = () => {
-    let filtered = materials;
-
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(material =>
-        material.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        material.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        material.type.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Filter by status
-    if (filterStatus !== "all") {
-      filtered = filtered.filter(material => {
-        if (filterStatus === "published") return material.published;
-        if (filterStatus === "draft") return !material.published;
-        if (filterStatus === "featured") return material.featured;
-        return true;
-      });
-    }
-
-    // Filter by category
-    if (filterCategory !== "all") {
-      filtered = filtered.filter(material => 
-        material.category.toLowerCase() === filterCategory.toLowerCase()
-      );
-    }
-
-    setFilteredMaterials(filtered);
-  };
+  
 
   const handleDeleteMaterial = async (id: string) => {
     if (!confirm("Tem certeza que deseja excluir este material?")) return;

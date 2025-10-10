@@ -52,7 +52,7 @@ export default function AdminLogin() {
           setError("Você não tem permissão para acessar o painel administrativo.");
         }
       }
-    } catch (error) {
+  } catch {
       setError("Erro ao fazer login. Tente novamente.");
     } finally {
       setIsLoading(false);

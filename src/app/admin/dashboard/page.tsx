@@ -10,7 +10,6 @@ import {
   Newspaper,
   FileText,
   TrendingUp,
-  Calendar,
   BookOpen,
   BarChart3,
 } from "lucide-react";

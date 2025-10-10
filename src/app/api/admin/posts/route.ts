@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import readingTime from "reading-time";
 import { checkAdminAuth } from "@/lib/auth-check";
 import { createSupabaseAdminClient } from "@/lib/supabase";
-import { randomUUID } from "crypto";
+// no explicit id creation; database default handles it
 
 type RawPost = {
   id: string;
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const slug = title
+    const baseSlug = title
       .toLowerCase()
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
@@ -122,8 +122,7 @@ export async function POST(request: NextRequest) {
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-")
       .replace(/^-|-$/g, "");
-
-    console.log("Slug generated:", slug);
+    console.log("Slug base:", baseSlug);
 
     const stats = readingTime(content);
     console.log("Reading time:", stats.text);
@@ -133,9 +132,30 @@ export async function POST(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const postBuilder = supabase.from("BlogPost") as any;
 
+    // ensure unique slug (case-insensitive)
+    const { data: existingSlugsData } = await supabase
+      .from("BlogPost")
+      .select("slug")
+      .ilike("slug", `${baseSlug}%`);
+
+    const existingSlugs = (existingSlugsData as Array<{ slug: string }> | null) ?? [];
+    const taken = new Set(existingSlugs.map((s) => (s.slug || "").toLowerCase()));
+    let slug = baseSlug;
+    if (taken.has(baseSlug.toLowerCase())) {
+      // find next numeric suffix
+      let maxN = 1;
+      existingSlugs.forEach((s) => {
+        const val = (s.slug || "").toLowerCase();
+        if (val === baseSlug) maxN = Math.max(maxN, 1);
+        const m = val.match(new RegExp(`^${baseSlug.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&")}-(\\d+)$`));
+        if (m) maxN = Math.max(maxN, parseInt(m[1], 10));
+      });
+      slug = `${baseSlug}-${maxN + 1}`;
+    }
+    console.log("Slug final:", slug);
+
     const { data, error } = await postBuilder
       .insert({
-        id: randomUUID(),
         title: title.trim(),
         slug,
         content,

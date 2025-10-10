@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 // Auth será verificada pelo AdminLayout
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -455,11 +456,13 @@ export default function NewMaterial() {
                     </div>
                   </div>
                 ) : (
-                  <div className="relative">
-                    <img
+                  <div className="relative w-full h-32">
+                    <Image
                       src={formData.cover}
                       alt="Preview"
-                      className="w-full h-32 object-cover rounded-lg"
+                      fill
+                      sizes="100vw"
+                      className="object-cover rounded-lg"
                     />
                     <Button
                       variant="outline"

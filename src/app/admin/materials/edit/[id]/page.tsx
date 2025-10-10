@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,11 +82,7 @@ export default function EditMaterial() {
     featured: false
   });
 
-  useEffect(() => {
-    fetchMaterial();
-  }, [materialId]);
-
-  const fetchMaterial = async () => {
+  const fetchMaterial = useCallback(async () => {
     try {
       const response = await fetch(`/api/admin/materials/${materialId}`);
       if (response.ok) {
@@ -116,7 +113,11 @@ export default function EditMaterial() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [materialId, router]);
+
+  useEffect(() => {
+    fetchMaterial();
+  }, [fetchMaterial]);
 
   const handleSubmit = async (e: React.FormEvent, publish?: boolean) => {
     e.preventDefault();
@@ -561,11 +562,13 @@ export default function EditMaterial() {
                     </div>
                   </div>
                 ) : (
-                  <div className="relative">
-                    <img
+                  <div className="relative w-full h-32">
+                    <Image
                       src={formData.cover}
                       alt="Preview"
-                      className="w-full h-32 object-cover rounded-lg"
+                      fill
+                      sizes="100vw"
+                      className="object-cover rounded-lg"
                     />
                     <Button
                       variant="outline"

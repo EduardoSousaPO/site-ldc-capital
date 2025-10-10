@@ -2,7 +2,7 @@
 
 import { getCurrentUser } from "@/lib/auth-supabase";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +37,7 @@ interface BlogPost {
 
 export default function PostsPage() {
   const router = useRouter();
-  const [user, setUser] = useState<{ id: string; email: string; name?: string; role: string } | null>(null);
+  // Auth é verificada pelo AdminLayout; esta página faz um check leve para redirecionar se necessário
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,7 +54,6 @@ export default function PostsPage() {
           return;
         }
         
-        setUser(currentUser);
         await fetchPosts();
       } catch (error) {
         console.error('Auth error:', error);
@@ -67,9 +66,30 @@ export default function PostsPage() {
     checkAuth();
   }, [router]);
 
+  const filterPosts = useCallback(() => {
+    let filtered = posts;
+
+    if (searchTerm) {
+      filtered = filtered.filter(post =>
+        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post.category.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (filterStatus !== "all") {
+      filtered = filtered.filter(post => {
+        if (filterStatus === "published") return post.published;
+        if (filterStatus === "draft") return !post.published;
+        return true;
+      });
+    }
+
+    setFilteredPosts(filtered);
+  }, [posts, searchTerm, filterStatus]);
+
   useEffect(() => {
     filterPosts();
-  }, [posts, searchTerm, filterStatus]);
+  }, [filterPosts]);
 
   const fetchPosts = async () => {
     try {
@@ -83,28 +103,7 @@ export default function PostsPage() {
     }
   };
 
-  const filterPosts = () => {
-    let filtered = posts;
-
-    // Filtrar por termo de busca
-    if (searchTerm) {
-      filtered = filtered.filter(post =>
-        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.category.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Filtrar por status
-    if (filterStatus !== "all") {
-      filtered = filtered.filter(post => {
-        if (filterStatus === "published") return post.published;
-        if (filterStatus === "draft") return !post.published;
-        return true;
-      });
-    }
-
-    setFilteredPosts(filtered);
-  };
+  
 
   const handleDelete = async (id: string) => {
     if (!confirm("Tem certeza que deseja excluir este post?")) return;

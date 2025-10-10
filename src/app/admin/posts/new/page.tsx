@@ -12,18 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Save, Eye, Image as ImageIcon, Upload, X, Images, Loader2 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import AdminLayout from "../../components/AdminLayout";
 import { toast } from "sonner";
 
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 
-const categories = [
-  "Consultoria Financeira",
-  "Investimentos",
-  "Planejamento Financeiro",
-  "Mercado Financeiro",
-  "Educacao Financeira",
-];
+type Category = { id: string; name: string; slug: string };
 
 export default function NewPost() {
   const router = useRouter();
@@ -31,6 +26,7 @@ export default function NewPost() {
   const [loading, setLoading] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [formData, setFormData] = useState({
     title: "",
     content: "",
@@ -90,12 +86,26 @@ export default function NewPost() {
   };
 
   useEffect(() => {
-    if (!formData.title && !formData.content) return;
+    const loadCategories = async () => {
+      try {
+        const res = await fetch("/api/admin/categories");
+        if (res.ok) {
+          const data = await res.json();
+          setCategories(data || []);
+        }
+      } catch {}
+    };
+    void loadCategories();
+  }, []);
+
+  useEffect(() => {
+    const { title, content, summary, category, cover } = formData;
+    if (!title && !content) return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(async () => {
       try {
         setAutoSaveStatus("saving");
-        const payload = { ...formData, published: false };
+        const payload = { title, content, summary, category, cover, published: false };
         let res: Response;
         if (!draftId) {
           res = await fetch("/api/admin/posts", {
@@ -125,7 +135,7 @@ export default function NewPost() {
     return () => {
       if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     };
-  }, [formData.title, formData.content, formData.summary, formData.category, formData.cover, draftId]);
+  }, [formData, draftId]);
 
   const handleImageUpload = async (file: File) => {
     setUploadingCover(true);
@@ -257,7 +267,7 @@ export default function NewPost() {
                   <Select value={formData.category} onValueChange={(value)=>handleInputChange("category", value)}>
                     <SelectTrigger className="mt-2"><SelectValue placeholder="Selecione uma categoria"/></SelectTrigger>
                     <SelectContent>
-                      {categories.map((c)=> (<SelectItem key={c} value={c}>{c}</SelectItem>))}
+                      {categories.map((c)=> (<SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -278,7 +288,10 @@ export default function NewPost() {
                     </div>
                   </div>
                 ) : (
-                  <div className="relative">{/* eslint-disable-next-line @next/next/no-img-element */}<img src={formData.cover} alt="Preview" className="w-full h-32 object-cover rounded-lg"/><Button variant="outline" size="sm" onClick={removeCover} className="absolute top-2 right-2 text-red-600 hover:text-red-700 bg-white/90"><X className="w-4 h-4"/></Button></div>
+                  <div className="relative w-full h-32">
+                    <Image src={formData.cover} alt="Preview" fill sizes="100vw" className="object-cover rounded-lg" />
+                    <Button variant="outline" size="sm" onClick={removeCover} className="absolute top-2 right-2 text-red-600 hover:text-red-700 bg-white/90"><X className="w-4 h-4"/></Button>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -309,10 +322,14 @@ export default function NewPost() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[80vh] overflow-auto" onClick={(e)=>e.stopPropagation()}>
             <div className="p-4 border-b flex items-center justify-between"><h3 className="font-serif text-lg">Biblioteca de Midia</h3><Button variant="outline" size="sm" onClick={()=>setMediaOpen(false)}><X className="w-4 h-4"/></Button></div>
             <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {mediaItems.length===0 ? (<div className="col-span-full text-center text-sm text-gray-500">Nenhuma midia encontrada.</div>) : (
+              {mediaItems.length===0 ? (
+                <div className="col-span-full text-center text-sm text-gray-500">Nenhuma midia encontrada.</div>
+              ) : (
                 mediaItems.map((item)=> (
                   <button key={item.path} className="group border rounded-lg overflow-hidden text-left" onClick={()=>{ insertImageInContent(item.url, item.name); toast.success('Imagem inserida no conteudo'); setMediaOpen(false); }}>
-                    <div className="aspect-video bg-gray-100 overflow-hidden">{/* eslint-disable-next-line @next/next/no-img-element */}<img src={item.url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"/></div>
+                    <div className="relative aspect-video bg-gray-100 overflow-hidden">
+                      <Image src={item.url} alt={item.name} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover group-hover:scale-105 transition-transform duration-200" />
+                    </div>
                     <div className="p-2 text-xs truncate">{item.name}</div>
                   </button>
                 ))
@@ -324,4 +341,3 @@ export default function NewPost() {
     </AdminLayout>
   );
 }
-
