@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import readingTime from "reading-time";
 import { checkAdminAuth } from "@/lib/auth-check";
 import { createSupabaseAdminClient } from "@/lib/supabase";
+import { randomUUID } from "crypto";
 
 type RawPost = {
   id: string;
@@ -134,6 +135,7 @@ export async function POST(request: NextRequest) {
 
     const { data, error } = await postBuilder
       .insert({
+        id: randomUUID(),
         title: title.trim(),
         slug,
         content,

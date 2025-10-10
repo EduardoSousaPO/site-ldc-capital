@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkAdminAuth } from "@/lib/auth-check";
 import { createSupabaseAdminClient } from "@/lib/supabase";
+import { randomUUID } from "crypto";
 
 type RawMaterial = {
   id: string;
@@ -132,6 +133,7 @@ export async function POST(request: NextRequest) {
 
     const { data, error } = await materialBuilder
       .insert({
+        id: randomUUID(),
         title,
         slug,
         description,
