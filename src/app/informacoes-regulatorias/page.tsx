@@ -38,6 +38,13 @@ const documentos = [
     descricao: "Política para verificação da adequação dos produtos e serviços aos perfis dos clientes.",
     arquivo: "/documentos/regulatorios/POLÍTICA_DE_SUITABILITY_LDC_OFICIAL[1].pdf",
     categoria: "Investimentos"
+  },
+  {
+    id: 6,
+    titulo: "Política de Segregação de Atividades e Confidencialidade",
+    descricao: "Procedimentos internos para segregação de funções e proteção de informações confidenciais.",
+    arquivo: "/documentos/regulatorios/POLÍTICA_DE_SEGREGAÇÃO_DE_ATIVIDADES_E_CONFIDENCIALIDADE_LDC_OFICIAL[1].pdf",
+    categoria: "Compliance"
   }
 ];
 
