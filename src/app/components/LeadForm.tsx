@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -236,12 +236,20 @@ export default function LeadForm() {
                 )}
               </div>
 
-              {/* Consentimento LGPD */}
+              {/* Consentimento LGPD (usar Controller porque o Checkbox não é input nativo) */}
               <div className="flex items-start space-x-3">
-                <Checkbox
-                  id="consentimento"
-                  {...register("consentimento")}
-                  className="mt-1 border-white/30"
+                <Controller
+                  name="consentimento"
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field: { value, onChange } }) => (
+                    <Checkbox
+                      id="consentimento"
+                      checked={!!value}
+                      onCheckedChange={(checked) => onChange(!!checked)}
+                      className="mt-1 border-white/30"
+                    />
+                  )}
                 />
                 <Label htmlFor="consentimento" className="text-sm text-gray-200 leading-relaxed">
                   Concordo em fornecer meus dados para contato e receber informações sobre os serviços da LDC Capital. 
