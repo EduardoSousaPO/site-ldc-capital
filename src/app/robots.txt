@@ -8,6 +8,7 @@ Sitemap: https://ldccapital.com.br/sitemap.xml
 Disallow: /api/
 Disallow: /.data/
 Disallow: /admin/
+Disallow: /diagnostico-gratuito
 
 # Allow all pages
 Allow: /
