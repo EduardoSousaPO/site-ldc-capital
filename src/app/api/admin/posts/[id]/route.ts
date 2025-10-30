@@ -17,6 +17,7 @@ type RawPost = {
   updatedAt: string;
   publishedAt: string | null;
   authorId: string | null;
+  authorDisplayName: string | null;
 };
 
 type AuthorInfo = {
@@ -191,7 +192,7 @@ export async function PATCH(
 
     const postRow = data as RawPost;
     const enriched = await attachAuthors([postRow], supabase);
-    return NextResponse.json({ ...enriched[0], authorDisplayName: (data as any).authorDisplayName });
+    return NextResponse.json({ ...enriched[0], authorDisplayName: postRow.authorDisplayName });
   } catch (error) {
     console.error("Error updating post:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
