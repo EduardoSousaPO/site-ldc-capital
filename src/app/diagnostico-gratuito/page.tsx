@@ -18,7 +18,7 @@ export default function DiagnosticoGratuitoPage() {
       <Header />
 
       {/* Seção principal: formulário acima da dobra */}
-      <LeadForm />
+      <LeadForm title="Sua Carteira Avaliada por Especialistas — Sem Custo" />
 
       {/* Como funciona (curto e direto) */}
       <section className="py-16 lg:py-20 bg-white">
@@ -71,4 +71,3 @@ export default function DiagnosticoGratuitoPage() {
     </main>
   );
 }
-

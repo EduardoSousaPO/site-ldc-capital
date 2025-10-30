@@ -12,7 +12,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, CheckCircle } from "lucide-react";
 import { leadFormSchema, type LeadFormData, formatPhone, patrimonioOptions, origemOptions } from "@/app/lib/schema";
 
-export default function LeadForm() {
+type LeadFormProps = {
+  title?: string;
+  subtitle?: string;
+  ctaLabel?: string;
+};
+
+export default function LeadForm({ title, subtitle, ctaLabel }: LeadFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -23,32 +29,30 @@ export default function LeadForm() {
     setValue,
     watch,
     reset,
+    control,
   } = useForm<LeadFormData>({
     resolver: zodResolver(leadFormSchema),
   });
 
   const telefoneValue = watch("telefone");
 
+  const headingTitle = title ?? "Peça sua Análise de Carteira Gratuita";
+  const headingSubtitle = subtitle ?? "Descubra como podemos potencializar seus investimentos";
+  const submitLabel = ctaLabel ?? "Peça sua Análise de Carteira Gratuita";
+
   const onSubmit = async (data: LeadFormData) => {
     setIsSubmitting(true);
-    
     try {
       const response = await fetch("/api/lead", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
 
       if (response.ok) {
         setIsSubmitted(true);
         reset();
-        
-        // Reset success state after 5 seconds
-        setTimeout(() => {
-          setIsSubmitted(false);
-        }, 5000);
+        setTimeout(() => setIsSubmitted(false), 5000);
       } else {
         throw new Error("Erro ao enviar formulário");
       }
@@ -68,36 +72,24 @@ export default function LeadForm() {
   if (isSubmitted) {
     return (
       <section id="contact-form" className="relative py-16 text-white overflow-hidden">
-        {/* Background com imagem */}
         <div className="absolute inset-0">
-          {/* Imagem de fundo */}
-          <div 
+          <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-            style={{
-              backgroundImage: `url('/images/michael-blum-uk1YeeAi5t0-unsplash.jpg')`
-            }}
-          ></div>
-          
-          {/* Overlay escuro para legibilidade */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[#262d3d]/70 via-[#344645]/60 to-[#262d3d]/70"></div>
-          
-          {/* Overlay adicional para melhor contraste */}
-          <div className="absolute inset-0 bg-[#262d3d]/50"></div>
+            style={{ backgroundImage: "url('/images/michael-blum-uk1YeeAi5t0-unsplash.jpg')" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#262d3d]/70 via-[#344645]/60 to-[#262d3d]/70" />
+          <div className="absolute inset-0 bg-[#262d3d]/50" />
         </div>
 
         <div className="relative z-10 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <Card className="bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl">
             <CardContent className="p-8 text-center">
               <CheckCircle className="h-16 w-16 text-[#98ab44] mx-auto mb-4" />
-              <h3 className="font-serif text-2xl font-bold mb-4">
-                Obrigado pelo seu interesse!
-              </h3>
+              <h3 className="font-serif text-2xl font-bold mb-4">Obrigado pelo seu interesse!</h3>
               <p className="text-gray-200 mb-6">
                 Recebemos suas informações e nossa equipe entrará em contato em breve para agendar sua análise gratuita.
               </p>
-              <p className="text-sm text-gray-300">
-                Você receberá um e-mail de confirmação nos próximos minutos.
-              </p>
+              <p className="text-sm text-gray-300">Você receberá um e-mail de confirmação nos próximos minutos.</p>
             </CardContent>
           </Card>
         </div>
@@ -107,62 +99,40 @@ export default function LeadForm() {
 
   return (
     <section id="contact-form" className="relative py-16 text-white overflow-hidden">
-      {/* Background com imagem */}
       <div className="absolute inset-0">
-        {/* Imagem de fundo */}
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: `url('/images/michael-blum-uk1YeeAi5t0-unsplash.jpg')`
-          }}
-        ></div>
-        
-        {/* Overlay escuro para legibilidade */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#262d3d]/70 via-[#344645]/60 to-[#262d3d]/70"></div>
-        
-        {/* Overlay adicional para melhor contraste */}
-        <div className="absolute inset-0 bg-[#262d3d]/50"></div>
+          style={{ backgroundImage: "url('/images/michael-blum-uk1YeeAi5t0-unsplash.jpg')" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#262d3d]/70 via-[#344645]/60 to-[#262d3d]/70" />
+        <div className="absolute inset-0 bg-[#262d3d]/50" />
       </div>
 
       <div className="relative z-10 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
-          <h2 className="font-serif text-4xl lg:text-5xl font-bold mb-4">
-            Peça sua Análise de Carteira Gratuita
-          </h2>
-          <p className="text-xl text-gray-200">
-            Descubra como podemos potencializar seus investimentos
-          </p>
+          <h2 className="font-serif text-4xl lg:text-5xl font-bold mb-4">{headingTitle}</h2>
+          <p className="text-xl text-gray-200">{headingSubtitle}</p>
         </div>
 
         <Card className="bg-white/10 backdrop-blur-md border border-white/20 shadow-2xl">
           <CardHeader>
-            <CardTitle className="text-center text-white font-serif text-2xl">
-              Fale com nossa equipe
-            </CardTitle>
+            <CardTitle className="text-center text-white font-serif text-2xl">Fale com nossa equipe</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              {/* Nome */}
               <div>
-                <Label htmlFor="nome" className="text-white">
-                  Nome completo *
-                </Label>
+                <Label htmlFor="nome" className="text-white">Nome completo *</Label>
                 <Input
                   id="nome"
                   {...register("nome")}
                   className="mt-1 bg-white/10 border-white/30 text-white placeholder:text-gray-300"
                   placeholder="Seu nome completo"
                 />
-                {errors.nome && (
-                  <p className="mt-1 text-sm text-red-400">{errors.nome.message}</p>
-                )}
+                {errors.nome && <p className="mt-1 text-sm text-red-400">{errors.nome.message}</p>}
               </div>
 
-              {/* Telefone */}
               <div>
-                <Label htmlFor="telefone" className="text-white">
-                  Telefone *
-                </Label>
+                <Label htmlFor="telefone" className="text-white">Telefone *</Label>
                 <Input
                   id="telefone"
                   value={telefoneValue || ""}
@@ -170,16 +140,11 @@ export default function LeadForm() {
                   className="mt-1 bg-white/10 border-white/30 text-white placeholder:text-gray-300"
                   placeholder="(11) 99999-9999"
                 />
-                {errors.telefone && (
-                  <p className="mt-1 text-sm text-red-400">{errors.telefone.message}</p>
-                )}
+                {errors.telefone && <p className="mt-1 text-sm text-red-400">{errors.telefone.message}</p>}
               </div>
 
-              {/* Email */}
               <div>
-                <Label htmlFor="email" className="text-white">
-                  E-mail *
-                </Label>
+                <Label htmlFor="email" className="text-white">E-mail *</Label>
                 <Input
                   id="email"
                   type="email"
@@ -187,16 +152,11 @@ export default function LeadForm() {
                   className="mt-1 bg-white/10 border-white/30 text-white placeholder:text-gray-300"
                   placeholder="seu@email.com"
                 />
-                {errors.email && (
-                  <p className="mt-1 text-sm text-red-400">{errors.email.message}</p>
-                )}
+                {errors.email && <p className="mt-1 text-sm text-red-400">{errors.email.message}</p>}
               </div>
 
-              {/* Patrimônio */}
               <div>
-                <Label htmlFor="patrimonio" className="text-white">
-                  Patrimônio para investimento *
-                </Label>
+                <Label htmlFor="patrimonio" className="text-white">Patrimônio para investimento *</Label>
                 <Select onValueChange={(value) => setValue("patrimonio", value as LeadFormData["patrimonio"])}>
                   <SelectTrigger className="mt-1 bg-white/10 border-white/30 text-white">
                     <SelectValue placeholder="Selecione a faixa" />
@@ -209,16 +169,11 @@ export default function LeadForm() {
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.patrimonio && (
-                  <p className="mt-1 text-sm text-red-400">{errors.patrimonio.message}</p>
-                )}
+                {errors.patrimonio && <p className="mt-1 text-sm text-red-400">{errors.patrimonio.message}</p>}
               </div>
 
-              {/* Como nos conheceu */}
               <div>
-                <Label htmlFor="origem" className="text-white">
-                  Como nos conheceu? *
-                </Label>
+                <Label htmlFor="origem" className="text-white">Como nos conheceu? *</Label>
                 <Select onValueChange={(value) => setValue("origem", value as LeadFormData["origem"])}>
                   <SelectTrigger className="mt-1 bg-white/10 border-white/30 text-white">
                     <SelectValue placeholder="Selecione uma opção" />
@@ -231,12 +186,9 @@ export default function LeadForm() {
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.origem && (
-                  <p className="mt-1 text-sm text-red-400">{errors.origem.message}</p>
-                )}
+                {errors.origem && <p className="mt-1 text-sm text-red-400">{errors.origem.message}</p>}
               </div>
 
-              {/* Consentimento LGPD (usar Controller porque o Checkbox não é input nativo) */}
               <div className="flex items-start space-x-3">
                 <Controller
                   name="consentimento"
@@ -252,13 +204,11 @@ export default function LeadForm() {
                   )}
                 />
                 <Label htmlFor="consentimento" className="text-sm text-gray-200 leading-relaxed">
-                  Concordo em fornecer meus dados para contato e receber informações sobre os serviços da LDC Capital. 
+                  Concordo em fornecer meus dados para contato e receber informações sobre os serviços da LDC Capital.
                   Seus dados serão tratados conforme nossa Política de Privacidade. *
                 </Label>
               </div>
-              {errors.consentimento && (
-                <p className="text-sm text-red-400">{errors.consentimento.message}</p>
-              )}
+              {errors.consentimento && <p className="text-sm text-red-400">{errors.consentimento.message}</p>}
 
               <Button
                 type="submit"
@@ -271,7 +221,7 @@ export default function LeadForm() {
                     Enviando...
                   </>
                 ) : (
-                  "Peça sua Análise de Carteira Gratuita"
+                  submitLabel
                 )}
               </Button>
             </form>
@@ -281,3 +231,4 @@ export default function LeadForm() {
     </section>
   );
 }
+
