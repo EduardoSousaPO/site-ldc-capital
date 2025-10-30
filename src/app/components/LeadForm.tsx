@@ -71,7 +71,7 @@ export default function LeadForm({ title, subtitle, ctaLabel }: LeadFormProps) {
 
   if (isSubmitted) {
     return (
-      <section id="contact-form" className="relative py-16 text-white overflow-hidden">
+      <section id="contact-form" className="relative py-16 text-white overflow-hidden scroll-mt-40 lg:scroll-mt-48 xl:scroll-mt-52 2xl:scroll-mt-56">
         <div className="absolute inset-0">
           <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -98,7 +98,7 @@ export default function LeadForm({ title, subtitle, ctaLabel }: LeadFormProps) {
   }
 
   return (
-    <section id="contact-form" className="relative py-16 text-white overflow-hidden">
+    <section id="contact-form" className="relative py-16 text-white overflow-hidden scroll-mt-40 lg:scroll-mt-48 xl:scroll-mt-52 2xl:scroll-mt-56">
       <div className="absolute inset-0">
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -231,4 +231,3 @@ export default function LeadForm({ title, subtitle, ctaLabel }: LeadFormProps) {
     </section>
   );
 }
-

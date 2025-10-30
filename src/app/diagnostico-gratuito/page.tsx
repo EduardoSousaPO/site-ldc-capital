@@ -17,8 +17,10 @@ export default function DiagnosticoGratuitoPage() {
     <main>
       <Header />
 
-      {/* Seção principal: formulário acima da dobra */}
-      <LeadForm title="Sua Carteira Avaliada por Especialistas — Sem Custo" />
+      {/* Seção principal: formulário acima da dobra com offset do header fixo */}
+      <div className="pt-40 lg:pt-48 xl:pt-52 2xl:pt-56">
+        <LeadForm title="Sua Carteira Avaliada por Especialistas — Sem Custo" />
+      </div>
 
       {/* Como funciona (curto e direto) */}
       <section className="py-16 lg:py-20 bg-white">
