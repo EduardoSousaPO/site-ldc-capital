@@ -63,7 +63,7 @@ export default function MateriaisPage() {
       <Header />
       
       {/* Hero Section Premium */}
-      <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden pt-20 pb-16 lg:pt-32 lg:pb-24">
         {/* Background com cor uniforme conforme print */}
         <div className="absolute inset-0 bg-[#262d3d]">
           {/* Padrão sutil para textura */}
@@ -125,7 +125,7 @@ export default function MateriaisPage() {
             </Badge>
             {categories.map((category) => (
               <Badge key={category} variant="outline">
-                {category}
+                {category.charAt(0).toUpperCase() + category.slice(1).toLowerCase()}
               </Badge>
             ))}
           </div>

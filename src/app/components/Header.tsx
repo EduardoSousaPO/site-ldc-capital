@@ -51,7 +51,11 @@ export default function Header() {
           <div className="flex-shrink-0">
             <Link href="/" className="flex items-center">
               <Image
-                src="/images/LDC Capital - Logo Final_Aplicação Branca + Colorida.png"
+                src={
+                  isScrolled
+                    ? "/images/LDC Capital - Logo Final_Aplicação Principal.png"
+                    : "/images/LDC Capital - Logo Final_Aplicação Branca + Colorida.png"
+                }
                 alt="LDC Capital"
                 width={640}
                 height={160}

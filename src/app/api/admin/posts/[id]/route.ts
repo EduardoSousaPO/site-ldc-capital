@@ -43,7 +43,8 @@ const postSelection = `
   createdAt,
   updatedAt,
   publishedAt,
-  authorId
+  authorId,
+  authorDisplayName
 `;
 
 export async function GET(
@@ -97,13 +98,13 @@ export async function PATCH(
 
     const { id } = await params;
     const payload = await request.json();
-    const { title, content, summary, category, cover, published } = payload;
+    const { title, content, summary, category, cover, published, authorDisplayName } = payload;
 
     const supabase = createSupabaseAdminClient();
 
     const { data: existingPostRow, error: fetchError } = await supabase
       .from("BlogPost")
-      .select("id, title, slug, content, readingTime, published, authorId")
+      .select("id, title, slug, content, readingTime, published, authorId, authorDisplayName")
       .eq("id", id)
       .maybeSingle();
 
@@ -164,6 +165,9 @@ export async function PATCH(
     if (summary !== undefined) updateData.summary = summary;
     if (category) updateData.category = category;
     if (cover !== undefined) updateData.cover = cover;
+    if (authorDisplayName !== undefined) {
+      updateData.authorDisplayName = (authorDisplayName || "").toString().slice(0, 120);
+    }
     if (published !== undefined) {
       updateData.published = published;
       if (published && !existingPost.published) {
@@ -187,7 +191,7 @@ export async function PATCH(
 
     const postRow = data as RawPost;
     const enriched = await attachAuthors([postRow], supabase);
-    return NextResponse.json(enriched[0]);
+    return NextResponse.json({ ...enriched[0], authorDisplayName: (data as any).authorDisplayName });
   } catch (error) {
     console.error("Error updating post:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

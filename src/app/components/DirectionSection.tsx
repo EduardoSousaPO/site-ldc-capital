@@ -70,7 +70,7 @@ export default function DirectionSection() {
               <span className="block mt-2 text-[#262d3d] drop-shadow-lg">direção.</span>
             </h2>
             
-            <p className="text-xl md:text-2xl text-white/90 max-w-4xl mx-auto leading-relaxed font-light">
+            <p className="text-lg md:text-xl text-white/90 max-w-4xl mx-auto leading-relaxed font-light">
               Na LDC Capital, acreditamos que grandes patrimônios não se constroem à deriva. 
               Assim como um barco precisa de leme para alcançar seu destino, seus investimentos precisam de direção clara, segura e experiente.
               <br /><br />

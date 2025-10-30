@@ -34,6 +34,7 @@ export default function NewPost() {
     category: "",
     cover: "",
     published: false,
+    authorDisplayName: "",
   });
 
   const [previewMode, setPreviewMode] = useState<"edit" | "live">("edit");
@@ -99,13 +100,13 @@ export default function NewPost() {
   }, []);
 
   useEffect(() => {
-    const { title, content, summary, category, cover } = formData;
+    const { title, content, summary, category, cover, authorDisplayName } = formData;
     if (!title && !content) return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(async () => {
       try {
         setAutoSaveStatus("saving");
-        const payload = { title, content, summary, category, cover, published: false };
+        const payload = { title, content, summary, category, cover, authorDisplayName, published: false };
         let res: Response;
         if (!draftId) {
           res = await fetch("/api/admin/posts", {
@@ -271,6 +272,10 @@ export default function NewPost() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div>
+                  <Label htmlFor="author" className="text-sm font-semibold">Autor (como aparecerá no post)</Label>
+                  <Input id="author" placeholder="Ex.: João Silva" value={formData.authorDisplayName} onChange={(e)=>handleInputChange("authorDisplayName", e.target.value)} className="mt-2"/>
+                </div>
               </CardContent>
             </Card>
 
@@ -308,7 +313,7 @@ export default function NewPost() {
               <CardHeader><CardTitle className="font-serif text-lg">Informacoes</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between text-sm"><span className="text-gray-600">Status:</span><Badge variant="secondary" className="bg-orange-100 text-orange-800">Rascunho</Badge></div>
-                <div className="flex justify-between text-sm"><span className="text-gray-600">Autor:</span><span className="font-medium">Administrador</span></div>
+                <div className="flex justify-between text-sm"><span className="text-gray-600">Autor:</span><span className="font-medium">{formData.authorDisplayName || "(não definido)"}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-gray-600">Palavras:</span><span className="font-medium">{formData.content.split(/\s+/).filter(w=>w.length>0).length}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-gray-600">Tempo de leitura:</span><span className="font-medium">{Math.max(1, Math.ceil(formData.content.split(/\s+/).filter(w=>w.length>0).length/200))} min</span></div>
               </CardContent>

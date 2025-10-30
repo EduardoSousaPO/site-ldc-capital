@@ -20,9 +20,9 @@ const documentos = [
   },
   {
     id: 3,
-    titulo: "Política de Negociação de Valores Mobiliários",
-    descricao: "Diretrizes para negociação de valores mobiliários por colaboradores e pessoas relacionadas.",
-    arquivo: "/documentos/regulatorios/POLÍTICA_DE_NEGOCIAÇÃO_DE_VALORES_MOBILIÁRIOS_LDC_OFICIAL[1].pdf",
+    titulo: "Política de Suitability",
+    descricao: "Política para verificação da adequação dos produtos e serviços aos perfis dos clientes.",
+    arquivo: "/documentos/regulatorios/POLÍTICA_DE_SUITABILITY_LDC_OFICIAL[1].pdf",
     categoria: "Investimentos"
   },
   {
@@ -34,9 +34,9 @@ const documentos = [
   },
   {
     id: 5,
-    titulo: "Política de Suitability",
-    descricao: "Política para verificação da adequação dos produtos e serviços aos perfis dos clientes.",
-    arquivo: "/documentos/regulatorios/POLÍTICA_DE_SUITABILITY_LDC_OFICIAL[1].pdf",
+    titulo: "Política de Negociação de Valores Mobiliários",
+    descricao: "Diretrizes para negociação de valores mobiliários por colaboradores e pessoas relacionadas.",
+    arquivo: "/documentos/regulatorios/POLÍTICA_DE_NEGOCIAÇÃO_DE_VALORES_MOBILIÁRIOS_LDC_OFICIAL[1].pdf",
     categoria: "Investimentos"
   },
   {

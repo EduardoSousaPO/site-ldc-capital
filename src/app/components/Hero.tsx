@@ -75,7 +75,7 @@ export default function Hero() {
           </h1>
           
           {/* Subtítulo Premium com melhor responsividade */}
-          <p className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl mb-8 sm:mb-12 lg:mb-16 text-gray-200 max-w-5xl mx-auto leading-relaxed font-light animate-slide-up delay-300 px-4 sm:px-0">
+          <p className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl mb-8 sm:mb-12 lg:mb-16 text-gray-200 max-w-5xl mx-auto leading-relaxed font-light animate-slide-up delay-300 px-4 sm:px-0">
             Ajudamos você a alcançar o melhor nível de bem-estar na sua vida através do mercado financeiro com o 
             <span className="text-[#98ab44] font-medium"> melhor modelo de serviço financeiro disponível.</span>
           </p>

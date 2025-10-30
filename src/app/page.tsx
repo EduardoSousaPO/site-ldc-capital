@@ -14,8 +14,8 @@ export default function Home() {
       <Header />
       <Hero />
       <DirectionSection />
-      <QuoteSection />
       <ServicesGridPremium />
+      <QuoteSection />
       <TestimonialsCarousel />
       <FAQ />
       <LeadForm />

@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { createSheetsHeaders } from '../src/lib/google-sheets';
 
 async function setupGoogleSheets() {
@@ -23,6 +24,9 @@ if (require.main === module) {
 }
 
 export { setupGoogleSheets };
+
+
+
 
 
 

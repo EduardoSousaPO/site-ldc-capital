@@ -37,6 +37,7 @@ export default function EditPostPage() {
     category: "",
     cover: "",
     published: false,
+    authorDisplayName: "",
   });
 
   const [previewMode, setPreviewMode] = useState<"edit" | "live">("edit");
@@ -61,6 +62,7 @@ export default function EditPostPage() {
         category: data.category || "",
         cover: data.cover || "",
         published: Boolean(data.published),
+        authorDisplayName: data.authorDisplayName || "",
       });
     } catch (e) {
       console.error(e);
@@ -279,6 +281,11 @@ export default function EditPostPage() {
                   <Label>URL da Capa</Label>
                   <Input placeholder="https://..." value={formData.cover}
                     onChange={(e)=>handleInputChange("cover", e.target.value)} />
+                </div>
+                <div>
+                  <Label>Autor (como aparecerá no post)</Label>
+                  <Input placeholder="Ex.: João Silva" value={formData.authorDisplayName}
+                    onChange={(e)=>handleInputChange("authorDisplayName", e.target.value)} />
                 </div>
               </CardContent>
             </Card>

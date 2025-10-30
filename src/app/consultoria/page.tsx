@@ -40,9 +40,6 @@ export default function ConsultoriaPage() {
               
               {/* Conteúdo Textual */}
               <div className="text-white order-2 lg:order-1">
-                <div className="inline-block px-4 py-2 bg-white/20 text-white text-sm font-medium rounded-full border border-white/30 mb-6">
-                  CONSULTORIA DE INVESTIMENTOS
-                </div>
                 
                 <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
                   Consultoria de investimentos personalizada para{" "}
@@ -259,30 +256,7 @@ export default function ConsultoriaPage() {
       <Differentials />
 
 
-      {/* Seção CTA Final */}
-      <section className="py-16 lg:py-24 bg-gradient-to-br from-[#98ab44] to-[#becc6a] text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="font-serif text-3xl lg:text-4xl font-bold mb-6">
-            Pronto para dar o próximo passo?
-          </h2>
-          
-          <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto">
-            Nossa equipe está preparada para analisar seu perfil e desenvolver uma 
-            estratégia personalizada para seus investimentos.
-          </p>
-
-          <CTAButton
-            size="lg"
-            className="bg-white text-[#98ab44] hover:bg-white/90 px-10 py-5 text-lg font-semibold rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 group mr-4"
-          >
-            Fale com nossa equipe
-          </CTAButton>
-
-          <p className="text-sm text-white/80 mt-6">
-            Análise gratuita • Sem compromisso • Atendimento em todo o Brasil
-          </p>
-        </div>
-      </section>
+      
 
       {/* Formulário de Contato */}
       <LeadForm />

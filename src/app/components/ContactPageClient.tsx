@@ -9,7 +9,7 @@ export default function ContactPageClient() {
   return (
     <>
       {/* Hero Section Premium */}
-      <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden pt-20 pb-16 lg:pt-32 lg:pb-24">
         {/* Background com gradiente premium */}
         <div className="absolute inset-0 bg-[#262d3d]">
           {/* Padrão sutil para textura */}
@@ -67,8 +67,8 @@ export default function ContactPageClient() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Fale Conosco */}
-            <Card className="text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300 group rounded-2xl overflow-hidden">
-              <CardContent className="p-8">
+            <Card className="text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300 group rounded-2xl overflow-hidden h-full">
+              <CardContent className="p-8 h-full flex flex-col">
                 <div className="w-16 h-16 bg-gradient-to-br from-[#98ab44] to-[#becc6a] rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                   <MessageCircle className="w-8 h-8 text-white" />
                 </div>
@@ -88,8 +88,8 @@ export default function ContactPageClient() {
             </Card>
 
             {/* Seja Cliente */}
-            <Card className="text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300 group rounded-2xl overflow-hidden">
-              <CardContent className="p-8">
+            <Card className="text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300 group rounded-2xl overflow-hidden h-full">
+              <CardContent className="p-8 h-full flex flex-col">
                 <div className="w-16 h-16 bg-gradient-to-br from-[#becc6a] to-[#98ab44] rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                   <UserCheck className="w-8 h-8 text-white" />
                 </div>
@@ -109,8 +109,8 @@ export default function ContactPageClient() {
             </Card>
 
             {/* Telefone */}
-            <Card className="text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300 group rounded-2xl overflow-hidden">
-              <CardContent className="p-8">
+            <Card className="text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300 group rounded-2xl overflow-hidden h-full">
+              <CardContent className="p-8 h-full flex flex-col">
                 <div className="w-16 h-16 bg-gradient-to-br from-[#98ab44] to-[#becc6a] rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                   <Phone className="w-8 h-8 text-white" />
                 </div>
@@ -124,8 +124,8 @@ export default function ContactPageClient() {
             </Card>
 
             {/* Horário */}
-            <Card className="text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300 group rounded-2xl overflow-hidden">
-              <CardContent className="p-8">
+            <Card className="text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300 group rounded-2xl overflow-hidden h-full">
+              <CardContent className="p-8 h-full flex flex-col">
                 <div className="w-16 h-16 bg-gradient-to-br from-[#becc6a] to-[#98ab44] rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                   <Clock className="w-8 h-8 text-white" />
                 </div>
@@ -140,42 +140,6 @@ export default function ContactPageClient() {
           </div>
         </div>
       </section>
-
-      {/* About Section Premium */}
-      <section className="py-16 lg:py-24 bg-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="mb-16">
-            <h2 className="font-serif text-3xl lg:text-4xl font-bold text-[#262d3d] mb-6">
-              Por que escolher a LDC Capital?
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Modelo transparente, experiência comprovada e atendimento personalizado
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="group">
-              <div className="bg-gradient-to-br from-[#98ab44] to-[#becc6a] rounded-3xl p-8 text-white group-hover:scale-105 transition-transform duration-300 shadow-lg">
-                <div className="text-4xl font-bold mb-3">Fee-Based</div>
-                <div className="text-white/90 leading-relaxed">Modelo transparente sem conflitos de interesse</div>
-              </div>
-            </div>
-            <div className="group">
-              <div className="bg-gradient-to-br from-[#becc6a] to-[#98ab44] rounded-3xl p-8 text-white group-hover:scale-105 transition-transform duration-300 shadow-lg">
-                <div className="text-4xl font-bold mb-3">400M+</div>
-                <div className="text-white/90 leading-relaxed">Patrimônio sob consultoria</div>
-              </div>
-            </div>
-            <div className="group">
-              <div className="bg-gradient-to-br from-[#98ab44] to-[#becc6a] rounded-3xl p-8 text-white group-hover:scale-105 transition-transform duration-300 shadow-lg">
-                <div className="text-4xl font-bold mb-3">Todo BR</div>
-                <div className="text-white/90 leading-relaxed">Atendimento online nacionalmente</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Onde nos encontrar */}
       <section className="py-16 bg-gray-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -193,7 +157,7 @@ export default function ContactPageClient() {
             <div className="relative">
               <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3456.123456789!2d-50.7789!3d-29.6489!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjnCsDM4JzU2LjAiUyA1MMKwNDYnNDQuMCJX!5e0!3m2!1spt-BR!2sbr!4v1234567890"
+                  src="https://www.google.com/maps?q=Rua+Rio+Branco,+1290,+Taquara,+RS+95600-074&output=embed"
                   width="100%"
                   height="400"
                   style={{ border: 0 }}
@@ -203,11 +167,6 @@ export default function ContactPageClient() {
                   className="w-full h-96 rounded-2xl"
                   title="Localização LDC Capital"
                 ></iframe>
-              </div>
-              <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md rounded-lg px-3 py-2">
-                <p className="text-sm font-medium text-gray-800">
-                  Use Ctrl + Scroll para dar zoom
-                </p>
               </div>
             </div>
 
@@ -279,6 +238,9 @@ export default function ContactPageClient() {
     </>
   );
 }
+
+
+
 
 
 

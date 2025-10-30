@@ -36,34 +36,33 @@ export async function POST(request: NextRequest) {
     if (process.env.GOOGLE_SHEETS_ID && process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
       try {
         const { addToGoogleSheets } = await import("@/lib/google-sheets");
-        
         sheetsResult = await addToGoogleSheets(sheetsData);
         if (!sheetsResult.success && sheetsResult.error) {
           console.error('Erro ao salvar no Google Sheets:', sheetsResult.error);
         }
-        
-        // Enviar email para a equipe
-        if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-          const { sendNewLeadEmail, sendConfirmationEmail } = await import("@/lib/email");
-          
-          emailResult = await sendNewLeadEmail(sheetsData);
-          if (!emailResult.success && emailResult.error) {
-            console.error('Erro ao enviar email:', emailResult.error);
-          }
-          
-          // Enviar email de confirmação para o lead
-          confirmationResult = await sendConfirmationEmail({
-            nome: validatedData.nome,
-            email: validatedData.email,
-            origemFormulario: 'Fale Conosco',
-          });
-          if (!confirmationResult.success && confirmationResult.error) {
-            console.error('Erro ao enviar email de confirmação:', confirmationResult.error);
-          }
+      } catch (error) {
+        console.error('Erro ao salvar no Google Sheets (opcional):', error);
+      }
+    }
+
+    // Envio de e-mail (independente do Google Sheets)
+    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+      try {
+        const { sendNewLeadEmail, sendConfirmationEmail } = await import("@/lib/email");
+        emailResult = await sendNewLeadEmail(sheetsData);
+        if (!emailResult.success && emailResult.error) {
+          console.error('Erro ao enviar email:', emailResult.error);
+        }
+        confirmationResult = await sendConfirmationEmail({
+          nome: validatedData.nome,
+          email: validatedData.email,
+          origemFormulario: 'Fale Conosco',
+        });
+        if (!confirmationResult.success && confirmationResult.error) {
+          console.error('Erro ao enviar email de confirmação:', confirmationResult.error);
         }
       } catch (error) {
-        console.error('Erro nas integrações externas:', error);
-        // Não falha a API se as integrações não funcionarem
+        console.error('Erro ao enviar e-mails:', error);
       }
     }
     

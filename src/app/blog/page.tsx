@@ -18,6 +18,7 @@ export default function BlogPage() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     async function fetchData() {
@@ -47,6 +48,11 @@ export default function BlogPage() {
   }, []);
 
   const featuredPosts = posts.slice(0, 3); // Posts mais lidos
+  const pageSize = 6; // 3 linhas x 2 colunas
+  const totalPages = Math.max(1, Math.ceil(posts.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const startIdx = (currentPage - 1) * pageSize;
+  const paginatedPosts = posts.slice(startIdx, startIdx + pageSize);
 
   if (loading) {
     return (
@@ -110,7 +116,7 @@ export default function BlogPage() {
               ) : (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-8 sm:mb-12">
-                    {posts.map((post) => (
+                    {paginatedPosts.map((post) => (
                       <Card key={post.slug} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg overflow-hidden bg-white">
                         <div className="aspect-[16/10] bg-gray-200 relative overflow-hidden">
                           {post.cover ? (
@@ -175,24 +181,33 @@ export default function BlogPage() {
 
                   {/* Paginação Responsiva */}
                   <div className="flex justify-center items-center space-x-1 sm:space-x-2">
-                    <Button variant="outline" size="sm" className="text-[#98ab44] border-[#98ab44] hover:bg-[#98ab44] hover:text-white text-xs sm:text-sm px-2 sm:px-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage === 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      className="text-[#98ab44] border-[#98ab44] disabled:opacity-40 hover:bg-[#98ab44] hover:text-white text-xs sm:text-sm px-2 sm:px-3"
+                    >
                       <span className="hidden sm:inline">Anterior</span>
                       <span className="sm:hidden">Ant</span>
                     </Button>
-                    <Button size="sm" className="bg-[#98ab44] hover:bg-[#98ab44]/90 text-white min-w-[32px] sm:min-w-[40px] text-xs sm:text-sm">
-                      1
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-gray-600 hover:text-[#98ab44] min-w-[32px] sm:min-w-[40px] text-xs sm:text-sm">
-                      2
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-gray-600 hover:text-[#98ab44] min-w-[32px] sm:min-w-[40px] text-xs sm:text-sm hidden sm:inline-flex">
-                      3
-                    </Button>
-                    <span className="text-gray-500 text-xs sm:text-sm hidden sm:inline">...</span>
-                    <Button variant="outline" size="sm" className="text-gray-600 hover:text-[#98ab44] min-w-[32px] sm:min-w-[40px] text-xs sm:text-sm hidden sm:inline-flex">
-                      5
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-[#98ab44] border-[#98ab44] hover:bg-[#98ab44] hover:text-white text-xs sm:text-sm px-2 sm:px-3">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                      <Button
+                        key={n}
+                        size="sm"
+                        onClick={() => setPage(n)}
+                        className={`${n === currentPage ? "bg-[#98ab44] text-white" : "bg-white text-gray-700 border border-gray-300 hover:text-[#98ab44]"} min-w-[32px] sm:min-w-[40px] text-xs sm:text-sm`}
+                      >
+                        {n}
+                      </Button>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      className="text-[#98ab44] border-[#98ab44] disabled:opacity-40 hover:bg-[#98ab44] hover:text-white text-xs sm:text-sm px-2 sm:px-3"
+                    >
                       <span className="hidden sm:inline">Próximo</span>
                       <span className="sm:hidden">Prox</span>
                     </Button>

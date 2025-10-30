@@ -16,6 +16,7 @@ export interface BlogPost {
     name: string | null;
     email: string;
   };
+  authorDisplayName?: string | null;
 }
 
 type BlogPostRow = {
@@ -32,6 +33,7 @@ type BlogPostRow = {
   updatedAt: string;
   publishedAt: string | null;
   authorId: string | null;
+  authorDisplayName: string | null;
 };
 
 const postSelection = `
@@ -48,6 +50,7 @@ const postSelection = `
   updatedAt,
   publishedAt,
   authorId
+  , authorDisplayName
 `;
 
 export async function getBlogPosts(): Promise<BlogPost[]> {
@@ -178,8 +181,9 @@ function transformPost(
     readingTime: row.readingTime || "5 min",
     date: row.publishedAt || row.createdAt,
     updatedAt: row.updatedAt,
+    authorDisplayName: row.authorDisplayName ?? null,
     author: {
-      name: authorMap[row.authorId ?? ""]?.name ?? null,
+      name: row.authorDisplayName ?? authorMap[row.authorId ?? ""]?.name ?? null,
       email: authorMap[row.authorId ?? ""]?.email ?? "",
     },
   };

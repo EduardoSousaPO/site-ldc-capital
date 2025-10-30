@@ -42,7 +42,8 @@ const postSelection = `
   createdAt,
   updatedAt,
   publishedAt,
-  authorId
+  authorId,
+  authorDisplayName
 `;
 
 export async function GET() {
@@ -98,7 +99,7 @@ export async function POST(request: NextRequest) {
       content: body.content ? "Content provided" : "No content",
     });
 
-    const { title, content, summary, category, cover, published } = body;
+    const { title, content, summary, category, cover, published, authorDisplayName } = body;
 
     if (!title || !content) {
       console.log("⚠️ Missing required fields:", {
@@ -165,6 +166,7 @@ export async function POST(request: NextRequest) {
         published: published || false,
         readingTime: stats.text,
         authorId: user.id,
+        authorDisplayName: (authorDisplayName || user.name || user.email || "").toString().slice(0, 120),
         publishedAt: published ? new Date().toISOString() : null,
       })
       .select(postSelection)
