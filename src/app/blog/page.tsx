@@ -48,10 +48,11 @@ export default function BlogPage() {
   }, []);
 
   const featuredPosts = posts.slice(0, 3); // Posts mais lidos
-  const pageSize = 6; // 3 linhas x 2 colunas
+  const pageSize = 6; // 3 linhas x 2 colunas = 6 posts
   const totalPages = Math.max(1, Math.ceil(posts.length / pageSize));
   const currentPage = Math.min(page, totalPages);
   const startIdx = (currentPage - 1) * pageSize;
+  // Garante que sempre mostra 6 posts na primeira página quando disponível
   const paginatedPosts = posts.slice(startIdx, startIdx + pageSize);
 
   if (loading) {
