@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     let body;
     try {
       body = await request.json();
-    } catch (parseError) {
+    } catch {
       return NextResponse.json(
         { 
           success: false, 
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
         { 
           success: false, 
           message: "Dados inválidos",
-          errors: error.errors.map(e => ({
+          errors: error.issues.map(e => ({
             path: e.path.join('.'),
             message: e.message
           }))
