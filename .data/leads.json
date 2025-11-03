@@ -22,5 +22,17 @@
     "createdAt": "2025-10-30T21:53:36.727Z",
     "ip": "::1",
     "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+  },
+  {
+    "id": "1762211737792",
+    "nome": "EDUARDO SOUSA PIRES OLIVEIRA",
+    "telefone": "(62) 98219-9194",
+    "email": "eduspires123@gmail.com",
+    "patrimonio": "1m-5m",
+    "origem": "youtube",
+    "consentimento": true,
+    "createdAt": "2025-11-03T23:15:37.792Z",
+    "ip": "::1",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
   }
 ]
