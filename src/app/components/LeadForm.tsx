@@ -49,16 +49,28 @@ export default function LeadForm({ title, subtitle, ctaLabel }: LeadFormProps) {
         body: JSON.stringify(data),
       });
 
-      if (response.ok) {
+      let result;
+      try {
+        result = await response.json();
+      } catch (jsonError) {
+        console.error("Erro ao processar resposta JSON:", jsonError);
+        throw new Error("Resposta inválida do servidor");
+      }
+
+      if (response.ok && result.success) {
         setIsSubmitted(true);
         reset();
         setTimeout(() => setIsSubmitted(false), 5000);
       } else {
-        throw new Error("Erro ao enviar formulário");
+        // Mostrar mensagem de erro específica da API
+        const errorMsg = result?.message || "Erro ao enviar formulário. Tente novamente.";
+        console.error("Erro da API:", result);
+        alert(errorMsg);
       }
     } catch (error) {
       console.error("Erro:", error);
-      alert("Erro ao enviar formulário. Tente novamente.");
+      const errorMsg = error instanceof Error ? error.message : "Erro de conexão. Verifique sua internet e tente novamente.";
+      alert(errorMsg);
     } finally {
       setIsSubmitting(false);
     }

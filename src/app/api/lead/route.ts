@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { leadFormSchema } from "@/app/lib/schema";
+import { z } from "zod";
 import fs from "fs/promises";
 import path from "path";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: "Formato de dados inválido. Por favor, recarregue a página e tente novamente." 
+        },
+        { status: 400 }
+      );
+    }
     
     // Validate the data
     const validatedData = leadFormSchema.parse(body);
@@ -116,21 +128,27 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Error processing lead:", error);
     
-    if (error instanceof Error && error.name === "ZodError") {
+    // Verificar se é erro de validação Zod
+    if (error instanceof z.ZodError) {
       return NextResponse.json(
         { 
           success: false, 
           message: "Dados inválidos",
-          errors: error.message 
+          errors: error.errors.map(e => ({
+            path: e.path.join('.'),
+            message: e.message
+          }))
         },
         { status: 400 }
       );
     }
     
+    // Outros erros
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
     return NextResponse.json(
       { 
         success: false, 
-        message: "Erro interno do servidor" 
+        message: errorMessage || "Erro interno do servidor"
       },
       { status: 500 }
     );
