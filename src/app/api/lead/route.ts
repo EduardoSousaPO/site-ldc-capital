@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { leadFormSchema } from "@/app/lib/schema";
 import { z } from "zod";
+// Importações para arquivo local (apenas desenvolvimento)
 import fs from "fs/promises";
 import path from "path";
 
@@ -31,31 +32,34 @@ export async function POST(request: NextRequest) {
       userAgent: request.headers.get("user-agent") || "unknown",
     };
     
-    // Ensure .data directory exists
-    const dataDir = path.join(process.cwd(), ".data");
-    try {
-      await fs.access(dataDir);
-    } catch {
-      await fs.mkdir(dataDir, { recursive: true });
+    // Tentar salvar em arquivo local (apenas em desenvolvimento, ignorar erros em produção)
+    // Em produção (Vercel), o sistema de arquivos é read-only, então pulamos isso
+    if (process.env.NODE_ENV === "development") {
+      try {
+        const dataDir = path.join(process.cwd(), ".data");
+        try {
+          await fs.access(dataDir);
+        } catch {
+          await fs.mkdir(dataDir, { recursive: true });
+        }
+        
+        const leadsFile = path.join(dataDir, "leads.json");
+        let leads = [];
+        
+        try {
+          const existingData = await fs.readFile(leadsFile, "utf-8");
+          leads = JSON.parse(existingData);
+        } catch {
+          leads = [];
+        }
+        
+        leads.push(lead);
+        await fs.writeFile(leadsFile, JSON.stringify(leads, null, 2));
+      } catch (fileError) {
+        // Ignorar erros de escrita em arquivo (normal em produção)
+        console.log("Aviso: Não foi possível salvar em arquivo local (normal em produção):", fileError);
+      }
     }
-    
-    // Read existing leads
-    const leadsFile = path.join(dataDir, "leads.json");
-    let leads = [];
-    
-    try {
-      const existingData = await fs.readFile(leadsFile, "utf-8");
-      leads = JSON.parse(existingData);
-    } catch {
-      // File doesn't exist or is invalid, start with empty array
-      leads = [];
-    }
-    
-    // Add new lead
-    leads.push(lead);
-    
-    // Save back to file
-    await fs.writeFile(leadsFile, JSON.stringify(leads, null, 2));
     
     // Integração com Google Sheets (opcional - só executa se configurado)
     let sheetsResult: { success: boolean; error?: string } = { success: false };
@@ -116,11 +120,18 @@ export async function POST(request: NextRequest) {
       confirmationSent: confirmationResult.success,
     });
     
+    // Retornar sucesso mesmo se apenas o Google Sheets funcionou
+    // O importante é que o lead foi processado
+    const successMessage = "Lead cadastrado com sucesso! Em breve entraremos em contato.";
+    
     return NextResponse.json(
       { 
         success: true, 
-        message: "Lead cadastrado com sucesso",
-        leadId: lead.id 
+        message: successMessage,
+        leadId: lead.id,
+        savedToSheets: sheetsResult.success,
+        emailSent: emailResult.success,
+        confirmationSent: confirmationResult.success,
       },
       { status: 200 }
     );
@@ -158,6 +169,16 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   try {
     // Simple endpoint to check leads (for development only)
+    // Em produção, não há arquivo local disponível
+    if (process.env.NODE_ENV !== "development") {
+      return NextResponse.json({
+        success: true,
+        count: 0,
+        leads: [],
+        message: "Em produção, os leads são salvos apenas no Google Sheets e banco de dados",
+      });
+    }
+    
     const leadsFile = path.join(process.cwd(), ".data", "leads.json");
     
     try {
