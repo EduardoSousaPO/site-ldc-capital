@@ -3,6 +3,10 @@ import localFont from "next/font/local";
 import "./globals.css";
 import SupabaseListener from "@/components/SupabaseListener";
 import { AdminToaster } from "@/components/ui/toaster";
+import { Analytics } from "@/components/Analytics";
+import { OrganizationSchema } from "@/components/StructuredData";
+import { siteConfig, getOgImageUrl } from "@/lib/seo-config";
+import Script from "next/script";
 // Removido NextAuth - usando Supabase Auth
 
 // IvyMode - Fonte oficial para títulos (conforme Manual da Marca LDC Capital)
@@ -60,15 +64,57 @@ const publicSans = localFont({
 
 
 export const metadata: Metadata = {
-  title: "LDC Capital - Mais do que finanças, direção",
-  description: "Consultoria de Investimentos independente. Raízes no interior, olhos no horizonte. Transparência, alinhamento de interesses e estratégia personalizada para grandes patrimônios.",
-  keywords: ["consultoria de investimentos", "planejamento financeiro", "gestão patrimonial", "investimentos", "LDC Capital"],
-  authors: [{ name: "LDC Capital" }],
+  metadataBase: new URL(siteConfig.url),
+  title: {
+    default: siteConfig.title,
+    template: `%s | ${siteConfig.name}`,
+  },
+  description: siteConfig.description,
+  keywords: siteConfig.keywords,
+  authors: [{ name: siteConfig.company.name }],
+  creator: siteConfig.company.name,
+  publisher: siteConfig.company.name,
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
   openGraph: {
-    title: "LDC Capital - Mais do que finanças, direção",
-    description: "Consultoria de Investimentos independente com foco em transparência e alinhamento de interesses.",
     type: "website",
-    locale: "pt_BR",
+    locale: siteConfig.locale,
+    url: siteConfig.url,
+    siteName: siteConfig.name,
+    title: siteConfig.title,
+    description: siteConfig.description,
+    images: [
+      {
+        url: getOgImageUrl(),
+        width: 1200,
+        height: 630,
+        alt: siteConfig.ogImageAlt,
+      },
+    ],
+  },
+  twitter: {
+    card: siteConfig.twitterCard as "summary_large_image",
+    title: siteConfig.title,
+    description: siteConfig.description,
+    images: [getOgImageUrl()],
+    creator: siteConfig.twitterHandle,
+  },
+  alternates: {
+    canonical: siteConfig.url,
+  },
+  verification: {
+    ...(siteConfig.googleSiteVerification && {
+      google: siteConfig.googleSiteVerification,
+    }),
   },
 };
 
@@ -78,13 +124,57 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" data-scroll-behavior="smooth">
+    <html lang={siteConfig.language} data-scroll-behavior="smooth">
       <body
         className={`${publicSans.variable} ${ivyMode.variable} antialiased`}
       >
+        <Script
+          id="organization-schema"
+          type="application/ld+json"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FinancialService",
+              "name": siteConfig.company.name,
+              "alternateName": siteConfig.name,
+              "description": siteConfig.description,
+              "url": siteConfig.url,
+              "logo": getFullUrl("/images/logo-ldc-principal.png"),
+              "address": {
+                "@type": "PostalAddress",
+                "streetAddress": siteConfig.company.address.street,
+                "addressLocality": siteConfig.company.address.city,
+                "addressRegion": siteConfig.company.address.state,
+                "postalCode": siteConfig.company.address.postalCode,
+                "addressCountry": siteConfig.company.address.country,
+              },
+              "contactPoint": {
+                "@type": "ContactPoint",
+                "telephone": siteConfig.company.contact.phone,
+                "contactType": "customer service",
+                "email": siteConfig.company.contact.email,
+                "areaServed": siteConfig.company.areaServed,
+                "availableLanguage": ["pt-BR"],
+              },
+              "sameAs": [
+                siteConfig.social.youtube,
+                siteConfig.social.instagram,
+                siteConfig.social.linkedin,
+              ],
+              "areaServed": {
+                "@type": "Country",
+                "name": "Brasil",
+              },
+              "serviceType": siteConfig.company.serviceType,
+              "feesAndCommissionsSpecification": siteConfig.company.feesAndCommissionsSpecification,
+            }),
+          }}
+        />
         <SupabaseListener />
         <AdminToaster />
         {children}
+        <Analytics />
       </body>
     </html>
   );

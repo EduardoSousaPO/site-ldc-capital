@@ -1,10 +1,32 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { siteConfig, getFullUrl, getOgImageUrl } from "@/lib/seo-config";
 
 export const metadata: Metadata = {
-  title: "Termos de Uso | LDC Capital",
-  description: "Termos de Uso da LDC Capital - Consultoria em Investimentos",
+  title: "Termos de Uso",
+  description: "Termos de Uso da LDC Capital - Consultoria em Investimentos. Conheça os termos e condições de uso do site.",
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    title: "Termos de Uso - LDC Capital",
+    description: "Termos de Uso da LDC Capital - Consultoria em Investimentos.",
+    url: getFullUrl("/termos-de-uso"),
+    siteName: siteConfig.name,
+    images: [getOgImageUrl()],
+    locale: siteConfig.locale,
+    type: "website",
+  },
+  twitter: {
+    card: siteConfig.twitterCard as "summary_large_image",
+    title: "Termos de Uso - LDC Capital",
+    images: [getOgImageUrl()],
+  },
+  alternates: {
+    canonical: getFullUrl("/termos-de-uso"),
+  },
 };
 
 export default function TermosDeUso() {

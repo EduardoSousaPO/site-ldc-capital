@@ -1,10 +1,32 @@
 import { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { siteConfig, getFullUrl, getOgImageUrl } from "@/lib/seo-config";
 
 export const metadata: Metadata = {
-  title: "Política de Privacidade | LDC Capital",
-  description: "Política de Privacidade da LDC Capital - Consultoria em Investimentos",
+  title: "Política de Privacidade",
+  description: "Política de Privacidade da LDC Capital - Consultoria em Investimentos. Conheça como tratamos seus dados pessoais de acordo com a LGPD.",
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    title: "Política de Privacidade - LDC Capital",
+    description: "Política de Privacidade da LDC Capital - Consultoria em Investimentos.",
+    url: getFullUrl("/politica-privacidade"),
+    siteName: siteConfig.name,
+    images: [getOgImageUrl()],
+    locale: siteConfig.locale,
+    type: "website",
+  },
+  twitter: {
+    card: siteConfig.twitterCard as "summary_large_image",
+    title: "Política de Privacidade - LDC Capital",
+    images: [getOgImageUrl()],
+  },
+  alternates: {
+    canonical: getFullUrl("/politica-privacidade"),
+  },
 };
 
 export default function PoliticaPrivacidade() {
@@ -197,6 +219,7 @@ export default function PoliticaPrivacidade() {
     </div>
   );
 }
+
 
 
 

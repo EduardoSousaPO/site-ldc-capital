@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import TimelinePremium from "../components/TimelinePremium";
@@ -7,16 +8,77 @@ import LeadForm from "../components/LeadForm";
 import CTAButton from "../components/CTAButton";
 import { Button } from "@/components/ui/button";
 import { Shield, Target, ArrowRight, CheckCircle } from "lucide-react";
+import { ServiceSchema } from "@/components/StructuredData";
+import { siteConfig, getFullUrl, getOgImageUrl } from "@/lib/seo-config";
+import Script from "next/script";
 
-export const metadata = {
-  title: "Consultoria de Investimentos - LDC Capital",
+export const metadata: Metadata = {
+  title: "Consultoria de Investimentos",
   description: "Raízes no interior, olhos no horizonte. Consultoria independente com modelo fee-based, sem conflitos de interesse. Metodologia estruturada em 5 passos.",
+  keywords: [
+    "consultoria de investimentos",
+    "consultoria fee-based",
+    "planejamento financeiro",
+    "gestão patrimonial",
+    "investimentos personalizados",
+  ],
+  openGraph: {
+    title: "Consultoria de Investimentos - LDC Capital",
+    description: "Raízes no interior, olhos no horizonte. Consultoria independente com modelo fee-based, sem conflitos de interesse.",
+    url: getFullUrl("/consultoria"),
+    siteName: siteConfig.name,
+    images: [
+      {
+        url: getOgImageUrl(),
+        width: 1200,
+        height: 630,
+        alt: "LDC Capital - Consultoria de Investimentos",
+      },
+    ],
+    locale: siteConfig.locale,
+    type: "website",
+  },
+  twitter: {
+    card: siteConfig.twitterCard as "summary_large_image",
+    title: "Consultoria de Investimentos - LDC Capital",
+    description: "Consultoria independente com modelo fee-based, sem conflitos de interesse.",
+    images: [getOgImageUrl()],
+  },
+  alternates: {
+    canonical: getFullUrl("/consultoria"),
+  },
 };
 
 export default function ConsultoriaPage() {
   return (
-    <main>
-      <Header />
+    <>
+      <Script
+        id="service-schema"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FinancialProduct",
+            "name": "Consultoria de Investimentos",
+            "description": "Metodologia estruturada em 5 passos para gestão de patrimônio e planejamento financeiro personalizado. Modelo fee-based sem conflitos de interesse.",
+            "provider": {
+              "@type": "Organization",
+              "name": siteConfig.company.name,
+              "url": siteConfig.url,
+            },
+            "offers": {
+              "@type": "Offer",
+              "priceCurrency": "BRL",
+              "price": "Fee-based",
+              "availability": "https://schema.org/InStock",
+              "url": getFullUrl("/consultoria"),
+            },
+            "category": "Financial Services",
+          }),
+        }}
+      />
+      <main>
+        <Header />
       
       {/* Hero Section Premium - Inspirado na Musa */}
       <section className="relative min-h-screen bg-[#262d3d] overflow-hidden pt-32 lg:pt-40 xl:pt-44 2xl:pt-48">
@@ -262,6 +324,7 @@ export default function ConsultoriaPage() {
       <LeadForm />
       
       <Footer />
-    </main>
+      </main>
+    </>
   );
 }
