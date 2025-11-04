@@ -7,7 +7,6 @@ import ServicesGridPremium from "./components/ServicesGridPremium";
 import TestimonialsCarousel from "./components/TestimonialsCarousel";
 import FAQ from "./components/FAQ";
 import LeadForm from "./components/LeadForm";
-import { FAQSchema } from "@/components/StructuredData";
 import { faqItems } from "./lib/faq";
 import Script from "next/script";
 

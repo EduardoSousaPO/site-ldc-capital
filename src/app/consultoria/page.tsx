@@ -8,7 +8,6 @@ import LeadForm from "../components/LeadForm";
 import CTAButton from "../components/CTAButton";
 import { Button } from "@/components/ui/button";
 import { Shield, Target, ArrowRight, CheckCircle } from "lucide-react";
-import { ServiceSchema } from "@/components/StructuredData";
 import { siteConfig, getFullUrl, getOgImageUrl } from "@/lib/seo-config";
 import Script from "next/script";
 

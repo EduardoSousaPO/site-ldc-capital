@@ -4,8 +4,7 @@ import "./globals.css";
 import SupabaseListener from "@/components/SupabaseListener";
 import { AdminToaster } from "@/components/ui/toaster";
 import { Analytics } from "@/components/Analytics";
-import { OrganizationSchema } from "@/components/StructuredData";
-import { siteConfig, getOgImageUrl } from "@/lib/seo-config";
+import { siteConfig, getOgImageUrl, getFullUrl } from "@/lib/seo-config";
 import Script from "next/script";
 // Removido NextAuth - usando Supabase Auth
 
