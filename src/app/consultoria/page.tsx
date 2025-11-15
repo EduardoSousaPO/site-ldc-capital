@@ -1,4 +1,3 @@
-import { Metadata } from "next";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import TimelinePremium from "../components/TimelinePremium";
@@ -8,76 +7,16 @@ import LeadForm from "../components/LeadForm";
 import CTAButton from "../components/CTAButton";
 import { Button } from "@/components/ui/button";
 import { Shield, Target, ArrowRight, CheckCircle } from "lucide-react";
-import { siteConfig, getFullUrl, getOgImageUrl } from "@/lib/seo-config";
-import Script from "next/script";
 
-export const metadata: Metadata = {
-  title: "Consultoria de Investimentos",
+export const metadata = {
+  title: "Consultoria de Investimentos - LDC Capital",
   description: "Raízes no interior, olhos no horizonte. Consultoria independente com modelo fee-based, sem conflitos de interesse. Metodologia estruturada em 5 passos.",
-  keywords: [
-    "consultoria de investimentos",
-    "consultoria fee-based",
-    "planejamento financeiro",
-    "gestão patrimonial",
-    "investimentos personalizados",
-  ],
-  openGraph: {
-    title: "Consultoria de Investimentos - LDC Capital",
-    description: "Raízes no interior, olhos no horizonte. Consultoria independente com modelo fee-based, sem conflitos de interesse.",
-    url: getFullUrl("/consultoria"),
-    siteName: siteConfig.name,
-    images: [
-      {
-        url: getOgImageUrl(),
-        width: 1200,
-        height: 630,
-        alt: "LDC Capital - Consultoria de Investimentos",
-      },
-    ],
-    locale: siteConfig.locale,
-    type: "website",
-  },
-  twitter: {
-    card: siteConfig.twitterCard as "summary_large_image",
-    title: "Consultoria de Investimentos - LDC Capital",
-    description: "Consultoria independente com modelo fee-based, sem conflitos de interesse.",
-    images: [getOgImageUrl()],
-  },
-  alternates: {
-    canonical: getFullUrl("/consultoria"),
-  },
 };
 
 export default function ConsultoriaPage() {
   return (
-    <>
-      <Script
-        id="service-schema"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "FinancialProduct",
-            "name": "Consultoria de Investimentos",
-            "description": "Metodologia estruturada em 5 passos para gestão de patrimônio e planejamento financeiro personalizado. Modelo fee-based sem conflitos de interesse.",
-            "provider": {
-              "@type": "Organization",
-              "name": siteConfig.company.name,
-              "url": siteConfig.url,
-            },
-            "offers": {
-              "@type": "Offer",
-              "priceCurrency": "BRL",
-              "price": "Fee-based",
-              "availability": "https://schema.org/InStock",
-              "url": getFullUrl("/consultoria"),
-            },
-            "category": "Financial Services",
-          }),
-        }}
-      />
-      <main>
-        <Header />
+    <main>
+      <Header />
       
       {/* Hero Section Premium - Inspirado na Musa */}
       <section className="relative min-h-screen bg-[#262d3d] overflow-hidden pt-32 lg:pt-40 xl:pt-44 2xl:pt-48">
@@ -101,6 +40,9 @@ export default function ConsultoriaPage() {
               
               {/* Conteúdo Textual */}
               <div className="text-white order-2 lg:order-1">
+                <div className="inline-block px-4 py-2 bg-white/20 text-white text-sm font-medium rounded-full border border-white/30 mb-6">
+                  CONSULTORIA DE INVESTIMENTOS
+                </div>
                 
                 <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
                   Consultoria de investimentos personalizada para{" "}
@@ -317,13 +259,35 @@ export default function ConsultoriaPage() {
       <Differentials />
 
 
-      
+      {/* Seção CTA Final */}
+      <section className="py-16 lg:py-24 bg-gradient-to-br from-[#98ab44] to-[#becc6a] text-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="font-serif text-3xl lg:text-4xl font-bold mb-6">
+            Pronto para dar o próximo passo?
+          </h2>
+          
+          <p className="text-xl mb-8 text-white/90 max-w-2xl mx-auto">
+            Nossa equipe está preparada para analisar seu perfil e desenvolver uma 
+            estratégia personalizada para seus investimentos.
+          </p>
+
+          <CTAButton
+            size="lg"
+            className="bg-white text-[#98ab44] hover:bg-white/90 px-10 py-5 text-lg font-semibold rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 group mr-4"
+          >
+            Fale com nossa equipe
+          </CTAButton>
+
+          <p className="text-sm text-white/80 mt-6">
+            Análise gratuita • Sem compromisso • Atendimento em todo o Brasil
+          </p>
+        </div>
+      </section>
 
       {/* Formulário de Contato */}
       <LeadForm />
       
       <Footer />
-      </main>
-    </>
+    </main>
   );
 }

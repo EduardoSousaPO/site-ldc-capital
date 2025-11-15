@@ -13,8 +13,8 @@ import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import CTAButton from "../../components/CTAButton";
 import { getBlogPostBySlug, getBlogPosts } from "../../lib/blog";
-import { ArticleSchema } from "@/components/StructuredData";
-import { siteConfig, getFullUrl, getOgImageUrl } from "@/lib/seo-config";
+import { getArticleSchema } from "@/lib/schema";
+import JsonLd from "@/components/JsonLd";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -29,46 +29,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!post) {
     return {
-      title: "Post não encontrado",
+      title: "Post não encontrado - LDC Capital",
     };
   }
 
-  const postUrl = getFullUrl(`/blog/${slug}`);
-  const postImage = post.cover ? (post.cover.startsWith("http") ? post.cover : getFullUrl(post.cover)) : getOgImageUrl();
-
   return {
-    title: post.title,
-    description: post.summary || siteConfig.description,
-    keywords: [post.category, "blog", "artigo", ...siteConfig.keywords],
-    authors: post.author.name ? [{ name: post.author.name }] : [{ name: siteConfig.company.name }],
+    title: `${post.title} - LDC Capital`,
+    description: post.summary,
     openGraph: {
       title: post.title,
-      description: post.summary || siteConfig.description,
+      description: post.summary,
       type: "article",
-      url: postUrl,
-      siteName: siteConfig.name,
       publishedTime: post.date,
-      modifiedTime: post.updatedAt,
-      authors: post.author.name ? [post.author.name] : [siteConfig.company.name],
-      images: [
-        {
-          url: postImage,
-          width: 1200,
-          height: 630,
-          alt: post.title,
-        },
-      ],
-      locale: siteConfig.locale,
-    },
-    twitter: {
-      card: siteConfig.twitterCard as "summary_large_image",
-      title: post.title,
-      description: post.summary || siteConfig.description,
-      images: [postImage],
-      creator: siteConfig.twitterHandle,
-    },
-    alternates: {
-      canonical: postUrl,
+      authors: post.author.name ? [post.author.name] : [],
+      images: post.cover ? [post.cover] : [],
     },
   };
 }
@@ -87,24 +61,19 @@ export default async function BlogPostPage({ params }: Props) {
     .filter(p => p.slug !== post.slug && p.category === post.category)
     .slice(0, 3);
 
-  const postUrl = getFullUrl(`/blog/${slug}`);
-  const postImage = post.cover ? (post.cover.startsWith("http") ? post.cover : getFullUrl(post.cover)) : undefined;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://ldccapital.com.br";
+  const articleSchema = getArticleSchema(
+    post.title,
+    post.summary,
+    post.cover,
+    post.date,
+    post.updatedAt || post.date
+  );
 
   return (
     <main>
-      <ArticleSchema
-        title={post.title}
-        description={post.summary || siteConfig.description}
-        author={{
-          name: post.author.name || siteConfig.company.name,
-          email: post.author.email,
-        }}
-        datePublished={post.date}
-        dateModified={post.updatedAt}
-        image={postImage}
-        url={postUrl}
-      />
       <Header />
+      <JsonLd data={articleSchema} />
       
       <article className="pt-20">
         {/* Hero Section */}

@@ -1,39 +1,19 @@
 import { MetadataRoute } from "next";
-import { siteConfig } from "@/lib/seo-config";
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = siteConfig.url;
-  
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://ldccapital.com.br";
+  const baseUrl = siteUrl.replace(/\/$/, "");
+
   return {
     rules: [
       {
         userAgent: "*",
         allow: "/",
         disallow: [
-          "/api/",
-          "/.data/",
           "/admin/",
-          "/diagnostico-gratuito",
-        ],
-      },
-      {
-        userAgent: "Googlebot",
-        allow: "/",
-        disallow: [
           "/api/",
-          "/.data/",
-          "/admin/",
-          "/diagnostico-gratuito",
-        ],
-      },
-      {
-        userAgent: "Bingbot",
-        allow: "/",
-        disallow: [
-          "/api/",
-          "/.data/",
-          "/admin/",
-          "/diagnostico-gratuito",
+          "/_next/",
+          "/static/",
         ],
       },
     ],

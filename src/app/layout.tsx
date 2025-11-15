@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import SupabaseListener from "@/components/SupabaseListener";
-import { AdminToaster } from "@/components/ui/toaster";
-import { Analytics } from "@/components/Analytics";
-import { siteConfig, getOgImageUrl, getFullUrl } from "@/lib/seo-config";
-import Script from "next/script";
-// Removido NextAuth - usando Supabase Auth
+import Analytics from "@/components/Analytics";
+import CookieBanner from "@/components/CookieBanner";
+import JsonLd from "@/components/JsonLd";
+import { getOrganizationSchema, getLocalBusinessSchema } from "@/lib/schema";
 
 // IvyMode - Fonte oficial para títulos (conforme Manual da Marca LDC Capital)
 const ivyMode = localFont({
@@ -62,17 +60,29 @@ const publicSans = localFont({
 });
 
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://ldccapital.com.br";
+
 export const metadata: Metadata = {
-  metadataBase: new URL(siteConfig.url),
+  metadataBase: new URL(siteUrl),
   title: {
-    default: siteConfig.title,
-    template: `%s | ${siteConfig.name}`,
+    default: "LDC Capital - Mais do que finanças, direção",
+    template: "%s | LDC Capital",
   },
-  description: siteConfig.description,
-  keywords: siteConfig.keywords,
-  authors: [{ name: siteConfig.company.name }],
-  creator: siteConfig.company.name,
-  publisher: siteConfig.company.name,
+  description:
+    "Consultoria de Investimentos independente. Raízes no interior, olhos no horizonte. Transparência, alinhamento de interesses e estratégia personalizada para grandes patrimônios.",
+  keywords: [
+    "consultoria de investimentos",
+    "planejamento financeiro",
+    "gestão patrimonial",
+    "investimentos",
+    "LDC Capital",
+    "consultoria financeira",
+    "assessoria de investimentos",
+    "wealth management",
+  ],
+  authors: [{ name: "LDC Capital" }],
+  creator: "LDC Capital",
+  publisher: "LDC Capital",
   robots: {
     index: true,
     follow: true,
@@ -86,34 +96,34 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    locale: siteConfig.locale,
-    url: siteConfig.url,
-    siteName: siteConfig.name,
-    title: siteConfig.title,
-    description: siteConfig.description,
+    locale: "pt_BR",
+    url: siteUrl,
+    siteName: "LDC Capital",
+    title: "LDC Capital - Mais do que finanças, direção",
+    description:
+      "Consultoria de Investimentos independente com foco em transparência e alinhamento de interesses.",
     images: [
       {
-        url: getOgImageUrl(),
+        url: `${siteUrl}/images/logo-ldc-principal.png`,
         width: 1200,
         height: 630,
-        alt: siteConfig.ogImageAlt,
+        alt: "LDC Capital - Mais do que finanças, direção",
       },
     ],
   },
   twitter: {
-    card: siteConfig.twitterCard as "summary_large_image",
-    title: siteConfig.title,
-    description: siteConfig.description,
-    images: [getOgImageUrl()],
-    creator: siteConfig.twitterHandle,
+    card: "summary_large_image",
+    title: "LDC Capital - Mais do que finanças, direção",
+    description:
+      "Consultoria de Investimentos independente com foco em transparência e alinhamento de interesses.",
+    images: [`${siteUrl}/images/logo-ldc-principal.png`],
   },
   alternates: {
-    canonical: siteConfig.url,
+    canonical: siteUrl,
   },
   verification: {
-    ...(siteConfig.googleSiteVerification && {
-      google: siteConfig.googleSiteVerification,
-    }),
+    // Adicione aqui o código de verificação do Google Search Console
+    // google: "seu-codigo-de-verificacao",
   },
 };
 
@@ -122,58 +132,20 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const gaId = process.env.NEXT_PUBLIC_GA_ID;
+  const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+
   return (
-    <html lang={siteConfig.language} data-scroll-behavior="smooth">
+    <html lang="pt-BR">
       <body
         className={`${publicSans.variable} ${ivyMode.variable} antialiased`}
       >
-        <Script
-          id="organization-schema"
-          type="application/ld+json"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "FinancialService",
-              "name": siteConfig.company.name,
-              "alternateName": siteConfig.name,
-              "description": siteConfig.description,
-              "url": siteConfig.url,
-              "logo": getFullUrl("/images/logo-ldc-principal.png"),
-              "address": {
-                "@type": "PostalAddress",
-                "streetAddress": siteConfig.company.address.street,
-                "addressLocality": siteConfig.company.address.city,
-                "addressRegion": siteConfig.company.address.state,
-                "postalCode": siteConfig.company.address.postalCode,
-                "addressCountry": siteConfig.company.address.country,
-              },
-              "contactPoint": {
-                "@type": "ContactPoint",
-                "telephone": siteConfig.company.contact.phone,
-                "contactType": "customer service",
-                "email": siteConfig.company.contact.email,
-                "areaServed": siteConfig.company.areaServed,
-                "availableLanguage": ["pt-BR"],
-              },
-              "sameAs": [
-                siteConfig.social.youtube,
-                siteConfig.social.instagram,
-                siteConfig.social.linkedin,
-              ],
-              "areaServed": {
-                "@type": "Country",
-                "name": "Brasil",
-              },
-              "serviceType": siteConfig.company.serviceType,
-              "feesAndCommissionsSpecification": siteConfig.company.feesAndCommissionsSpecification,
-            }),
-          }}
-        />
-        <SupabaseListener />
-        <AdminToaster />
+        {/* Schema.org Structured Data */}
+        <JsonLd data={getOrganizationSchema()} />
+        <JsonLd data={getLocalBusinessSchema()} />
         {children}
-        <Analytics />
+        <CookieBanner />
+        <Analytics gaId={gaId} metaPixelId={metaPixelId} />
       </body>
     </html>
   );

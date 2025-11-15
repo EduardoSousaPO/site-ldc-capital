@@ -711,3 +711,7 @@ O site LDC Capital possui uma **base sólida** de SEO, mas está **significativa
 **Data:** Janeiro 2025  
 **Próxima revisão:** Após implementação da Fase 1
 
+
+
+
+

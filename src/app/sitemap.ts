@@ -1,18 +1,17 @@
 import { MetadataRoute } from "next";
-import { getBlogPosts } from "./lib/blog";
-import { getMaterials } from "@/app/lib/materials";
-import { siteConfig } from "@/lib/seo-config";
+import { prisma } from "@/lib/prisma";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = siteConfig.url;
-  
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://ldccapital.com.br";
+  const baseUrl = siteUrl.replace(/\/$/, "");
+
   // Páginas estáticas
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
       lastModified: new Date(),
       changeFrequency: "weekly",
-      priority: 1.0,
+      priority: 1,
     },
     {
       url: `${baseUrl}/consultoria`,
@@ -29,7 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     {
       url: `${baseUrl}/materiais`,
       lastModified: new Date(),
-      changeFrequency: "monthly",
+      changeFrequency: "weekly",
       priority: 0.8,
     },
     {
@@ -39,22 +38,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     },
     {
-      url: `${baseUrl}/informacoes-regulatorias`,
+      url: `${baseUrl}/diagnostico-gratuito`,
       lastModified: new Date(),
       changeFrequency: "monthly",
-      priority: 0.6,
-    },
-    {
-      url: `${baseUrl}/politica-privacidade`,
-      lastModified: new Date(),
-      changeFrequency: "yearly",
-      priority: 0.5,
-    },
-    {
-      url: `${baseUrl}/termos-de-uso`,
-      lastModified: new Date(),
-      changeFrequency: "yearly",
-      priority: 0.5,
+      priority: 0.8,
     },
     {
       url: `${baseUrl}/trabalhe-conosco`,
@@ -62,36 +49,74 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly",
       priority: 0.6,
     },
+    {
+      url: `${baseUrl}/informacoes-regulatorias`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.5,
+    },
+    {
+      url: `${baseUrl}/politica-privacidade`,
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/termos-de-uso`,
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
   ];
 
-  // Posts do blog
-  let blogPages: MetadataRoute.Sitemap = [];
   try {
-    const posts = await getBlogPosts();
-    blogPages = posts.map((post) => ({
-      url: `${baseUrl}/blog/${post.slug}`,
-      lastModified: new Date(post.updatedAt),
-      changeFrequency: "yearly" as const,
-      priority: 0.6,
-    }));
-  } catch (error) {
-    console.error("Error fetching blog posts for sitemap:", error);
-  }
+    // Posts do blog
+    const posts = await prisma.post.findMany({
+      where: {
+        published: true,
+      },
+      select: {
+        slug: true,
+        updatedAt: true,
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    });
 
-  // Materiais
-  let materialPages: MetadataRoute.Sitemap = [];
-  try {
-    const materials = await getMaterials();
-    materialPages = materials.map((material) => ({
-      url: `${baseUrl}/materiais/${material.slug}`,
-      lastModified: material.updatedAt ? new Date(material.updatedAt) : new Date(),
+    const blogPages: MetadataRoute.Sitemap = posts.map((post) => ({
+      url: `${baseUrl}/blog/${post.slug}`,
+      lastModified: post.updatedAt,
       changeFrequency: "monthly" as const,
       priority: 0.7,
     }));
-  } catch (error) {
-    console.error("Error fetching materials for sitemap:", error);
-  }
 
-  return [...staticPages, ...blogPages, ...materialPages];
+    // Materiais
+    const materials = await prisma.material.findMany({
+      where: {
+        published: true,
+      },
+      select: {
+        slug: true,
+        updatedAt: true,
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    });
+
+    const materialPages: MetadataRoute.Sitemap = materials.map((material) => ({
+      url: `${baseUrl}/materiais/${material.slug}`,
+      lastModified: material.updatedAt,
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
+    }));
+
+    return [...staticPages, ...blogPages, ...materialPages];
+  } catch (error) {
+    console.error("Erro ao gerar sitemap:", error);
+    // Retorna apenas páginas estáticas em caso de erro
+    return staticPages;
+  }
 }
 

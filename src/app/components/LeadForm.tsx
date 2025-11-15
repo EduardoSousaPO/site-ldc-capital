@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, CheckCircle } from "lucide-react";
 import { leadFormSchema, type LeadFormData, formatPhone, patrimonioOptions, origemOptions } from "@/app/lib/schema";
+import { trackLead, trackEvent } from "@/lib/analytics";
 
 type LeadFormProps = {
   title?: string;
@@ -58,16 +59,26 @@ export default function LeadForm({ title, subtitle, ctaLabel }: LeadFormProps) {
       }
 
       if (response.ok && result.success) {
+        // Rastrear conversão bem-sucedida
+        trackLead("formulario-home", 100);
+        trackEvent("form_submit_success", "conversion", "formulario-lead");
+        
         setIsSubmitted(true);
         reset();
         setTimeout(() => setIsSubmitted(false), 5000);
       } else {
+        // Rastrear erro para identificar problemas
+        trackEvent("form_submit_error", "error", "formulario-lead");
+        
         // Mostrar mensagem de erro específica da API
         const errorMsg = result?.message || "Erro ao enviar formulário. Tente novamente.";
         console.error("Erro da API:", result);
         alert(errorMsg);
       }
     } catch (error) {
+      // Rastrear erro de conexão
+      trackEvent("form_submit_error", "error", "formulario-lead");
+      
       console.error("Erro:", error);
       const errorMsg = error instanceof Error ? error.message : "Erro de conexão. Verifique sua internet e tente novamente.";
       alert(errorMsg);
