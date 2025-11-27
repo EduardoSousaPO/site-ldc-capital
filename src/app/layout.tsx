@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import Analytics from "@/components/Analytics";
 import CookieBanner from "@/components/CookieBanner";
+import WhatsAppButton from "@/components/WhatsAppButton";
 import JsonLd from "@/components/JsonLd";
 import { getOrganizationSchema, getLocalBusinessSchema } from "@/lib/schema";
 
@@ -145,6 +146,7 @@ export default function RootLayout({
         <JsonLd data={getLocalBusinessSchema()} />
         {children}
         <CookieBanner />
+        <WhatsAppButton />
         <Analytics gaId={gaId} metaPixelId={metaPixelId} />
       </body>
     </html>

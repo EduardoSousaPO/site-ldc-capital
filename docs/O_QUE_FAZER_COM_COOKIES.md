@@ -470,3 +470,4 @@ R: Sim, e já está implementado! O banner aparece automaticamente.
 
 **Última atualização**: Janeiro 2025
 
+

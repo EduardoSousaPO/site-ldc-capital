@@ -10,3 +10,4 @@ export default function JsonLd({ data }: { data: object }) {
   );
 }
 
+
