@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signIn, getSession } from "next-auth/react";
+import { signIn, getCurrentUser } from "@/lib/auth-supabase";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,23 +24,23 @@ export default function AdminLogin() {
     setError("");
 
     try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
+      const { data, error: signInError } = await signIn(email, password);
 
-      if (result?.error) {
+      if (signInError) {
         setError("Credenciais inválidas. Verifique seu email e senha.");
-      } else {
-        const session = await getSession();
-        if (session?.user?.role === "ADMIN" || session?.user?.role === "EDITOR") {
+      } else if (data?.user) {
+        // Verificar se o usuário tem permissão
+        const user = await getCurrentUser();
+        if (user && (user.role === "ADMIN" || user.role === "EDITOR")) {
           router.push("/admin/dashboard");
+          router.refresh(); // Forçar atualização para garantir que o middleware reconheça a sessão
         } else {
           setError("Você não tem permissão para acessar o painel administrativo.");
         }
+      } else {
+        setError("Erro ao fazer login. Tente novamente.");
       }
-    } catch (error) {
+    } catch {
       setError("Erro ao fazer login. Tente novamente.");
     } finally {
       setIsLoading(false);

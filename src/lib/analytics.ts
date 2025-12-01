@@ -2,8 +2,8 @@
 
 declare global {
   interface Window {
-    gtag?: (...args: any[]) => void;
-    fbq?: (...args: any[]) => void;
+    gtag?: (...args: unknown[]) => void;
+    fbq?: (...args: unknown[]) => void;
   }
 }
 
@@ -41,7 +41,7 @@ export function trackConversion(value?: number, currency = "BRL") {
 /**
  * Tracka um evento no Meta Pixel
  */
-export function trackMetaEvent(eventName: string, params?: Record<string, any>) {
+export function trackMetaEvent(eventName: string, params?: Record<string, unknown>) {
   if (typeof window !== "undefined" && window.fbq) {
     window.fbq("track", eventName, params);
   }

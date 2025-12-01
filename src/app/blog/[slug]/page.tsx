@@ -64,7 +64,7 @@ export default async function BlogPostPage({ params }: Props) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://ldccapital.com.br";
   const articleSchema = getArticleSchema(
     post.title,
-    post.summary,
+    post.summary || post.title,
     post.cover,
     post.date,
     post.updatedAt || post.date

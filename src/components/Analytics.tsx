@@ -5,9 +5,9 @@ import Script from "next/script";
 
 declare global {
   interface Window {
-    gtag?: (...args: any[]) => void;
-    dataLayer?: any[];
-    fbq?: (...args: any[]) => void;
+    gtag?: (...args: unknown[]) => void;
+    dataLayer?: unknown[];
+    fbq?: (...args: unknown[]) => void;
   }
 }
 

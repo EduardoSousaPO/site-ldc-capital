@@ -162,7 +162,7 @@ Monitore os logs do console para erros ou problemas.
 
 ### **Atualizações:**
 Mantenha as dependências atualizadas, especialmente:
-- `next-auth` (segurança)
+- `@supabase/supabase-js` e `@supabase/ssr` (autenticação e segurança)
 - `prisma` (banco de dados)
 - `next` (framework)
 
