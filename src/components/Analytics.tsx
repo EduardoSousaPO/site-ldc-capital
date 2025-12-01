@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import Script from "next/script";
 
 declare global {
@@ -17,60 +16,7 @@ interface AnalyticsProps {
 }
 
 export default function Analytics({ gaId, metaPixelId }: AnalyticsProps) {
-  useEffect(() => {
-    // Listener para eventos de consentimento
-    const handleEnableAnalytics = () => {
-      if (gaId && window.gtag) {
-        window.gtag("consent", "update", {
-          analytics_storage: "granted",
-        });
-      }
-    };
-
-    const handleDisableAnalytics = () => {
-      if (gaId && window.gtag) {
-        window.gtag("consent", "update", {
-          analytics_storage: "denied",
-        });
-      }
-    };
-
-    const handleEnableMarketing = () => {
-      if (metaPixelId && window.fbq) {
-        window.fbq("consent", "grant");
-      }
-    };
-
-    const handleDisableMarketing = () => {
-      if (metaPixelId && window.fbq) {
-        window.fbq("consent", "revoke");
-      }
-    };
-
-    window.addEventListener("enable-analytics", handleEnableAnalytics);
-    window.addEventListener("disable-analytics", handleDisableAnalytics);
-    window.addEventListener("enable-marketing", handleEnableMarketing);
-    window.addEventListener("disable-marketing", handleDisableMarketing);
-
-    // Verifica consentimento salvo
-    const consent = localStorage.getItem("cookie-consent");
-    if (consent) {
-      const prefs = JSON.parse(consent);
-      if (prefs.analytics) {
-        handleEnableAnalytics();
-      }
-      if (prefs.marketing) {
-        handleEnableMarketing();
-      }
-    }
-
-    return () => {
-      window.removeEventListener("enable-analytics", handleEnableAnalytics);
-      window.removeEventListener("disable-analytics", handleDisableAnalytics);
-      window.removeEventListener("enable-marketing", handleEnableMarketing);
-      window.removeEventListener("disable-marketing", handleDisableMarketing);
-    };
-  }, [gaId, metaPixelId]);
+  // Analytics habilitado automaticamente sem banner de cookies
 
   return (
     <>
@@ -90,11 +36,10 @@ export default function Analytics({ gaId, metaPixelId }: AnalyticsProps) {
                 function gtag(){dataLayer.push(arguments);}
                 gtag('js', new Date());
                 
-                // Configuração inicial com consentimento negado por padrão
+                // Configuração com consentimento concedido
                 gtag('consent', 'default', {
-                  'analytics_storage': 'denied',
-                  'ad_storage': 'denied',
-                  'wait_for_update': 500
+                  'analytics_storage': 'granted',
+                  'ad_storage': 'granted'
                 });
                 
                 gtag('config', '${gaId}', {
@@ -124,7 +69,7 @@ export default function Analytics({ gaId, metaPixelId }: AnalyticsProps) {
               s.parentNode.insertBefore(t,s)}(window, document,'script',
               'https://connect.facebook.net/en_US/fbevents.js');
               fbq('init', '${metaPixelId}');
-              fbq('consent', 'revoke'); // Inicia com consentimento negado
+              fbq('consent', 'grant'); // Consentimento concedido
               fbq('track', 'PageView');
             `,
           }}
