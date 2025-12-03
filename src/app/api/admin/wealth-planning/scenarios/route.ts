@@ -58,6 +58,7 @@ export async function GET(request: Request) {
     }
 
     // Formatar resposta
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const formattedScenarios = scenarios?.map((s: any) => ({
       id: s.id,
       title: s.title,

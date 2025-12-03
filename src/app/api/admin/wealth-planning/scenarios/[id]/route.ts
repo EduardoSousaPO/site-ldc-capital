@@ -91,6 +91,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     }
 
     // Preparar dados de atualização
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {};
     if (body.title !== undefined) updateData.title = body.title.trim();
     if (body.status !== undefined) updateData.status = body.status;

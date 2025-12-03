@@ -99,6 +99,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     }
 
     // Atualizar cliente
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {};
     if (name !== undefined) updateData.name = name.trim();
     if (email !== undefined) updateData.email = email && email.trim() ? email.trim() : null;

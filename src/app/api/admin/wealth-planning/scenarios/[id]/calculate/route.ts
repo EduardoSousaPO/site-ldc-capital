@@ -41,14 +41,14 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     // Preparar dados do cenário
     const scenarioData: ScenarioData = {
-      personalData: scenario.personalData as any,
-      financialData: scenario.financialData as any,
-      portfolio: scenario.portfolio as any,
-      assets: scenario.assets as any,
-      projects: scenario.projects as any,
-      debts: scenario.debts as any,
-      otherRevenues: scenario.otherRevenues as any,
-      assumptions: scenario.assumptions as any,
+      personalData: scenario.personalData as ScenarioData['personalData'],
+      financialData: scenario.financialData as ScenarioData['financialData'],
+      portfolio: scenario.portfolio as ScenarioData['portfolio'],
+      assets: scenario.assets as ScenarioData['assets'],
+      projects: scenario.projects as ScenarioData['projects'],
+      debts: scenario.debts as ScenarioData['debts'],
+      otherRevenues: scenario.otherRevenues as ScenarioData['otherRevenues'],
+      assumptions: scenario.assumptions as ScenarioData['assumptions'],
     };
 
     // Executar cálculos

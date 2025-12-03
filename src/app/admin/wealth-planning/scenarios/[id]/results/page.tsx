@@ -22,7 +22,7 @@ export default function ScenarioResultsPage() {
   const router = useRouter();
   const { showToast } = useToast();
   const scenarioId = params.id as string;
-  const [scenario, setScenario] = useState<any>(null);
+  const [scenario, setScenario] = useState<{ id: string; title: string; calculatedResults?: CalculationResults | null } | null>(null);
   const [results, setResults] = useState<CalculationResults | null>(null);
   const [loading, setLoading] = useState(true);
   const [calculating, setCalculating] = useState(false);
@@ -139,7 +139,7 @@ export default function ScenarioResultsPage() {
           <Card>
             <CardContent className="py-12 text-center">
               <p className="text-gray-500 font-sans mb-4">
-                Os resultados ainda não foram calculados. Clique em "Calcular Resultados" para gerar as projeções.
+                Os resultados ainda não foram calculados. Clique em &quot;Calcular Resultados&quot; para gerar as projeções.
               </p>
             </CardContent>
           </Card>
@@ -168,7 +168,7 @@ export default function ScenarioResultsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ProjectionChart projections={results.yearlyProjections} />
+                  <ProjectionChartFixed projections={results.yearlyProjections} />
                 </CardContent>
               </Card>
             )}

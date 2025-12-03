@@ -13,7 +13,7 @@ export default function EditScenarioPage() {
   const params = useParams();
   const router = useRouter();
   const scenarioId = params.id as string;
-  const [scenario, setScenario] = useState<any>(null);
+  const [scenario, setScenario] = useState<{ id: string; title: string; clientId: string; personalData: unknown; financialData: unknown; portfolio: unknown; assets: unknown; projects: unknown; debts: unknown; otherRevenues: unknown; assumptions: unknown } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

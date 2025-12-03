@@ -43,7 +43,9 @@ async function generateReport(id: string) {
     );
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const html = generatePDFHTML(scenario as any);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cleanTitle = ((scenario as any).title || 'relatorio').replace(/[^a-zA-Z0-9]/g, '_');
   
   return new NextResponse(html, {
@@ -80,8 +82,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   }
 }
 
+interface YearlyProjection {
+  age: number;
+  currentScenario?: number;
+  maintenanceScenario?: number;
+  consumptionScenario?: number;
+}
+
 function generateProjectionChartSVG(
-  yearlyProjections: any[],
+  yearlyProjections: YearlyProjection[],
   retirementAge: number | undefined,
   width: number = 600,
   height: number = 300
@@ -99,7 +108,7 @@ function generateProjectionChartSVG(
   let minValue = Infinity;
   let maxValue = -Infinity;
 
-  yearlyProjections.forEach((proj: any) => {
+  yearlyProjections.forEach((proj: YearlyProjection) => {
     const age = proj.age || 0;
     minAge = Math.min(minAge, age);
     maxAge = Math.max(maxAge, age);
@@ -135,7 +144,7 @@ function generateProjectionChartSVG(
   const maintenancePoints: string[] = [];
   const consumptionPoints: string[] = [];
 
-  yearlyProjections.forEach((proj: any) => {
+  yearlyProjections.forEach((proj: YearlyProjection) => {
     const x = scaleX(proj.age);
     
     if (typeof proj.currentScenario === 'number' && proj.currentScenario >= 0) {
@@ -214,6 +223,7 @@ function generateProjectionChartSVG(
   `;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function generatePDFHTML(scenario: any): string {
   const client = scenario.Client;
   const personalData = scenario.personalData || {};

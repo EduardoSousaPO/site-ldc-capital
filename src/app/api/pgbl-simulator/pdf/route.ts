@@ -533,6 +533,7 @@ function generatePDFHTML(
   `;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function generateChartSVG(projecaoAnual: any[]): string {
   if (!projecaoAnual || projecaoAnual.length === 0) {
     return '<div style="text-align: center; padding: 20px; color: #577171;">Nenhum dado disponível</div>';
