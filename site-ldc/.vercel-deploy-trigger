@@ -1,0 +1,3 @@
+# Trigger file para forçar deploy na Vercel
+# Última atualização: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+
