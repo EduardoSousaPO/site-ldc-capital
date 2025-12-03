@@ -326,6 +326,17 @@ export interface Client {
 // 16. TIPOS PARA FORMULÁRIOS E VALIDAÇÃO
 // ============================================================================
 
+export interface ScenarioData {
+  personalData: PersonalData;
+  financialData: FinancialData;
+  portfolio: Portfolio;
+  assets: Assets;
+  projects: Projects;
+  debts: Debts;
+  otherRevenues: OtherRevenues;
+  assumptions: MacroeconomicAssumptions;
+}
+
 export interface ScenarioFormData extends ScenarioData {
   title: string; // Título do cenário
   clientId: string; // ID do cliente
