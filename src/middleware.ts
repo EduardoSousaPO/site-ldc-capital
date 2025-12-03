@@ -17,13 +17,22 @@ export async function middleware(request: NextRequest) {
     }
 
     try {
+      // Filtrar cookies do projeto correto
+      const projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL?.match(/https?:\/\/([^.]+)\.supabase\.co/)?.[1];
+      const cookiePrefix = projectRef ? `sb-${projectRef}-` : 'sb-';
+      
       const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
           cookies: {
             getAll() {
-              return request.cookies.getAll()
+              // Filtrar apenas cookies do projeto atual
+              const allCookies = request.cookies.getAll();
+              return allCookies.filter(cookie => 
+                cookie.name.startsWith(cookiePrefix) || 
+                !cookie.name.startsWith('sb-')
+              );
             },
             setAll(cookiesToSet) {
               cookiesToSet.forEach(({ name, value, options }) => {

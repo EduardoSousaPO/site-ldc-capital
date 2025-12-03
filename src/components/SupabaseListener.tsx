@@ -25,7 +25,7 @@ export default function SupabaseListener() {
         await fetch("/api/auth/callback", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials: "same-origin",
+          credentials: "include", // Garantir que cookies sejam enviados
           body: JSON.stringify(payload),
         });
 

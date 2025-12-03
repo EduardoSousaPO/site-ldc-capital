@@ -1,123 +1,78 @@
-import { createSupabaseServerClient } from "@/lib/supabase-server";
-import { createSupabaseAdminClient } from "@/lib/supabase";
-
-export interface AuthUser {
-  id: string;
-  email: string;
-  name?: string | null;
-  role: string;
-}
+import { cookies } from "next/headers";
+import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase";
+import type { User } from "./auth-supabase";
+import { createClient } from '@supabase/supabase-js';
 
 /**
- * Verifica autenticação de administradores usando apenas Supabase (Auth + PostgREST).
- * Remove a dependência direta do Prisma neste fluxo para evitar erros de conexão em produção.
+ * Verifica autenticacao e retorna o usuario atual (para uso em API routes)
+ * Retorna null se nao autenticado ou sem permissao de admin/editor
  */
-export async function checkAdminAuth(): Promise<AuthUser | null> {
+export async function checkAdminAuth(): Promise<User | null> {
   try {
-    console.log("🔐 Checking admin authentication...");
-    console.log("Environment check:", {
-      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-      hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      nodeEnv: process.env.NODE_ENV,
-    });
+    const cookieStore = await cookies();
+    
+    // Criar cliente Supabase SSR
+    const supabase = createSupabaseServerClient(cookieStore);
+    const admin = createSupabaseAdminClient();
 
-    const supabase = await createSupabaseServerClient();
+    // Tentar obter usuário
     const {
-      data: { user },
+      data: { user: authUser },
       error,
     } = await supabase.auth.getUser();
 
-    if (error || !user) {
-      console.log("ℹ️ No authenticated user found via Supabase server client");
+    if (error || !authUser) {
+      // Só logar erros em desenvolvimento
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Erro ao obter usuário:", error);
+      }
       return null;
     }
 
-    console.log("✅ User found in Supabase via server client:", {
-      id: user.id,
-      email: user.email,
-      metadata_role: user.user_metadata?.role,
-    });
+    // Role vem do metadata (Supabase) e sincronizamos com a tabela User
+    const metadataRole = (authUser.user_metadata?.role as string | undefined) || undefined;
+    const normalizedRole = metadataRole?.toUpperCase() as User["role"] | undefined;
 
-    const metadataRole = user.user_metadata?.role;
-
-    if (metadataRole === "ADMIN" || metadataRole === "EDITOR") {
-      return {
-        id: user.id,
-        email: user.email || "",
-        name: user.user_metadata?.name,
-        role: metadataRole,
-      };
-    }
-
-    return await resolveUserRoleFromDatabase(user.id, user.email || "");
-  } catch (error) {
-    console.error("❌ Error in checkAdminAuth:", error);
-    return null;
-  }
-}
-
-// Tipo para o retorno da consulta Supabase
-interface UserFromDB {
-  id: string;
-  email: string | null;
-  name: string | null;
-  role: string;
-}
-
-async function resolveUserRoleFromDatabase(
-  userId: string,
-  email: string
-): Promise<AuthUser | null> {
-  const supabaseAdmin = createSupabaseAdminClient();
-
-  const { data: userById, error: idError } = await supabaseAdmin
-    .from("User")
-    .select("id,email,name,role")
-    .eq("id", userId)
-    .maybeSingle() as { data: UserFromDB | null; error: Error | null };
-
-  if (!idError && userById) {
-    if (userById.role === "ADMIN" || userById.role === "EDITOR") {
-      return {
-        id: userById.id,
-        email: userById.email || "",
-        name: userById.name,
-        role: userById.role,
-      };
-    }
-
-    console.error("❌ Insufficient permissions via DB lookup:", userById.role);
-    return null;
-  }
-
-  if (idError) {
-    console.warn("⚠️ DB lookup by ID failed:", idError.message);
-  }
-
-  if (email) {
-    const { data: userByEmail, error: emailError } = await supabaseAdmin
+    const { data: dbUser, error: upsertError } = await admin
       .from("User")
-      .select("id,email,name,role")
-      .eq("email", email)
-      .maybeSingle() as { data: UserFromDB | null; error: Error | null };
+      .upsert(
+        {
+          id: authUser.id,
+          email: authUser.email || "",
+          name: authUser.user_metadata?.name || authUser.email || "Usuario",
+          role: normalizedRole || "USER",
+        },
+        { onConflict: "id" }
+      )
+      .select("id, email, name, role")
+      .single();
 
-    if (emailError) {
-      console.warn("⚠️ DB lookup by email failed:", emailError.message);
+    if (upsertError || !dbUser) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error("Erro ao sincronizar usuario no Supabase:", upsertError);
+      }
+      return null;
     }
 
-    if (
-      userByEmail &&
-      (userByEmail.role === "ADMIN" || userByEmail.role === "EDITOR")
-    ) {
-      return {
-        id: userByEmail.id,
-        email: userByEmail.email || "",
-        name: userByEmail.name,
-        role: userByEmail.role,
-      };
+    const resolvedRole = normalizedRole || (dbUser.role as User["role"]) || "USER";
+
+    const user: User = {
+      id: dbUser.id,
+      email: dbUser.email,
+      name: dbUser.name || undefined,
+      role: resolvedRole,
+    };
+
+    if (user.role !== "ADMIN" && user.role !== "EDITOR") {
+      return null;
     }
+
+    return user;
+  } catch (error) {
+    // Só logar erros em desenvolvimento
+    if (process.env.NODE_ENV === 'development') {
+      console.error("Error checking admin auth:", error);
+    }
+    return null;
   }
-
-  console.error("❌ No authorized user found via Supabase admin lookup");
-  return null;
 }

@@ -44,6 +44,7 @@ export default function Header() {
           ? "bg-white/95 backdrop-blur-md shadow-sm"
           : "bg-transparent"
       }`}
+      data-nextjs-scroll-focus-boundary="true"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16">
         <div className="flex items-center justify-between h-32 lg:h-40 xl:h-44 2xl:h-48">

@@ -13,7 +13,8 @@ import {
   Menu,
   X,
   User,
-  BookOpen
+  BookOpen,
+  TrendingUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut, getCurrentUser, User as AuthUser } from "@/lib/auth-supabase";
@@ -93,6 +94,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       href: "/admin/materials",
       icon: BookOpen,
       current: pathname.startsWith("/admin/materials")
+    },
+    {
+      name: "Wealth Planning",
+      href: "/admin/wealth-planning",
+      icon: TrendingUp,
+      current: pathname.startsWith("/admin/wealth-planning")
     },
     {
       name: "Configurações",

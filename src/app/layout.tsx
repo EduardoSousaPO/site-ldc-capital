@@ -5,6 +5,7 @@ import Analytics from "@/components/Analytics";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import JsonLd from "@/components/JsonLd";
 import { getOrganizationSchema, getLocalBusinessSchema } from "@/lib/schema";
+import { ToastProvider } from "@/components/ui/toast-system";
 
 // IvyMode - Fonte oficial para títulos (conforme Manual da Marca LDC Capital)
 const ivyMode = localFont({
@@ -136,15 +137,17 @@ export default function RootLayout({
   const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" data-scroll-behavior="smooth">
       <body
         className={`${publicSans.variable} ${ivyMode.variable} antialiased`}
       >
         {/* Schema.org Structured Data */}
         <JsonLd data={getOrganizationSchema()} />
         <JsonLd data={getLocalBusinessSchema()} />
-        {children}
-        <WhatsAppButton />
+        <ToastProvider>
+          {children}
+          <WhatsAppButton />
+        </ToastProvider>
         <Analytics gaId={gaId} metaPixelId={metaPixelId} />
       </body>
     </html>

@@ -1,11 +1,10 @@
 import { MetadataRoute } from "next";
-import { prisma } from "@/lib/prisma";
+import { createSupabaseAdminClient } from "@/lib/supabase";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://ldccapital.com.br";
   const baseUrl = siteUrl.replace(/\/$/, "");
 
-  // Páginas estáticas
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
@@ -70,53 +69,41 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   try {
-    // Posts do blog
-    const posts = await prisma.blogPost.findMany({
-      where: {
-        published: true,
-      },
-      select: {
-        slug: true,
-        updatedAt: true,
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
-    });
+    const supabase = createSupabaseAdminClient();
 
-    const blogPages: MetadataRoute.Sitemap = posts.map((post) => ({
-      url: `${baseUrl}/blog/${post.slug}`,
-      lastModified: post.updatedAt,
-      changeFrequency: "monthly" as const,
-      priority: 0.7,
-    }));
+    const { data: postsData } = await supabase
+      .from("BlogPost")
+      .select("slug, updatedAt, publishedAt, published")
+      .order("updatedAt", { ascending: false });
 
-    // Materiais
-    const materials = await prisma.material.findMany({
-      where: {
-        published: true,
-      },
-      select: {
-        slug: true,
-        updatedAt: true,
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
-    });
+    const blogPages: MetadataRoute.Sitemap =
+      (postsData || [])
+        .filter((post) => post && post.published)
+        .map((post) => ({
+          url: `${baseUrl}/blog/${post.slug}`,
+          lastModified: post.publishedAt ? new Date(post.publishedAt) : new Date(post.updatedAt || new Date()),
+          changeFrequency: "monthly" as const,
+          priority: 0.7,
+        }));
 
-    const materialPages: MetadataRoute.Sitemap = materials.map((material) => ({
-      url: `${baseUrl}/materiais/${material.slug}`,
-      lastModified: material.updatedAt,
-      changeFrequency: "monthly" as const,
-      priority: 0.6,
-    }));
+    const { data: materialsData } = await supabase
+      .from("Material")
+      .select("slug, updatedAt, publishedAt, published")
+      .order("updatedAt", { ascending: false });
+
+    const materialPages: MetadataRoute.Sitemap =
+      (materialsData || [])
+        .filter((material) => material && material.published)
+        .map((material) => ({
+          url: `${baseUrl}/materiais/${material.slug}`,
+          lastModified: material.publishedAt ? new Date(material.publishedAt) : new Date(material.updatedAt || new Date()),
+          changeFrequency: "monthly" as const,
+          priority: 0.6,
+        }));
 
     return [...staticPages, ...blogPages, ...materialPages];
   } catch (error) {
-    console.error("Erro ao gerar sitemap:", error);
-    // Retorna apenas páginas estáticas em caso de erro
+    console.error("Erro ao gerar sitemap via Supabase:", error);
     return staticPages;
   }
 }
-
