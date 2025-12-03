@@ -1,4 +1,4 @@
-import type { WealthPlanningScenario, CalculationResults } from "@/types/wealth-planning";
+import type { WealthPlanningScenario, CalculationResults, Dependent } from "@/types/wealth-planning";
 
 /**
  * Gera HTML do template de PDF diretamente (sem React Server Components)
@@ -175,7 +175,7 @@ export function generatePDFHTML(
           <tr>
             <th>Dependentes</th>
             <td>
-              ${scenario.personalData.dependents.map((dep: any) => 
+              ${scenario.personalData.dependents.map((dep: Dependent) => 
                 `${dep.name || "Sem nome"} (${dep.age || 0} anos)`
               ).join(", ")}
             </td>

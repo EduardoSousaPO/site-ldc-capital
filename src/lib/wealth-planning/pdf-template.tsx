@@ -37,6 +37,7 @@ export function PDFTemplate({ scenario, results }: PDFTemplateProps) {
 
   return (
     <html>
+      {/* eslint-disable-next-line @next/next/no-head-element */}
       <head>
         <meta charSet="UTF-8" />
         <title>Relatório - {scenario.title}</title>

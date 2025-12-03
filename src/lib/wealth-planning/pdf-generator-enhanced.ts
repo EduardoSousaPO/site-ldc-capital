@@ -22,15 +22,6 @@ export function generateEnhancedPDFHTML(
     return `${value.toFixed(2)}%`;
   };
 
-  const formatDate = (date: Date | string) => {
-    const d = typeof date === "string" ? new Date(date) : date;
-    return new Intl.DateTimeFormat("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    }).format(d);
-  };
-
   // Gerar gráfico SVG de projeção
   const generateProjectionChartSVG = () => {
     if (!results.notRetired?.yearlyProjections || results.notRetired.yearlyProjections.length === 0) {

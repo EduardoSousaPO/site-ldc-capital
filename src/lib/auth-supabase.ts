@@ -13,10 +13,6 @@ export async function signIn(email: string, password: string) {
   
   // Limpar cookies antigos de outros projetos antes de fazer login
   if (typeof window !== 'undefined') {
-    const supabaseUrl = window.location.origin.includes('localhost') 
-      ? 'http://localhost:3000' 
-      : window.location.origin;
-    
     // Extrair project ref da URL do Supabase (hardcoded para o projeto atual)
     const projectRef = 'xvbpqlojxwbvqizmixrr';
     const correctPrefix = `sb-${projectRef}-`;

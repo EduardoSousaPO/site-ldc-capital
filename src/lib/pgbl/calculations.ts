@@ -70,18 +70,6 @@ function getAliquotaRegressiva(anos: number): number {
 }
 
 /**
- * Calcula a alíquota de IR na tabela progressiva baseada no valor
- */
-function getAliquotaProgressiva(valor: number): number {
-  for (const faixa of TABELA_PROGRESSIVA) {
-    if (valor >= faixa.min && valor <= faixa.max) {
-      return faixa.aliquota;
-    }
-  }
-  return TABELA_PROGRESSIVA[TABELA_PROGRESSIVA.length - 1].aliquota;
-}
-
-/**
  * Calcula o IR devido na tabela progressiva
  */
 function calcularIRProgressivo(valor: number): number {
