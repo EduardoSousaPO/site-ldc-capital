@@ -69,7 +69,7 @@ export default function PGBLSimulatorPage() {
     }
   };
 
-  const updateInput = (field: keyof PGBLInputs, value: any) => {
+  const updateInput = (field: keyof PGBLInputs, value: number | string) => {
     setInputs((prev) => ({
       ...prev,
       [field]: value,

@@ -47,7 +47,7 @@ export default function EnhancedProjectionChart({
       if (projections.length > 0) {
         projections.forEach((proj) => {
           // Aceitar valores numéricos válidos (incluindo zero)
-          const isValidNumber = (val: any) => 
+          const isValidNumber = (val: unknown): val is number => 
             typeof val === 'number' && !isNaN(val) && isFinite(val);
           
           const currentVal = isValidNumber(proj.currentScenario) 
@@ -178,7 +178,7 @@ export default function EnhancedProjectionChart({
             width={80}
           />
           <Tooltip
-            formatter={(value: any) => {
+            formatter={(value: unknown) => {
               if (!value || isNaN(value)) return "N/A";
               return formatCurrency(value);
             }}

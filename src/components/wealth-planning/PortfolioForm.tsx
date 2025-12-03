@@ -39,6 +39,7 @@ export default function PortfolioForm({ data, onChange }: PortfolioFormProps) {
       assets: updated,
       total,
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assets.map((a) => a.value).join(",")]);
 
   const addAsset = () => {

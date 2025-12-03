@@ -49,6 +49,7 @@ export default function QuoteSection() {
             }`}
           >
             <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
                 src="/images/jonas-wurster-3LwMyv3FiUE-unsplash.jpg"
                 alt="Pessoas no Preikestolen - Pulpit Rock"

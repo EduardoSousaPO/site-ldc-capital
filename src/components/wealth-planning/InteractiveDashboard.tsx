@@ -10,7 +10,6 @@ import ProjectionChartFixed from "@/components/wealth-planning/ProjectionChartFi
 import FinancialThermometer from "@/components/wealth-planning/FinancialThermometer";
 import ScenariosTable from "@/components/wealth-planning/ScenariosTable";
 import ProtectionChart from "@/components/wealth-planning/ProtectionChart";
-import { CurrencyInput } from "@/components/wealth-planning/CurrencyInput";
 import { AnimatedNumber, formatters } from "@/components/wealth-planning/AnimatedNumber";
 import { SaveIndicator, useSaveIndicator } from "@/components/wealth-planning/SaveIndicator";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -18,13 +17,11 @@ import { useDebounce } from "@/hooks/useDebounce";
 interface InteractiveDashboardProps {
   scenario: WealthPlanningScenario;
   onUpdate: (updatedScenario: Partial<WealthPlanningScenario>) => Promise<void>;
-  onRecalculate: () => Promise<void>;
 }
 
 export default function InteractiveDashboard({
   scenario,
   onUpdate,
-  onRecalculate,
 }: InteractiveDashboardProps) {
   const [localScenario, setLocalScenario] = useState<WealthPlanningScenario>(scenario);
   const [localResults, setLocalResults] = useState<CalculationResults | null>(
@@ -79,10 +76,11 @@ export default function InteractiveDashboard({
   }, [localScenario]);
 
   const updateField = useCallback(
-    (path: string, value: any) => {
+    (path: string, value: unknown) => {
       setLocalScenario((prev) => {
         const updated = JSON.parse(JSON.stringify(prev)); // Deep clone
         const keys = path.split(".");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let current: any = updated;
 
         for (let i = 0; i < keys.length - 1; i++) {
@@ -112,6 +110,7 @@ export default function InteractiveDashboard({
           saveIndicator.markError("Erro ao salvar alterações");
         });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedScenario]);
 
   const formatCurrency = (value: number) => {

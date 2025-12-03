@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, createContext, useContext, ReactNode } from "react";
+import { useState, createContext, useContext, ReactNode } from "react";
 import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from "lucide-react";
 import { Button } from "./button";
 

@@ -52,7 +52,7 @@ export function generateEnhancedPDFHTML(
     // Gerar pontos para cada linha
     const generatePath = (dataKey: 'currentScenario' | 'maintenanceScenario' | 'consumptionScenario', color: string) => {
       const points = projections
-        .map((proj, idx) => {
+        .map((proj) => {
           const x = margin.left + (proj.age - personalData.age) / ageRange * chartWidth;
           const y = margin.top + chartHeight - ((proj[dataKey] || 0) - minValue) / valueRange * chartHeight;
           return `${x},${y}`;
@@ -79,7 +79,6 @@ export function generateEnhancedPDFHTML(
 
     // Labels do eixo X
     const xLabels = [];
-    const ageStep = Math.ceil(ageRange / 10);
     for (let i = 0; i <= 10; i++) {
       const age = personalData.age + (ageRange / 10) * i;
       const x = margin.left + (chartWidth / 10) * i;

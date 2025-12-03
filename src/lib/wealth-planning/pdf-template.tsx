@@ -2,9 +2,6 @@ import React from "react";
 import type {
   WealthPlanningScenario,
   CalculationResults,
-  NotRetiredResults,
-  RetiredResults,
-  FamilyProtection,
 } from "@/types/wealth-planning";
 
 interface PDFTemplateProps {

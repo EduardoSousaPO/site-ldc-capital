@@ -42,7 +42,7 @@ export default function TrabalheConosco() {
         experiencia: "",
         mensagem: ""
       });
-    } catch (error) {
+    } catch {
       toast.error("Erro ao enviar candidatura. Tente novamente.");
     } finally {
       setLoading(false);

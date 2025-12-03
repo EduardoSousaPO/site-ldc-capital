@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Target, TrendingUp, Shield, Globe, Calendar, Users, ArrowRight, CheckCircle } from "lucide-react";
+import { Target, TrendingUp, Shield, Globe, Calendar, Users, CheckCircle } from "lucide-react";
 import { services } from "@/app/lib/services";
 import { useEffect, useState } from "react";
 
@@ -17,7 +17,6 @@ const iconMap = {
 
 export default function ServicesGrid() {
   const [isVisible, setIsVisible] = useState(false);
-  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver(

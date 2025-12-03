@@ -8,10 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-  Plus,
   Search,
   UserPlus,
-  TrendingUp,
   Edit,
   Trash2,
   Eye,
@@ -19,7 +17,7 @@ import {
 } from "lucide-react";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
-import { getCurrentUser } from "@/lib/auth-supabase";
+import { getCurrentUser, type User } from "@/lib/auth-supabase";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 import { useToast } from "@/components/ui/toast-system";
 import { EmptyState } from "@/components/wealth-planning/EmptyState";
@@ -49,7 +47,7 @@ export default function WealthPlanningDashboard() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [mounted, setMounted] = useState(false);
 
   // Estados para diálogo de exclusão

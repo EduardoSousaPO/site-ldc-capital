@@ -73,6 +73,7 @@ export default function ConsultoriaPage() {
                 <div className="relative">
                   <div className="bg-white/10 backdrop-blur-md rounded-3xl p-2 border border-white/20">
                     <div className="aspect-[4/3] rounded-2xl overflow-hidden">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img 
                         src="/images/vitaly-gariev-RbYg6fKSfcY-unsplash.jpg"
                         alt="Consultor Profissional LDC Capital"

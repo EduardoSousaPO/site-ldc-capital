@@ -23,6 +23,7 @@ export default function AssetsForm({ data, onChange }: AssetsFormProps) {
   useEffect(() => {
     const total = items.reduce((sum, item) => sum + item.value, 0);
     onChange({ items, total });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items]);
 
   const addAsset = () => {

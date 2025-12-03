@@ -85,7 +85,8 @@ export default function ClientDetailPage() {
     if (clientId) {
       fetchClient();
     }
-  }, [clientId, router, showToast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientId]);
 
   const handleDeleteClick = (scenarioId: string, e: React.MouseEvent) => {
     e.preventDefault();

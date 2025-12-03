@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, FileText, Download, ExternalLink } from "lucide-react";
+import { ArrowLeft, FileText, ExternalLink } from "lucide-react";
 
 const documentos = [
   {
@@ -49,7 +49,7 @@ const documentos = [
 ];
 
 export default function InformacoesRegulatorias() {
-  const handleDownload = (arquivo: string, titulo: string) => {
+  const handleDownload = (arquivo: string) => {
     // Abrir em nova aba
     window.open(arquivo, '_blank');
   };

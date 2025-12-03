@@ -12,9 +12,7 @@ interface PDFGeneratorProps {
 }
 
 export default function PDFGenerator({ 
-  scenarioId, 
-  clientName, 
-  scenarioTitle 
+  scenarioId
 }: PDFGeneratorProps) {
   const [generating, setGenerating] = useState(false);
   const { showToast } = useToast();

@@ -10,7 +10,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import type { YearlyProjection, NotRetiredResults, RetiredResults } from "@/types/wealth-planning";
+import type { NotRetiredResults, RetiredResults } from "@/types/wealth-planning";
 
 interface ProjectionChartProps {
   notRetiredResults?: NotRetiredResults;

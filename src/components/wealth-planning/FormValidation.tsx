@@ -34,9 +34,9 @@ export function ValidationMessage({ type, message, show = true }: ValidationMess
 }
 
 interface FieldValidationProps {
-  value: any;
+  value: unknown;
   rules: Array<{
-    validate: (value: any) => boolean;
+    validate: (value: unknown) => boolean;
     message: string;
   }>;
   show?: boolean;
@@ -57,7 +57,7 @@ export function FieldValidation({ value, rules, show = true }: FieldValidationPr
 // Validações comuns
 export const validators = {
   required: (message = "Este campo é obrigatório") => ({
-    validate: (value: any) => {
+    validate: (value: unknown) => {
       if (typeof value === "string") return value.trim().length > 0;
       if (typeof value === "number") return !isNaN(value) && value > 0;
       return value !== null && value !== undefined;

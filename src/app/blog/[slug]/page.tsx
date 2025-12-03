@@ -61,7 +61,6 @@ export default async function BlogPostPage({ params }: Props) {
     .filter(p => p.slug !== post.slug && p.category === post.category)
     .slice(0, 3);
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://ldccapital.com.br";
   const articleSchema = getArticleSchema(
     post.title,
     post.summary || post.title,

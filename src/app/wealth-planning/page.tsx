@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,6 +21,7 @@ export default function WealthPlanningLoginPage() {
 
   useEffect(() => {
     checkAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkAuth = async () => {
@@ -69,7 +69,7 @@ export default function WealthPlanningLoginPage() {
       } else {
         setError("Erro ao fazer login. Tente novamente.");
       }
-    } catch (error) {
+    } catch {
       setError("Erro ao fazer login. Tente novamente.");
     } finally {
       setLoading(false);

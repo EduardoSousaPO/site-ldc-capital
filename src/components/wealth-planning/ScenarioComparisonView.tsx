@@ -16,6 +16,7 @@ export default function ScenarioComparisonView({
 
   useEffect(() => {
     fetchScenarios();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scenarioIds]);
 
   const fetchScenarios = async () => {

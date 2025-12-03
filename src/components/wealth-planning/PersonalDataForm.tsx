@@ -355,7 +355,7 @@ export default function PersonalDataForm({ data, onChange }: PersonalDataFormPro
                 Nenhum dependente adicionado
               </p>
               <p className="text-xs text-[#577171]/70 font-sans mt-1">
-                Clique em "Adicionar Dependente" para incluir familiares dependentes
+                Clique em &quot;Adicionar Dependente&quot; para incluir familiares dependentes
               </p>
             </div>
           ) : (

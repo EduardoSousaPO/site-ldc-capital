@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Calculator, FileText } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { ArrowLeft, Calculator } from "lucide-react";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
 import { useToast } from "@/components/ui/toast";
@@ -75,7 +75,7 @@ export default function ScenarioResultsPage() {
       );
 
       if (response.ok) {
-        const results: CalculationResults = await response.json();
+        await response.json();
         showToast("Cálculos executados com sucesso", "success");
         // Recarregar cenário para ver os resultados
         const scenarioResponse = await fetch(

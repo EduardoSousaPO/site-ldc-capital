@@ -11,9 +11,10 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
+import type { WealthPlanningScenario } from "@/types/wealth-planning";
 
 interface ProjectionChartFixedProps {
-  data: any;
+  data: WealthPlanningScenario;
 }
 
 export default function ProjectionChartFixed({ data }: ProjectionChartFixedProps) {
@@ -30,7 +31,7 @@ export default function ProjectionChartFixed({ data }: ProjectionChartFixedProps
             Gráfico de Projeção
           </h3>
           <p className="font-sans text-sm text-[#577171] mb-4">
-            Preencha os dados do cenário e clique em "Recalcular" para gerar as projeções
+            Preencha os dados do cenário e clique em &quot;Recalcular&quot; para gerar as projeções
           </p>
         </div>
       </div>
@@ -38,7 +39,7 @@ export default function ProjectionChartFixed({ data }: ProjectionChartFixedProps
   }
 
   // Transformar dados para o formato do gráfico
-  const chartData = results.yearlyProjections.map((proj: any) => ({
+  const chartData = results.yearlyProjections.map((proj) => ({
     idade: proj.age,
     "Projeção Atual": proj.currentScenario >= 0 ? proj.currentScenario : null,
     "Manutenção Patrimônio": proj.maintenanceScenario > 0 ? proj.maintenanceScenario : null,
@@ -112,7 +113,7 @@ export default function ProjectionChartFixed({ data }: ProjectionChartFixedProps
           />
           
           <Tooltip
-            formatter={(value: any) => formatTooltipCurrency(value)}
+            formatter={(value: unknown) => formatTooltipCurrency(typeof value === 'number' ? value : 0)}
             labelFormatter={(label) => `Idade: ${label} anos`}
             contentStyle={{
               backgroundColor: "#fff",

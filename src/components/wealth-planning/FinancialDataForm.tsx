@@ -62,16 +62,16 @@ export default function FinancialDataForm({
                 type="number"
                 min="0"
                 step="0.01"
-                value={(data as any).currentAnnualIncome || ""}
+                value={(data as Partial<FinancialData>).currentAnnualIncome || ""}
                 onChange={(e) =>
-                  updateData({ currentAnnualIncome: parseFloat(e.target.value) || 0 } as any)
+                  updateData({ currentAnnualIncome: parseFloat(e.target.value) || 0 } as Partial<FinancialData>)
                 }
                 className="font-sans"
                 placeholder="0.00"
               />
               <p className="text-xs text-gray-600 font-sans font-medium">
                 Mensal: R${" "}
-                {(((data as any).currentAnnualIncome || 0) / 12).toLocaleString("pt-BR", {
+                {(((data as Partial<FinancialData>).currentAnnualIncome || 0) / 12).toLocaleString("pt-BR", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
                 })}
@@ -115,14 +115,14 @@ export default function FinancialDataForm({
                     maximumFractionDigits: 2,
                   })}
                 </p>
-                {(data as any).currentAnnualIncome && (
+                {(data as Partial<FinancialData>).currentAnnualIncome && (
                   <p className={`font-sans font-medium ${
-                    ((data as any).currentAnnualIncome - (data.monthlyFamilyExpense || 0) * 12) >= 0
+                    ((data as Partial<FinancialData>).currentAnnualIncome - (data.monthlyFamilyExpense || 0) * 12) >= 0
                       ? "text-green-600"
                       : "text-red-600"
                   }`}>
                     Saldo: R${" "}
-                    {((data as any).currentAnnualIncome - (data.monthlyFamilyExpense || 0) * 12).toLocaleString("pt-BR", {
+                    {((data as Partial<FinancialData>).currentAnnualIncome - (data.monthlyFamilyExpense || 0) * 12).toLocaleString("pt-BR", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
@@ -244,9 +244,9 @@ export default function FinancialDataForm({
                 type="number"
                 min="0"
                 step="0.01"
-                value={(data as any).emergencyReserve || ""}
+                value={(data as Partial<FinancialData>).emergencyReserve || ""}
                 onChange={(e) =>
-                  updateData({ emergencyReserve: parseFloat(e.target.value) || 0 } as any)
+                  updateData({ emergencyReserve: parseFloat(e.target.value) || 0 } as Partial<FinancialData>)
                 }
                 className="font-sans"
                 placeholder="0.00"
@@ -369,9 +369,9 @@ export default function FinancialDataForm({
                 </Tooltip>
               </div>
               <Select
-                value={(data as any).taxBracket || ""}
+                value={(data as Partial<FinancialData>).taxBracket || ""}
                 onValueChange={(value) =>
-                  updateData({ taxBracket: value } as any)
+                  updateData({ taxBracket: value } as Partial<FinancialData>)
                 }
               >
                 <SelectTrigger className="font-sans w-full">

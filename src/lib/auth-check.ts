@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { createSupabaseAdminClient, createSupabaseServerClient } from "@/lib/supabase";
 import type { User } from "./auth-supabase";
-import { createClient } from '@supabase/supabase-js';
 
 /**
  * Verifica autenticacao e retorna o usuario atual (para uso em API routes)

@@ -5,18 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ArrowLeft, ArrowRight, Save, Info } from "lucide-react";
+import { ArrowLeft, ArrowRight, Save } from "lucide-react";
 import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
 import { useToast } from "@/components/ui/toast";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import PersonalDataForm from "@/components/wealth-planning/PersonalDataForm";
 import FinancialDataForm from "@/components/wealth-planning/FinancialDataForm";
 import PortfolioForm from "@/components/wealth-planning/PortfolioForm";

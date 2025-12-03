@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Compass, Mountain, Target, Eye } from "lucide-react";
+import { ArrowRight, Compass, Target, Eye } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function Hero() {

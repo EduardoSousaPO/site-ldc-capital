@@ -19,6 +19,7 @@ export default function DebtsForm({ data, onChange }: DebtsFormProps) {
   useEffect(() => {
     const total = items.reduce((sum, item) => sum + item.balance, 0);
     onChange({ items, total });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items]);
 
   const addDebt = () => {
