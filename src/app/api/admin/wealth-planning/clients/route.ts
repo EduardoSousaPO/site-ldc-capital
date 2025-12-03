@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { checkAdminAuth } from "@/lib/auth-check";
 import { createSupabaseAdminClient } from "@/lib/supabase";
-import type { Client } from "@/types/wealth-planning";
 
 // GET - Listar todos os clientes
 export async function GET() {

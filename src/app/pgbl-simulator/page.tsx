@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingUp, Calculator, BarChart3, Table2, Download, Info } from "lucide-react";
-import { calcularPGBL, formatCurrency, formatPercentage, type PGBLInputs, type PGBLResult } from "@/lib/pgbl/calculations";
+import { calcularPGBL, formatCurrency, type PGBLInputs, type PGBLResult } from "@/lib/pgbl/calculations";
 import PGBLChart from "@/components/pgbl/PGBLChart";
 import PGBLTable from "@/components/pgbl/PGBLTable";
 import { getCurrentUser } from "@/lib/auth-supabase";
@@ -35,12 +35,14 @@ export default function PGBLSimulatorPage() {
 
   useEffect(() => {
     checkAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (!checkingAuth) {
       calcular();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputs, checkingAuth]);
 
   const checkAuth = async () => {

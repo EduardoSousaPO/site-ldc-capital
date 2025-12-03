@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { checkAdminAuth } from "@/lib/auth-check";
 import { createSupabaseAdminClient } from "@/lib/supabase";
-import type { ScenarioData, ScenarioFormData } from "@/types/wealth-planning";
+import type { ScenarioFormData } from "@/types/wealth-planning";
 
 // GET - Listar cenários
 export async function GET(request: Request) {

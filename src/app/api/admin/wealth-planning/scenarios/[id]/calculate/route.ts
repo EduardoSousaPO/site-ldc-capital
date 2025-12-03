@@ -55,12 +55,10 @@ export async function POST(request: Request, { params }: RouteParams) {
     const calculatedResults = calculateScenario(scenarioData);
 
     // Salvar resultados no banco
-    const { data: updatedScenario, error: updateError } = await supabase
+    const { error: updateError } = await supabase
       .from("WealthPlanningScenario")
       .update({ calculatedResults })
-      .eq("id", id)
-      .select()
-      .single();
+      .eq("id", id);
 
     if (updateError) {
       console.error("Erro ao salvar resultados:", updateError);

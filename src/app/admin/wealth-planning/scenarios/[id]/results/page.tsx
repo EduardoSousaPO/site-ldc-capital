@@ -14,12 +14,10 @@ import ProjectionChartFixed from "@/components/wealth-planning/ProjectionChartFi
 import FinancialThermometer from "@/components/wealth-planning/FinancialThermometer";
 import PDFGenerator from "@/components/wealth-planning/PDFGenerator";
 import { ScenarioSkeleton } from "@/components/wealth-planning/ScenarioSkeleton";
-import { AnimatedNumber, formatters } from "@/components/wealth-planning/AnimatedNumber";
 import { useToast } from "@/components/ui/toast-system";
 
 export default function ScenarioResultsPage() {
   const params = useParams();
-  const router = useRouter();
   const { showToast } = useToast();
   const scenarioId = params.id as string;
   const [scenario, setScenario] = useState<{ id: string; title: string; calculatedResults?: CalculationResults | null } | null>(null);
@@ -29,6 +27,7 @@ export default function ScenarioResultsPage() {
 
   useEffect(() => {
     fetchScenario();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scenarioId]);
 
   const fetchScenario = async () => {

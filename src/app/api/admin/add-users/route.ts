@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase";
 
 // Cria usuários administrativos adicionais no Supabase Auth
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function POST(_request: NextRequest) {
   try {
     const supabase = createSupabaseAdminClient();

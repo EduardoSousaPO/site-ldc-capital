@@ -18,6 +18,7 @@ export default function EditScenarioPage() {
 
   useEffect(() => {
     fetchScenario();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scenarioId]);
 
   const fetchScenario = async () => {
