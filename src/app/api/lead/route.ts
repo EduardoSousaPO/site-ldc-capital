@@ -38,8 +38,9 @@ export async function POST(request: NextRequest) {
     const supabase = createSupabaseAdminClient();
     
     try {
-      const { data: lead, error: supabaseError } = await supabase
-        .from("Lead")
+      // Type casting necessário porque a tabela Lead ainda não está nos tipos gerados do Supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: lead, error: supabaseError } = await (supabase.from("Lead") as any)
         .insert({
           nome: leadData.nome,
           email: leadData.email,
