@@ -8,6 +8,12 @@ interface ScenariosTableProps {
 
 export default function ScenariosTable({ results }: ScenariosTableProps) {
   const formatCurrency = (value: number) => {
+    // Validar e limitar valores absurdos antes de formatar
+    if (!isFinite(value) || value < 0 || value > 1e15) {
+      console.warn('ScenariosTable: Valor monetário inválido ou muito alto', { value });
+      return 'Valor inválido';
+    }
+    
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",

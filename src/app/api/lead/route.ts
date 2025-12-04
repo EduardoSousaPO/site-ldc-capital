@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { leadFormSchema } from "@/app/lib/schema";
 import { z } from "zod";
-import fs from "fs/promises";
-import path from "path";
+import { createSupabaseAdminClient } from "@/lib/supabase";
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,40 +21,52 @@ export async function POST(request: NextRequest) {
     // Validate the data
     const validatedData = leadFormSchema.parse(body);
     
-    // Add timestamp and ID
-    const lead = {
-      id: Date.now().toString(),
-      ...validatedData,
-      createdAt: new Date().toISOString(),
+    // Preparar dados do lead
+    const leadData = {
+      nome: validatedData.nome,
+      email: validatedData.email,
+      telefone: validatedData.telefone,
+      patrimonio: validatedData.patrimonio,
+      origem: validatedData.origem,
+      origemFormulario: 'Home' as const,
       ip: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown",
       userAgent: request.headers.get("user-agent") || "unknown",
     };
     
-    // Ensure .data directory exists
-    const dataDir = path.join(process.cwd(), ".data");
-    try {
-      await fs.access(dataDir);
-    } catch {
-      await fs.mkdir(dataDir, { recursive: true });
-    }
-    
-    // Read existing leads
-    const leadsFile = path.join(dataDir, "leads.json");
-    let leads = [];
+    // Salvar no Supabase (sempre tenta, é o método principal)
+    let supabaseResult: { success: boolean; error?: string; leadId?: string } = { success: false };
+    const supabase = createSupabaseAdminClient();
     
     try {
-      const existingData = await fs.readFile(leadsFile, "utf-8");
-      leads = JSON.parse(existingData);
-    } catch {
-      // File doesn't exist or is invalid, start with empty array
-      leads = [];
+      const { data: lead, error: supabaseError } = await supabase
+        .from("Lead")
+        .insert({
+          nome: leadData.nome,
+          email: leadData.email,
+          telefone: leadData.telefone || null,
+          patrimonio: leadData.patrimonio || null,
+          origem: leadData.origem || null,
+          origemFormulario: leadData.origemFormulario,
+          ip: leadData.ip,
+          userAgent: leadData.userAgent,
+        })
+        .select("id")
+        .single();
+      
+      if (supabaseError) {
+        console.error('Erro ao salvar no Supabase:', supabaseError);
+        supabaseResult = { success: false, error: supabaseError.message };
+      } else {
+        supabaseResult = { success: true, leadId: lead?.id };
+        console.log('✅ Lead salvo no Supabase:', lead?.id);
+      }
+    } catch (error) {
+      console.error('Erro ao salvar no Supabase:', error);
+      supabaseResult = { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Erro desconhecido' 
+      };
     }
-    
-    // Add new lead
-    leads.push(lead);
-    
-    // Save back to file
-    await fs.writeFile(leadsFile, JSON.stringify(leads, null, 2));
     
     // Integração com Google Sheets (opcional - só executa se configurado)
     let sheetsResult: { success: boolean; error?: string } = { success: false };
@@ -66,16 +77,7 @@ export async function POST(request: NextRequest) {
       try {
         const { addToGoogleSheets } = await import("@/lib/google-sheets");
         
-        const sheetsData = {
-          nome: validatedData.nome,
-          email: validatedData.email,
-          telefone: validatedData.telefone,
-          patrimonio: validatedData.patrimonio,
-          origem: validatedData.origem,
-          origemFormulario: 'Home' as const,
-        };
-        
-        sheetsResult = await addToGoogleSheets(sheetsData);
+        sheetsResult = await addToGoogleSheets(leadData);
         if (!sheetsResult.success && sheetsResult.error) {
           console.error('Erro ao salvar no Google Sheets:', sheetsResult.error);
         }
@@ -84,7 +86,7 @@ export async function POST(request: NextRequest) {
         if (process.env.SMTP_USER && process.env.SMTP_PASS) {
           const { sendNewLeadEmail, sendConfirmationEmail } = await import("@/lib/email");
           
-          emailResult = await sendNewLeadEmail(sheetsData);
+          emailResult = await sendNewLeadEmail(leadData);
           if (!emailResult.success && emailResult.error) {
             console.error('Erro ao enviar email:', emailResult.error);
           }
@@ -106,21 +108,34 @@ export async function POST(request: NextRequest) {
     }
     
     console.log("New lead received:", {
-      id: lead.id,
-      nome: lead.nome,
-      email: lead.email,
-      patrimonio: lead.patrimonio,
-      origem: lead.origem,
+      nome: leadData.nome,
+      email: leadData.email,
+      patrimonio: leadData.patrimonio,
+      origem: leadData.origem,
+      supabaseSaved: supabaseResult.success,
       sheetsIntegration: sheetsResult.success,
       emailSent: emailResult.success,
       confirmationSent: confirmationResult.success,
     });
     
+    // Verificar se pelo menos o Supabase funcionou (método principal)
+    if (!supabaseResult.success) {
+      console.error("❌ Erro ao salvar lead no Supabase. Lead não foi salvo.");
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: "Erro ao processar seu cadastro. Por favor, tente novamente mais tarde ou entre em contato diretamente." 
+        },
+        { status: 500 }
+      );
+    }
+    
+    // Se Supabase funcionou, retornamos sucesso mesmo se Google Sheets falhar
     return NextResponse.json(
       { 
         success: true, 
         message: "Lead cadastrado com sucesso",
-        leadId: lead.id 
+        leadId: supabaseResult.leadId 
       },
       { status: 200 }
     );
@@ -156,38 +171,12 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
-  try {
-    // Simple endpoint to check leads (for development only)
-    const leadsFile = path.join(process.cwd(), ".data", "leads.json");
-    
-    try {
-      const data = await fs.readFile(leadsFile, "utf-8");
-      const leads = JSON.parse(data);
-      
-      return NextResponse.json({
-        success: true,
-        count: leads.length,
-        leads: leads.map((lead: { id: string; nome: string; email: string; patrimonio: string; origem: string; createdAt: string }) => ({
-          id: lead.id,
-          nome: lead.nome,
-          email: lead.email,
-          patrimonio: lead.patrimonio,
-          origem: lead.origem,
-          createdAt: lead.createdAt,
-        })),
-      });
-    } catch {
-      return NextResponse.json({
-        success: true,
-        count: 0,
-        leads: [],
-      });
-    }
-  } catch (error) {
-    console.error("Error fetching leads:", error);
-    return NextResponse.json(
-      { success: false, message: "Erro ao buscar leads" },
-      { status: 500 }
-    );
-  }
+  // Endpoint desabilitado - leads são gerenciados via Google Sheets ou Supabase
+  return NextResponse.json(
+    { 
+      success: false, 
+      message: "Este endpoint não está mais disponível. Leads são gerenciados via Google Sheets." 
+    },
+    { status: 410 }
+  );
 }

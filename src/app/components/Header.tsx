@@ -7,12 +7,19 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 
-const navigation = [
+type NavigationItem = {
+  name: string;
+  href: string;
+  external?: boolean;
+};
+
+const navigation: NavigationItem[] = [
   { name: "Home", href: "/" },
   { name: "Consultoria", href: "/consultoria" },
   { name: "Blog", href: "/blog" },
   { name: "Materiais", href: "/materiais" },
   { name: "Contato", href: "/contato" },
+  { name: "Youtube", href: "https://www.youtube.com/@luciano.herzog", external: true },
 ];
 
 export default function Header() {
@@ -68,19 +75,36 @@ export default function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-8">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`text-sm font-medium transition-colors hover:text-[#98ab44] ${
-                  pathname === item.href
-                    ? "text-[#98ab44]"
-                    : isScrolled ? "text-[#262d3d]" : "text-white"
-                }`}
-              >
-                {item.name}
-              </Link>
-            ))}
+            {navigation.map((item) => {
+              if (item.external) {
+                return (
+                  <a
+                    key={item.name}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`text-sm font-medium transition-colors hover:text-[#98ab44] ${
+                      isScrolled ? "text-[#262d3d]" : "text-white"
+                    }`}
+                  >
+                    {item.name}
+                  </a>
+                );
+              }
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`text-sm font-medium transition-colors hover:text-[#98ab44] ${
+                    pathname === item.href
+                      ? "text-[#98ab44]"
+                      : isScrolled ? "text-[#262d3d]" : "text-white"
+                  }`}
+                >
+                  {item.name}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* CTA Button */}
@@ -114,20 +138,36 @@ export default function Header() {
         {isMobileMenuOpen && (
           <div className="lg:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 bg-white/95 backdrop-blur-md rounded-lg mt-2 shadow-lg">
-              {navigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`block px-3 py-2 text-base font-medium transition-colors hover:text-[#98ab44] ${
-                    pathname === item.href
-                      ? "text-[#98ab44]"
-                      : "text-[#262d3d]"
-                  }`}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {item.name}
-                </Link>
-              ))}
+              {navigation.map((item) => {
+                if (item.external) {
+                  return (
+                    <a
+                      key={item.name}
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block px-3 py-2 text-base font-medium transition-colors hover:text-[#98ab44] text-[#262d3d]"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      {item.name}
+                    </a>
+                  );
+                }
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`block px-3 py-2 text-base font-medium transition-colors hover:text-[#98ab44] ${
+                      pathname === item.href
+                        ? "text-[#98ab44]"
+                        : "text-[#262d3d]"
+                    }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {item.name}
+                  </Link>
+                );
+              })}
               <div className="px-3 py-2">
                 <Button
                   onClick={scrollToContact}

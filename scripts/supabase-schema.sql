@@ -209,6 +209,48 @@ create policy "client_admin_editor_all"
   with check (is_admin_or_editor());
 
 -- ---------------------------------------------------------------------------
+-- Leads (Form submissions)
+-- ---------------------------------------------------------------------------
+create table if not exists public."Lead" (
+  id uuid primary key default gen_random_uuid(),
+  nome text not null,
+  email text not null,
+  telefone text,
+  patrimonio text,
+  origem text,
+  origemFormulario text not null default 'Home',
+  ip text,
+  userAgent text,
+  status text not null default 'Novo',
+  observacoes text,
+  createdAt timestamptz not null default now(),
+  updatedAt timestamptz not null default now()
+);
+
+create trigger handle_lead_updated_at
+  before update on public."Lead"
+  for each row execute procedure moddatetime(updatedAt);
+
+create index if not exists lead_email_idx on public."Lead"(email);
+create index if not exists lead_status_idx on public."Lead"(status);
+create index if not exists lead_created_at_idx on public."Lead"(createdAt);
+
+alter table public."Lead" enable row level security;
+
+-- Permite inserção pública (para formulários)
+create policy "lead_public_insert"
+  on public."Lead"
+  for insert
+  with check (true);
+
+-- Apenas admins/editores podem ler e atualizar
+create policy "lead_admin_editor_all"
+  on public."Lead"
+  for all
+  using (is_admin_or_editor())
+  with check (is_admin_or_editor());
+
+-- ---------------------------------------------------------------------------
 -- Wealth planning scenarios
 -- ---------------------------------------------------------------------------
 create table if not exists public."WealthPlanningScenario" (

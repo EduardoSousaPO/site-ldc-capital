@@ -114,6 +114,12 @@ export default function InteractiveDashboard({
   }, [debouncedScenario]);
 
   const formatCurrency = (value: number) => {
+    // Validar e limitar valores absurdos antes de formatar
+    if (!isFinite(value) || value < 0 || value > 1e15) {
+      console.warn('InteractiveDashboard: Valor monetário inválido ou muito alto', { value });
+      return 'Valor inválido';
+    }
+    
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",

@@ -51,18 +51,66 @@ export function calculateFutureValue(
   pmt: number,
   pv: number
 ): number {
-  if (nper <= 0) return Math.abs(pv);
-  
-  if (rate === 0 || Math.abs(rate) < 1e-10) {
-    // Sem juros: FV = PV + PMT × n
-    return Math.abs(-pv - pmt * nper);
+  // Validações de entrada
+  if (!isFinite(rate) || !isFinite(nper) || !isFinite(pmt) || !isFinite(pv)) {
+    console.warn('calculateFutureValue: Valores não finitos detectados', { rate, nper, pmt, pv });
+    return 0;
   }
   
-  const factor = Math.pow(1 + rate, nper);
+  if (nper <= 0) return Math.max(0, Math.abs(pv));
+  
+  // Limitar taxa a valores razoáveis (evitar overflow)
+  const maxRate = 1.0; // 100% ao ano é o máximo razoável
+  const limitedRate = Math.max(-0.99, Math.min(maxRate, rate));
+  
+  // Limitar número de períodos (evitar overflow)
+  const maxPeriods = 100; // Máximo 100 anos
+  const limitedNper = Math.max(0, Math.min(maxPeriods, nper));
+  
+  if (limitedRate === 0 || Math.abs(limitedRate) < 1e-10) {
+    // Sem juros: FV = PV + PMT × n
+    const fv = Math.abs(-pv - pmt * limitedNper);
+    return Math.min(fv, 1e15); // Limitar a 1 quatrilhão (valor máximo razoável)
+  }
+  
+  // Verificar se o fator exponencial vai causar overflow
+  const maxFactor = 1e10; // Limite para evitar overflow
+  const logFactor = limitedNper * Math.log(1 + limitedRate);
+  
+  if (logFactor > Math.log(maxFactor)) {
+    console.warn('calculateFutureValue: Fator exponencial muito alto, limitando cálculo', {
+      rate: limitedRate,
+      nper: limitedNper,
+      logFactor
+    });
+    // Retornar um valor máximo razoável baseado em extrapolação linear
+    const safeNper = Math.floor(Math.log(maxFactor) / Math.log(1 + limitedRate));
+    const safeFactor = Math.pow(1 + limitedRate, safeNper);
+    const fv = -pv * safeFactor * Math.pow(1 + limitedRate, limitedNper - safeNper) - pmt * ((safeFactor - 1) / limitedRate);
+    return Math.min(Math.max(0, fv), 1e15); // Limitar a 1 quatrilhão
+  }
+  
+  const factor = Math.pow(1 + limitedRate, limitedNper);
+  
+  // Verificar se o fator é válido
+  if (!isFinite(factor) || factor > maxFactor) {
+    console.warn('calculateFutureValue: Fator calculado inválido ou muito alto', { factor, rate: limitedRate, nper: limitedNper });
+    return Math.min(Math.abs(-pv) + Math.abs(pmt) * limitedNper * 2, 1e15); // Estimativa conservadora
+  }
+  
   // FV = PV × (1+i)^n + PMT × [((1+i)^n - 1) / i]
   // Como PV e PMT são negativos (saídas), FV será positivo
-  const fv = -pv * factor - pmt * ((factor - 1) / rate);
-  return Math.max(0, fv); // Garantir valor não negativo
+  const fv = -pv * factor - pmt * ((factor - 1) / limitedRate);
+  
+  // Validar resultado
+  if (!isFinite(fv) || fv < 0) {
+    console.warn('calculateFutureValue: Resultado inválido', { fv, rate: limitedRate, nper: limitedNper, pv, pmt });
+    return Math.min(Math.abs(-pv) + Math.abs(pmt) * limitedNper, 1e15);
+  }
+  
+  // Limitar valor máximo razoável (1 quatrilhão de reais)
+  const maxReasonableValue = 1e15;
+  return Math.min(Math.max(0, fv), maxReasonableValue);
 }
 
 /**
@@ -269,24 +317,71 @@ function projectYearly(
   expectedAnnualRevenues: number
 ): YearlyProjection[] {
   const projections: YearlyProjection[] = [];
-  let capital = initialCapital;
+  
+  // Validações de entrada
+  if (!isFinite(initialCapital) || !isFinite(realRate) || !isFinite(annualContribution)) {
+    console.warn('projectYearly: Valores de entrada inválidos', {
+      initialCapital,
+      realRate,
+      annualContribution
+    });
+    // Retornar projeção vazia ou com valores zerados
+    for (let age = currentAge; age <= lifeExpectancy; age++) {
+      projections.push({
+        age,
+        currentScenario: 0,
+        maintenanceScenario: 0,
+        consumptionScenario: 0,
+      });
+    }
+    return projections;
+  }
+  
+  // Limitar taxa a valores razoáveis
+  const maxRate = 1.0; // 100% ao ano máximo
+  const limitedRate = Math.max(-0.99, Math.min(maxRate, realRate));
+  
+  // Limitar capital inicial e contribuição
+  const maxInitialCapital = 1e12; // 1 trilhão máximo
+  const maxAnnualContribution = 1e9; // 1 bilhão máximo por ano
+  let capital = Math.min(Math.max(0, initialCapital), maxInitialCapital);
+  const limitedContribution = Math.min(Math.max(-maxAnnualContribution, annualContribution), maxAnnualContribution);
   
   const extraIncomeNeeded = desiredAnnualIncome - expectedAnnualRevenues;
+  const maxReasonableValue = 1e15; // 1 quatrilhão máximo
   
   for (let age = currentAge; age <= lifeExpectancy; age++) {
     if (age <= retirementAge) {
       // Antes da aposentadoria: acumula
-      capital = capital * (1 + realRate) + annualContribution;
+      // Verificar se vai causar overflow antes de calcular
+      const nextCapital = capital * (1 + limitedRate) + limitedContribution;
+      
+      if (!isFinite(nextCapital) || nextCapital > maxReasonableValue) {
+        // Se ultrapassar o limite, usar extrapolação linear conservadora
+        capital = Math.min(capital * 1.1 + limitedContribution, maxReasonableValue);
+        console.warn(`projectYearly: Limite atingido na idade ${age}`, { capital: nextCapital });
+      } else {
+        capital = nextCapital;
+      }
     } else {
       // Depois da aposentadoria: retira renda
-      capital = capital * (1 + realRate) - extraIncomeNeeded;
-      // Garantir que capital não fique negativo
-      if (capital < 0) capital = 0;
+      const nextCapital = capital * (1 + limitedRate) - extraIncomeNeeded;
+      
+      if (!isFinite(nextCapital)) {
+        capital = 0;
+      } else if (nextCapital < 0) {
+        capital = 0;
+      } else if (nextCapital > maxReasonableValue) {
+        capital = maxReasonableValue;
+        console.warn(`projectYearly: Limite atingido na idade ${age} (aposentadoria)`, { capital: nextCapital });
+      } else {
+        capital = nextCapital;
+      }
     }
     
-    // Garantir que o valor seja um número válido
+    // Garantir que o valor seja um número válido e dentro de limites razoáveis
     const validCapital = typeof capital === 'number' && !isNaN(capital) && isFinite(capital) 
-      ? Math.max(0, capital) 
+      ? Math.max(0, Math.min(capital, maxReasonableValue))
       : 0;
     
     projections.push({
@@ -342,6 +437,51 @@ export function calculateNotRetired(
   // CENÁRIO 1: Projeção atual
   // ========================================================================
   
+  // Validar valores antes de calcular
+  if (!isFinite(realRateCurrent) || !isFinite(yearsToRetirement) || !isFinite(annualSavings) || !isFinite(initialCapital)) {
+    console.error('calculateNotRetired: Valores inválidos detectados', {
+      realRateCurrent,
+      yearsToRetirement,
+      annualSavings,
+      initialCapital
+    });
+    // Retornar valores padrão seguros
+    return {
+      currentScenario: {
+        annualSavings: 0,
+        retirementAge: personalData.retirementAge,
+        projectedCapital: initialCapital || 0,
+        requiredCapital: 0,
+        requiredRate: undefined,
+        requiredRealRate: undefined,
+        accumulatedCapital: initialCapital || 0,
+        withinProfile: false,
+      },
+      maintenanceScenario: {
+        requiredCapital: 0,
+        annualSavings: 0,
+        retirementAge: personalData.retirementAge,
+        requiredRate: undefined,
+        requiredRealRate: undefined,
+        accumulatedCapital: 0,
+        withinProfile: false,
+      },
+      consumptionScenario: {
+        requiredCapital: 0,
+        annualSavings: 0,
+        retirementAge: personalData.retirementAge,
+        requiredRate: undefined,
+        requiredRealRate: undefined,
+        accumulatedCapital: 0,
+        withinProfile: false,
+      },
+      yearlyProjections: [],
+      withinRiskProfile: false,
+      financialThermometer: 0,
+      warnings: ['Erro nos cálculos: valores de entrada inválidos.'],
+    };
+  }
+  
   // FV com PV negativo (capital inicial) e PMT negativo (aportes anuais)
   const projectedCapital = calculateFutureValue(
     realRateCurrent,
@@ -349,6 +489,11 @@ export function calculateNotRetired(
     -annualSavings, // PMT negativo (aportes são saídas)
     -initialCapital // PV negativo (investimento inicial é saída)
   );
+  
+  // Validar resultado do capital projetado
+  if (!isFinite(projectedCapital) || projectedCapital < 0) {
+    console.error('calculateNotRetired: Capital projetado inválido', { projectedCapital });
+  }
   
   const extraIncomeNeeded = desiredAnnualIncome - expectedAnnualRevenues;
   const requiredCapitalMaintenance = calculateMaintenanceCapital(
@@ -548,38 +693,74 @@ export function calculateNotRetired(
     );
   }
   
+  // Função auxiliar para validar e limitar valores monetários
+  const validateMonetaryValue = (value: number, defaultValue: number = 0): number => {
+    if (!isFinite(value) || value < 0 || value > 1e15) {
+      console.warn('Valor monetário inválido ou muito alto, usando valor padrão', { value, defaultValue });
+      return defaultValue;
+    }
+    return value;
+  };
+  
+  // Validar e limitar todos os valores monetários
+  const safeProjectedCapital = validateMonetaryValue(projectedCapital, initialCapital);
+  const safeRequiredCapitalMaintenance = validateMonetaryValue(requiredCapitalMaintenance);
+  const safeRequiredCapitalConsumption = validateMonetaryValue(requiredCapitalConsumption);
+  const safeRequiredPMTMaintenance = validateMonetaryValue(Math.abs(requiredPMTMaintenance), 0);
+  const safeRequiredPMTConsumption = validateMonetaryValue(Math.abs(requiredPMTConsumption), 0);
+  
+  // Validar projeções anuais
+  const safeYearlyProjections = combinedProjections.map(proj => ({
+    ...proj,
+    currentScenario: validateMonetaryValue(proj.currentScenario),
+    maintenanceScenario: validateMonetaryValue(proj.maintenanceScenario),
+    consumptionScenario: validateMonetaryValue(proj.consumptionScenario),
+  }));
+  
   return {
     currentScenario: {
-      annualSavings,
+      annualSavings: validateMonetaryValue(annualSavings, 0),
       retirementAge: personalData.retirementAge,
-      projectedCapital,
-      requiredCapital: requiredCapitalMaintenance,
-      requiredRate: requiredRateCurrent ? requiredRateCurrent * 100 : undefined,
-      requiredRealRate: requiredRealRateCurrent,
-      accumulatedCapital: projectedCapital, // Capital acumulado na aposentadoria
+      projectedCapital: safeProjectedCapital,
+      requiredCapital: safeRequiredCapitalMaintenance,
+      requiredRate: requiredRateCurrent && isFinite(requiredRateCurrent) 
+        ? Math.min(Math.max(0, requiredRateCurrent * 100), 1000) // Limitar a 1000%
+        : undefined,
+      requiredRealRate: requiredRealRateCurrent && isFinite(requiredRealRateCurrent)
+        ? Math.min(Math.max(-100, requiredRealRateCurrent), 1000) // Limitar entre -100% e 1000%
+        : undefined,
+      accumulatedCapital: safeProjectedCapital,
       withinProfile: withinRiskProfile && (requiredRateCurrent || 0) <= (suitabilityLimits[personalData.suitability] || 1.0),
     },
     maintenanceScenario: {
-      requiredCapital: requiredCapitalMaintenance,
-      annualSavings: Math.abs(requiredPMTMaintenance), // Converter para positivo
+      requiredCapital: safeRequiredCapitalMaintenance,
+      annualSavings: safeRequiredPMTMaintenance,
       retirementAge: personalData.retirementAge,
-      requiredRate: requiredRateMaintenance ? requiredRateMaintenance * 100 : undefined,
-      requiredRealRate: requiredRealRateMaintenance,
-      accumulatedCapital: requiredCapitalMaintenance,
+      requiredRate: requiredRateMaintenance && isFinite(requiredRateMaintenance)
+        ? Math.min(Math.max(0, requiredRateMaintenance * 100), 1000)
+        : undefined,
+      requiredRealRate: requiredRealRateMaintenance && isFinite(requiredRealRateMaintenance)
+        ? Math.min(Math.max(-100, requiredRealRateMaintenance), 1000)
+        : undefined,
+      accumulatedCapital: safeRequiredCapitalMaintenance,
       withinProfile: withinRiskProfile && (requiredRateMaintenance || 0) <= (suitabilityLimits[personalData.suitability] || 1.0),
     },
     consumptionScenario: {
-      requiredCapital: requiredCapitalConsumption,
-      annualSavings: Math.abs(requiredPMTConsumption), // Converter para positivo
+      requiredCapital: safeRequiredCapitalConsumption,
+      annualSavings: safeRequiredPMTConsumption,
       retirementAge: personalData.retirementAge,
-      requiredRate: requiredRateConsumption ? requiredRateConsumption * 100 : undefined,
-      requiredRealRate: requiredRealRateConsumption,
-      accumulatedCapital: requiredCapitalConsumption,
+      requiredRate: requiredRateConsumption && isFinite(requiredRateConsumption)
+        ? Math.min(Math.max(0, requiredRateConsumption * 100), 1000)
+        : undefined,
+      requiredRealRate: requiredRealRateConsumption && isFinite(requiredRealRateConsumption)
+        ? Math.min(Math.max(-100, requiredRealRateConsumption), 1000)
+        : undefined,
+      accumulatedCapital: safeRequiredCapitalConsumption,
       withinProfile: withinRiskProfile && (requiredRateConsumption || 0) <= (suitabilityLimits[personalData.suitability] || 1.0),
     },
-    yearlyProjections: combinedProjections,
+    yearlyProjections: safeYearlyProjections,
     withinRiskProfile,
-    financialThermometer,
+    financialThermometer: Math.max(0, Math.min(10, financialThermometer)),
     warnings,
   };
 }
