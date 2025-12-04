@@ -123,11 +123,16 @@ export default function MateriaisPage() {
             <Badge variant="outline" className="text-[#98ab44] border-[#98ab44]">
               Todos
             </Badge>
-            {categories.map((category) => (
-              <Badge key={category} variant="outline">
-                {category.charAt(0).toUpperCase() + category.slice(1).toLowerCase()}
-              </Badge>
-            ))}
+            {categories.map((category) => {
+              const displayCategory = category === "GUIAS" 
+                ? "Guias" 
+                : category.charAt(0).toUpperCase() + category.slice(1).toLowerCase();
+              return (
+                <Badge key={category} variant="outline">
+                  {displayCategory}
+                </Badge>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -178,7 +183,7 @@ export default function MateriaisPage() {
                   <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-8 pt-4 sm:pt-8">
                     <div className="flex items-center justify-between mb-3 sm:mb-4">
                       <Badge variant="secondary" className="text-xs sm:text-sm bg-[#98ab44]/10 text-[#98ab44] border-[#98ab44]/20">
-                        {material.category}
+                        {material.category === "GUIAS" ? "Guias" : material.category}
                       </Badge>
                       {material.pages && (
                         <span className="text-xs sm:text-sm text-gray-500 font-medium">

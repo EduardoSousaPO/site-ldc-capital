@@ -17,7 +17,7 @@ import AdminLayout from "../../../components/AdminLayout";
 import { toast } from "sonner";
 
 const categories = [
-  "GUIAS",
+  "Guias",
   "Planejamento Financeiro", 
   "Investimentos",
   "Consultoria Financeira",

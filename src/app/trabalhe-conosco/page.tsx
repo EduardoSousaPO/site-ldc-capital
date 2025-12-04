@@ -233,7 +233,7 @@ export default function TrabalheConosco() {
 
         {/* Informações Adicionais */}
         <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="font-serif text-lg font-semibold text-[#262d3d] mb-3">
+          <h3 className="font-serif text-2xl font-bold text-[#262d3d] mb-4">
             Processo Seletivo
           </h3>
           <div className="text-gray-600 font-sans text-sm leading-relaxed space-y-2">
@@ -254,9 +254,9 @@ export default function TrabalheConosco() {
             <div>
               <h4 className="font-serif font-semibold text-[#262d3d] mb-2">Desenvolvimento Profissional</h4>
               <ul className="text-gray-600 font-sans text-sm space-y-1">
-                <li>• Treinamentos especializados</li>
-                <li>• Certificações do mercado financeiro</li>
+                <li>• Área em crescimento e meritocrática</li>
                 <li>• Plano de carreira estruturado</li>
+                <li>• Treinamentos especializados</li>
               </ul>
             </div>
             <div>

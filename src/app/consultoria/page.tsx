@@ -272,12 +272,14 @@ export default function ConsultoriaPage() {
             estratégia personalizada para seus investimentos.
           </p>
 
-          <CTAButton
-            size="lg"
-            className="bg-white text-[#98ab44] hover:bg-white/90 px-10 py-5 text-lg font-semibold rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 group mr-4"
-          >
-            Fale com nossa equipe
-          </CTAButton>
+          <div className="mb-6">
+            <CTAButton
+              size="lg"
+              className="bg-white text-[#98ab44] hover:bg-white/90 px-10 py-5 text-lg font-semibold rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 group"
+            >
+              Fale com a nossa Equipe
+            </CTAButton>
+          </div>
 
           <p className="text-sm text-white/80 mt-6">
             Análise gratuita • Sem compromisso • Atendimento em todo o Brasil
