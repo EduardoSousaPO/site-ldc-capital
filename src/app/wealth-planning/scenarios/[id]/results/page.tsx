@@ -10,7 +10,7 @@ import Header from "@/app/components/Header";
 import Footer from "@/app/components/Footer";
 import { useToast } from "@/components/ui/toast";
 import InteractiveDashboard from "@/components/wealth-planning/InteractiveDashboard";
-import type { WealthPlanningScenario, CalculationResults } from "@/types/wealth-planning";
+import type { WealthPlanningScenario } from "@/types/wealth-planning";
 
 export default function ScenarioResultsPage() {
   const router = useRouter();

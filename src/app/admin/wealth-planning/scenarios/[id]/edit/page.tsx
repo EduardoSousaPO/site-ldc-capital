@@ -7,13 +7,27 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import AdminLayout from "../../../../components/AdminLayout";
 import ScenarioWizard from "@/components/wealth-planning/ScenarioWizard";
-import type { ScenarioData } from "@/types/wealth-planning";
+import type { ScenarioData, PersonalData, FinancialData, Portfolio, Assets, Projects, Debts, OtherRevenues, MacroeconomicAssumptions } from "@/types/wealth-planning";
+
+interface ScenarioResponse {
+  id: string;
+  title: string;
+  clientId: string;
+  personalData: PersonalData;
+  financialData: FinancialData;
+  portfolio: Portfolio;
+  assets: Assets;
+  projects: Projects;
+  debts: Debts;
+  otherRevenues: OtherRevenues;
+  assumptions: MacroeconomicAssumptions;
+}
 
 export default function EditScenarioPage() {
   const params = useParams();
   const router = useRouter();
   const scenarioId = params.id as string;
-  const [scenario, setScenario] = useState<{ id: string; title: string; clientId: string; personalData: unknown; financialData: unknown; portfolio: unknown; assets: unknown; projects: unknown; debts: unknown; otherRevenues: unknown; assumptions: unknown } | null>(null);
+  const [scenario, setScenario] = useState<ScenarioResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
