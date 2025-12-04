@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, RefreshCw, Edit } from "lucide-react";
 import AdminLayout from "../../../../components/AdminLayout";
 import { formatCurrency, formatPercentage } from "@/lib/wealth-planning/calculations";
-import type { CalculationResults } from "@/types/wealth-planning";
+import type { CalculationResults, WealthPlanningScenario } from "@/types/wealth-planning";
 import ProjectionChartFixed from "@/components/wealth-planning/ProjectionChartFixed";
 import FinancialThermometer from "@/components/wealth-planning/FinancialThermometer";
 import PDFGenerator from "@/components/wealth-planning/PDFGenerator";
@@ -20,7 +20,7 @@ export default function ScenarioResultsPage() {
   const params = useParams();
   const { showToast } = useToast();
   const scenarioId = params.id as string;
-  const [scenario, setScenario] = useState<{ id: string; title: string; calculatedResults?: CalculationResults | null } | null>(null);
+  const [scenario, setScenario] = useState<WealthPlanningScenario | null>(null);
   const [results, setResults] = useState<CalculationResults | null>(null);
   const [loading, setLoading] = useState(true);
   const [calculating, setCalculating] = useState(false);
@@ -92,6 +92,8 @@ export default function ScenarioResultsPage() {
   }
 
   const hasResults = results !== null;
+  const notRetired = results?.notRetired;
+  const retired = results?.retired;
 
   return (
     <AdminLayout>
@@ -145,7 +147,7 @@ export default function ScenarioResultsPage() {
         ) : (
           <>
             {/* Termômetro Financeiro */}
-            {results.financialThermometer !== undefined && (
+            {notRetired?.financialThermometer !== undefined && (
               <Card>
                 <CardHeader>
                   <CardTitle className="font-serif text-xl text-[#262d3d]">
@@ -153,13 +155,13 @@ export default function ScenarioResultsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <FinancialThermometer value={results.financialThermometer} />
+                  <FinancialThermometer value={notRetired.financialThermometer} />
                 </CardContent>
               </Card>
             )}
 
             {/* Gráfico de Projeções */}
-            {results.yearlyProjections && results.yearlyProjections.length > 0 && (
+            {notRetired?.yearlyProjections && notRetired.yearlyProjections.length > 0 && scenario && (
               <Card>
                 <CardHeader>
                   <CardTitle className="font-serif text-xl text-[#262d3d]">
@@ -167,137 +169,133 @@ export default function ScenarioResultsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ProjectionChartFixed projections={results.yearlyProjections} />
+                  <ProjectionChartFixed data={scenario} />
                 </CardContent>
               </Card>
             )}
 
-            {/* Tabela Comparativa dos 3 Cenários */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-serif text-xl text-[#262d3d]">
-                  Comparação de Cenários
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="bg-[#262d3d] text-white">
-                        <th className="p-3 text-left font-sans font-semibold">Cenário</th>
-                        <th className="p-3 text-right font-sans font-semibold">Poupança Anual</th>
-                        <th className="p-3 text-right font-sans font-semibold">Idade Aposentadoria</th>
-                        <th className="p-3 text-right font-sans font-semibold">Capital aos {scenario.personalData?.retirementAge || 50} anos</th>
-                        <th className="p-3 text-right font-sans font-semibold">Capital aos {scenario.personalData?.lifeExpectancy || 80} anos</th>
-                        <th className="p-3 text-right font-sans font-semibold">Capital Necessário</th>
-                        <th className="p-3 text-right font-sans font-semibold">Rentabilidade Necessária</th>
-                        <th className="p-3 text-center font-sans font-semibold">Dentro do Perfil?</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {/* Cenário Atual */}
-                      <tr className="border-b hover:bg-gray-50">
-                        <td className="p-3 font-sans font-semibold">Cenário Atual</td>
-                        <td className="p-3 text-right font-sans">
-                          {formatCurrency(results.currentScenario.annualSavings)}
-                        </td>
-                        <td className="p-3 text-right font-sans">
-                          {results.currentScenario.retirementAge} anos
-                        </td>
-                        <td className="p-3 text-right font-sans">
-                          {formatCurrency(results.currentScenario.capitalAtRetirement)}
-                        </td>
-                        <td className="p-3 text-right font-sans">
-                          {formatCurrency(results.currentScenario.capitalAtLifeExpectancy)}
-                        </td>
-                        <td className="p-3 text-right font-sans">-</td>
-                        <td className="p-3 text-right font-sans">
-                          {formatPercentage(results.currentScenario.requiredRate.real)} real
-                        </td>
-                        <td className="p-3 text-center">
-                          <Badge
-                            variant={results.currentScenario.withinRiskProfile ? "default" : "destructive"}
-                          >
-                            {results.currentScenario.withinRiskProfile ? "Sim" : "Não"}
-                          </Badge>
-                        </td>
-                      </tr>
+            {/* Tabela Comparativa dos 3 Cenários - Apenas para não aposentados */}
+            {notRetired && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-serif text-xl text-[#262d3d]">
+                    Comparação de Cenários
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-[#262d3d] text-white">
+                          <th className="p-3 text-left font-sans font-semibold">Cenário</th>
+                          <th className="p-3 text-right font-sans font-semibold">Poupança Anual</th>
+                          <th className="p-3 text-right font-sans font-semibold">Idade Aposentadoria</th>
+                          <th className="p-3 text-right font-sans font-semibold">Capital Acumulado</th>
+                          <th className="p-3 text-right font-sans font-semibold">Capital Necessário</th>
+                          <th className="p-3 text-right font-sans font-semibold">Rentabilidade Necessária</th>
+                          <th className="p-3 text-center font-sans font-semibold">Dentro do Perfil?</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {/* Cenário Atual */}
+                        <tr className="border-b hover:bg-gray-50">
+                          <td className="p-3 font-sans font-semibold">Cenário Atual</td>
+                          <td className="p-3 text-right font-sans">
+                            {formatCurrency(notRetired.currentScenario.annualSavings)}
+                          </td>
+                          <td className="p-3 text-right font-sans">
+                            {notRetired.currentScenario.retirementAge} anos
+                          </td>
+                          <td className="p-3 text-right font-sans">
+                            {formatCurrency(notRetired.currentScenario.accumulatedCapital)}
+                          </td>
+                          <td className="p-3 text-right font-sans">
+                            {formatCurrency(notRetired.currentScenario.requiredCapital)}
+                          </td>
+                          <td className="p-3 text-right font-sans">
+                            {notRetired.currentScenario.requiredRealRate !== undefined
+                              ? formatPercentage(notRetired.currentScenario.requiredRealRate) + " real"
+                              : "-"}
+                          </td>
+                          <td className="p-3 text-center">
+                            <Badge
+                              variant={notRetired.currentScenario.withinProfile ? "default" : "destructive"}
+                            >
+                              {notRetired.currentScenario.withinProfile ? "Sim" : "Não"}
+                            </Badge>
+                          </td>
+                        </tr>
 
-                      {/* Cenário Manutenção */}
-                      <tr className="border-b hover:bg-gray-50 bg-green-50/30">
-                        <td className="p-3 font-sans font-semibold text-[#98ab44]">
-                          Manutenção do Patrimônio
-                        </td>
-                        <td className="p-3 text-right font-sans">
-                          {formatCurrency(results.maintenanceScenario.annualSavings)}
-                        </td>
-                        <td className="p-3 text-right font-sans">
-                          {results.maintenanceScenario.retirementAge} anos
-                        </td>
-                        <td className="p-3 text-right font-sans">
-                          {formatCurrency(results.maintenanceScenario.capitalAtRetirement)}
-                        </td>
-                        <td className="p-3 text-right font-sans">
-                          {formatCurrency(results.maintenanceScenario.capitalAtLifeExpectancy)}
-                        </td>
-                        <td className="p-3 text-right font-sans">
-                          {results.maintenanceScenario.requiredCapital
-                            ? formatCurrency(results.maintenanceScenario.requiredCapital)
-                            : "-"}
-                        </td>
-                        <td className="p-3 text-right font-sans">
-                          {formatPercentage(results.maintenanceScenario.requiredRate.real)} real
-                        </td>
-                        <td className="p-3 text-center">
-                          <Badge
-                            variant={results.maintenanceScenario.withinRiskProfile ? "default" : "destructive"}
-                          >
-                            {results.maintenanceScenario.withinRiskProfile ? "Sim" : "Não"}
-                          </Badge>
-                        </td>
-                      </tr>
+                        {/* Cenário Manutenção */}
+                        <tr className="border-b hover:bg-gray-50 bg-green-50/30">
+                          <td className="p-3 font-sans font-semibold text-[#98ab44]">
+                            Manutenção do Patrimônio
+                          </td>
+                          <td className="p-3 text-right font-sans">
+                            {formatCurrency(notRetired.maintenanceScenario.annualSavings)}
+                          </td>
+                          <td className="p-3 text-right font-sans">
+                            {notRetired.maintenanceScenario.retirementAge} anos
+                          </td>
+                          <td className="p-3 text-right font-sans">
+                            {formatCurrency(notRetired.maintenanceScenario.accumulatedCapital)}
+                          </td>
+                          <td className="p-3 text-right font-sans">
+                            {formatCurrency(notRetired.maintenanceScenario.requiredCapital)}
+                          </td>
+                          <td className="p-3 text-right font-sans">
+                            {notRetired.maintenanceScenario.requiredRealRate !== undefined
+                              ? formatPercentage(notRetired.maintenanceScenario.requiredRealRate) + " real"
+                              : "-"}
+                          </td>
+                          <td className="p-3 text-center">
+                            <Badge
+                              variant={notRetired.maintenanceScenario.withinProfile ? "default" : "destructive"}
+                            >
+                              {notRetired.maintenanceScenario.withinProfile ? "Sim" : "Não"}
+                            </Badge>
+                          </td>
+                        </tr>
 
-                      {/* Cenário Consumo */}
-                      <tr className="border-b hover:bg-gray-50 bg-red-50/30">
-                        <td className="p-3 font-sans font-semibold text-red-600">
-                          Consumo do Patrimônio
-                        </td>
-                        <td className="p-3 text-right font-sans">
-                          {formatCurrency(results.consumptionScenario.annualSavings)}
-                        </td>
-                        <td className="p-3 text-right font-sans">
-                          {results.consumptionScenario.retirementAge} anos
-                        </td>
-                        <td className="p-3 text-right font-sans">
-                          {formatCurrency(results.consumptionScenario.capitalAtRetirement)}
-                        </td>
-                        <td className="p-3 text-right font-sans">
-                          {formatCurrency(results.consumptionScenario.capitalAtLifeExpectancy)}
-                        </td>
-                        <td className="p-3 text-right font-sans">
-                          {results.consumptionScenario.requiredCapital
-                            ? formatCurrency(results.consumptionScenario.requiredCapital)
-                            : "-"}
-                        </td>
-                        <td className="p-3 text-right font-sans">
-                          {formatPercentage(results.consumptionScenario.requiredRate.real)} real
-                        </td>
-                        <td className="p-3 text-center">
-                          <Badge
-                            variant={results.consumptionScenario.withinRiskProfile ? "default" : "destructive"}
-                          >
-                            {results.consumptionScenario.withinRiskProfile ? "Sim" : "Não"}
-                          </Badge>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
+                        {/* Cenário Consumo */}
+                        <tr className="border-b hover:bg-gray-50 bg-red-50/30">
+                          <td className="p-3 font-sans font-semibold text-red-600">
+                            Consumo do Patrimônio
+                          </td>
+                          <td className="p-3 text-right font-sans">
+                            {formatCurrency(notRetired.consumptionScenario.annualSavings)}
+                          </td>
+                          <td className="p-3 text-right font-sans">
+                            {notRetired.consumptionScenario.retirementAge} anos
+                          </td>
+                          <td className="p-3 text-right font-sans">
+                            {formatCurrency(notRetired.consumptionScenario.accumulatedCapital)}
+                          </td>
+                          <td className="p-3 text-right font-sans">
+                            {formatCurrency(notRetired.consumptionScenario.requiredCapital)}
+                          </td>
+                          <td className="p-3 text-right font-sans">
+                            {notRetired.consumptionScenario.requiredRealRate !== undefined
+                              ? formatPercentage(notRetired.consumptionScenario.requiredRealRate) + " real"
+                              : "-"}
+                          </td>
+                          <td className="p-3 text-center">
+                            <Badge
+                              variant={notRetired.consumptionScenario.withinProfile ? "default" : "destructive"}
+                            >
+                              {notRetired.consumptionScenario.withinProfile ? "Sim" : "Não"}
+                            </Badge>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Premissas */}
-            {results.assumptions && (
+            {/* Premissas - Usar do cenário */}
+            {scenario.assumptions && (
               <Card>
                 <CardHeader>
                   <CardTitle className="font-serif text-xl text-[#262d3d]">
@@ -309,19 +307,19 @@ export default function ScenarioResultsPage() {
                     <div className="p-4 bg-gray-50 rounded-lg">
                       <p className="text-sm text-gray-600 mb-1">Inflação Anual</p>
                       <p className="text-xl font-bold text-[#262d3d]">
-                        {formatPercentage(results.assumptions.annualInflation)}
+                        {formatPercentage(scenario.assumptions.annualInflation)}
                       </p>
                     </div>
                     <div className="p-4 bg-gray-50 rounded-lg">
                       <p className="text-sm text-gray-600 mb-1">CDI Anual</p>
                       <p className="text-xl font-bold text-[#262d3d]">
-                        {formatPercentage(results.assumptions.annualCDI)}
+                        {formatPercentage(scenario.assumptions.annualCDI)}
                       </p>
                     </div>
                     <div className="p-4 bg-gray-50 rounded-lg">
                       <p className="text-sm text-gray-600 mb-1">Juro Real na Aposentadoria</p>
                       <p className="text-xl font-bold text-[#262d3d]">
-                        {formatPercentage(results.assumptions.realRetirementReturn)}
+                        {formatPercentage(scenario.assumptions.retirementRealRate)}
                       </p>
                     </div>
                   </div>
@@ -330,7 +328,7 @@ export default function ScenarioResultsPage() {
             )}
 
             {/* Dados para Aposentado */}
-            {results.retired && (
+            {retired && (
               <Card>
                 <CardHeader>
                   <CardTitle className="font-serif text-xl text-[#262d3d]">
@@ -340,15 +338,17 @@ export default function ScenarioResultsPage() {
                 <CardContent>
                   <div className="grid gap-4 md:grid-cols-2 font-sans">
                     <div className="p-4 bg-gray-50 rounded-lg">
-                      <p className="text-sm text-gray-600 mb-1">Idade de Sobrevivência do Patrimônio</p>
+                      <p className="text-sm text-gray-600 mb-1">Carteira Atual - Idade de Sobrevivência</p>
                       <p className="text-2xl font-bold text-[#98ab44]">
-                        {results.retired.survivalAge} anos
+                        {retired.currentPortfolio?.survivalAge || "N/A"} anos
                       </p>
                     </div>
                     <div className="p-4 bg-gray-50 rounded-lg">
                       <p className="text-sm text-gray-600 mb-1">Renda Média Gerada</p>
                       <p className="text-2xl font-bold text-[#262d3d]">
-                        {formatCurrency(results.retired.averageIncome)}
+                        {retired.currentPortfolio?.averageAnnualReturn
+                          ? formatCurrency(retired.currentPortfolio.averageAnnualReturn)
+                          : "N/A"}
                       </p>
                     </div>
                   </div>

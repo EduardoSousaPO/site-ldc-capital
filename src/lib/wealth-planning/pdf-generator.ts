@@ -314,19 +314,19 @@ export function generatePDFHTML(
       <div class="summary-box">
         <div class="summary-item">
           <span class="summary-label">Carteira Atual:</span>
-          <span>Saldo Final: ${formatCurrency(results.retired.currentPortfolio?.finalBalance || 0)}</span>
+          <span>Idade de Sobrevivência: ${results.retired.currentPortfolio?.survivalAge || 0} anos</span>
         </div>
         <div class="summary-item">
           <span class="summary-label">Renda Vitalícia:</span>
-          <span>Saldo Final: ${formatCurrency(results.retired.lifetimeIncomePortfolio?.finalBalance || 0)}</span>
+          <span>Idade de Sobrevivência: ${results.retired.lifetimeIncomePortfolio?.survivalAge || 0} anos</span>
         </div>
         <div class="summary-item">
           <span class="summary-label">Consumo Financeiro:</span>
-          <span>Saldo Final: ${formatCurrency(results.retired.financialConsumptionPortfolio?.finalBalance || 0)}</span>
+          <span>Idade de Sobrevivência: ${results.retired.financialConsumptionPortfolio?.survivalAge || 0} anos</span>
         </div>
         <div class="summary-item">
           <span class="summary-label">Consumo Total:</span>
-          <span>Saldo Final: ${formatCurrency(results.retired.totalConsumptionPortfolio?.finalBalance || 0)}</span>
+          <span>Idade de Sobrevivência: ${results.retired.totalConsumptionPortfolio?.survivalAge || 0} anos</span>
         </div>
       </div>
     </div>
@@ -340,18 +340,7 @@ export function generatePDFHTML(
           <span class="summary-label">Proteção Total Necessária:</span>
           <span>${formatCurrency(results.familyProtection?.totalProtection || 0)}</span>
         </div>
-        ${results.familyProtection?.spouseProtection ? `
-        <div class="summary-item">
-          <span class="summary-label">Proteção para Cônjuge:</span>
-          <span>${formatCurrency(results.familyProtection.spouseProtection)}</span>
-        </div>
-        ` : ''}
-        ${results.familyProtection?.dependentsProtection ? `
-        <div class="summary-item">
-          <span class="summary-label">Proteção para Dependentes:</span>
-          <span>${formatCurrency(results.familyProtection.dependentsProtection)}</span>
-        </div>
-        ` : ''}
+        {/* spouseProtection e dependentsProtection não existem em FamilyProtection */}
       </div>
     </div>
     ` : ''}

@@ -16,8 +16,8 @@ export function AnimatedNumber({
   className = "",
 }: AnimatedNumberProps) {
   const [displayValue, setDisplayValue] = useState(value);
-  const animationRef = useRef<number>();
-  const startTimeRef = useRef<number>();
+  const animationRef = useRef<number | undefined>(undefined);
+  const startTimeRef = useRef<number | undefined>(undefined);
   const startValueRef = useRef(value);
 
   useEffect(() => {

@@ -364,7 +364,7 @@ export function generateEnhancedPDFHTML(
         <strong>Cliente:</strong> ${scenario.personalData?.name || "Não informado"}
       </div>
       <div class="subtitle">
-        <strong>Data de Geração:</strong> ${formatDate(new Date())}
+        <strong>Data de Geração:</strong> ${new Date().toLocaleDateString('pt-BR')}
       </div>
     </div>
 
@@ -478,7 +478,7 @@ export function generateEnhancedPDFHTML(
     </div>
 
     <div class="footer">
-      <p>Relatório gerado em ${formatDate(new Date())}</p>
+      <p>Relatório gerado em ${new Date().toLocaleDateString('pt-BR')}</p>
       <p><strong>LDC Capital</strong> - Planejamento Financeiro</p>
       <p style="margin-top: 10px; font-size: 9px; color: #9ca3af;">
         Este relatório foi gerado automaticamente pelo sistema de Wealth Planning da LDC Capital.

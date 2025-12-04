@@ -498,22 +498,7 @@ export default function InteractiveDashboard({
                   {formatCurrency(localResults.familyProtection.successionLiquidity)}
                 </span>
               </div>
-              {localResults.familyProtection.spouseProtection && (
-                <div className="flex items-center justify-between py-3 border-b border-[#e3e3e3]">
-                  <span className="text-sm text-[#262d3d] font-sans">Proteção para Cônjuge</span>
-                  <span className="text-sm font-semibold text-[#262d3d] font-sans">
-                    {formatCurrency(localResults.familyProtection.spouseProtection)}
-                  </span>
-                </div>
-              )}
-              {localResults.familyProtection.dependentsProtection && (
-                <div className="flex items-center justify-between py-3">
-                  <span className="text-sm text-[#262d3d] font-sans">Proteção para Dependentes</span>
-                  <span className="text-sm font-semibold text-[#262d3d] font-sans">
-                    {formatCurrency(localResults.familyProtection.dependentsProtection)}
-                  </span>
-                </div>
-              )}
+              {/* spouseProtection e dependentsProtection não existem em FamilyProtection */}
             </div>
           </div>
         )}

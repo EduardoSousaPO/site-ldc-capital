@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,7 @@ const STEPS = [
   },
 ];
 
-export default function NewScenarioPage() {
+function NewScenarioPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
@@ -566,5 +566,21 @@ export default function NewScenarioPage() {
       </main>
       <Footer />
     </>
+  );
+}
+
+export default function NewScenarioPage() {
+  return (
+    <Suspense fallback={
+      <>
+        <Header />
+        <main className="flex items-center justify-center min-h-screen">
+          <div className="w-8 h-8 border-4 border-[#262d3d]/30 border-t-[#262d3d] rounded-full animate-spin"></div>
+        </main>
+        <Footer />
+      </>
+    }>
+      <NewScenarioPageContent />
+    </Suspense>
   );
 }

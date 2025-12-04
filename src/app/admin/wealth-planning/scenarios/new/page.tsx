@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import AdminLayout from "../../../components/AdminLayout";
 import ScenarioWizard from "@/components/wealth-planning/ScenarioWizard";
 import type { ScenarioData } from "@/types/wealth-planning";
 
-export default function NewScenarioPage() {
+function NewScenarioPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const clientId = searchParams.get("clientId");
@@ -67,6 +68,20 @@ export default function NewScenarioPage() {
         />
       </div>
     </AdminLayout>
+  );
+}
+
+export default function NewScenarioPage() {
+  return (
+    <Suspense fallback={
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="w-8 h-8 border-4 border-[#262d3d]/30 border-t-[#262d3d] rounded-full animate-spin"></div>
+        </div>
+      </AdminLayout>
+    }>
+      <NewScenarioPageContent />
+    </Suspense>
   );
 }
 

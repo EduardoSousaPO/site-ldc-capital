@@ -18,9 +18,10 @@ export default function SupabaseListener() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event: string, session: unknown) => {
       if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN" || event === "SIGNED_OUT") {
-        const payload: AuthChangePayload = { event, session };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const payload: AuthChangePayload = { event, session: session as any };
 
         await fetch("/api/auth/callback", {
           method: "POST",

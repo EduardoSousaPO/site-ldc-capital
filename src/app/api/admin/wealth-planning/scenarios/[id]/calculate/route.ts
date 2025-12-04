@@ -20,7 +20,8 @@ export async function POST(request: Request, { params }: RouteParams) {
     const supabase = createSupabaseAdminClient();
 
     // Verificar se cenário existe e se usuário tem permissão
-    let query = supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let query: any = supabase
       .from("WealthPlanningScenario")
       .select("*")
       .eq("id", id)
@@ -55,8 +56,8 @@ export async function POST(request: Request, { params }: RouteParams) {
     const calculatedResults = calculateScenario(scenarioData);
 
     // Salvar resultados no banco
-    const { error: updateError } = await supabase
-      .from("WealthPlanningScenario")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: updateError } = await (supabase.from("WealthPlanningScenario") as any)
       .update({ calculatedResults })
       .eq("id", id);
 

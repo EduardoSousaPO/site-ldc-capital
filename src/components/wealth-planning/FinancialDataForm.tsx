@@ -117,12 +117,12 @@ export default function FinancialDataForm({
                 </p>
                 {(data as Partial<FinancialData>).currentAnnualIncome && (
                   <p className={`font-sans font-medium ${
-                    ((data as Partial<FinancialData>).currentAnnualIncome - (data.monthlyFamilyExpense || 0) * 12) >= 0
+                    (((data as Partial<FinancialData>).currentAnnualIncome || 0) - (data.monthlyFamilyExpense || 0) * 12) >= 0
                       ? "text-green-600"
                       : "text-red-600"
                   }`}>
                     Saldo: R${" "}
-                    {((data as Partial<FinancialData>).currentAnnualIncome - (data.monthlyFamilyExpense || 0) * 12).toLocaleString("pt-BR", {
+                    {(((data as Partial<FinancialData>).currentAnnualIncome || 0) - (data.monthlyFamilyExpense || 0) * 12).toLocaleString("pt-BR", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}

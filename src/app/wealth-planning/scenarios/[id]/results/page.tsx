@@ -233,7 +233,6 @@ export default function ScenarioResultsPage() {
                       console.error("Erro ao atualizar:", error);
                     }
                   }}
-                  onRecalculate={handleCalculate}
                 />
               </div>
             </>

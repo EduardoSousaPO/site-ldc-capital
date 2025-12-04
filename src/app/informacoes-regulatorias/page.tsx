@@ -120,7 +120,7 @@ export default function InformacoesRegulatorias() {
 
                 {/* Botão de Download */}
                 <button
-                  onClick={() => handleDownload(doc.arquivo, doc.titulo)}
+                  onClick={() => handleDownload(doc.arquivo)}
                   className="w-full flex items-center justify-center bg-[#98ab44] hover:bg-[#262d3d] text-white px-4 py-2 rounded-lg font-sans font-medium transition-colors duration-300"
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />

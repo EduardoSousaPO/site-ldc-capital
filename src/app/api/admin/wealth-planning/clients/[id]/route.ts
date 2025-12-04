@@ -37,8 +37,17 @@ export async function GET(request: Request, { params }: RouteParams) {
       .eq("clientId", id)
       .order("createdAt", { ascending: false });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const clientData = client as any;
+
     return NextResponse.json({
-      ...client,
+      id: clientData.id,
+      name: clientData.name,
+      email: clientData.email,
+      phone: clientData.phone,
+      notes: clientData.notes,
+      createdAt: clientData.createdAt,
+      updatedAt: clientData.updatedAt,
       scenarios: scenarios || [],
     });
   } catch (error) {
@@ -106,8 +115,8 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     if (phone !== undefined) updateData.phone = phone && phone.trim() ? phone.trim() : null;
     if (notes !== undefined) updateData.notes = notes && notes.trim() ? notes.trim() : null;
 
-    const { data: client, error } = await supabase
-      .from("Client")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: client, error } = await (supabase.from("Client") as any)
       .update(updateData)
       .eq("id", id)
       .select()

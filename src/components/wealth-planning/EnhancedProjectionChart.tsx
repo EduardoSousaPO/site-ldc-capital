@@ -179,8 +179,8 @@ export default function EnhancedProjectionChart({
           />
           <Tooltip
             formatter={(value: unknown) => {
-              if (!value || isNaN(value)) return "N/A";
-              return formatCurrency(value);
+              if (!value || (typeof value === 'number' && isNaN(value))) return "N/A";
+              return formatCurrency(typeof value === 'number' ? value : 0);
             }}
             contentStyle={{
               backgroundColor: "#fff",

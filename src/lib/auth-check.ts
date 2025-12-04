@@ -8,10 +8,10 @@ import type { User } from "./auth-supabase";
  */
 export async function checkAdminAuth(): Promise<User | null> {
   try {
-    const cookieStore = await cookies();
+    const cookieStorePromise = cookies();
     
     // Criar cliente Supabase SSR
-    const supabase = createSupabaseServerClient(cookieStore);
+    const supabase = await createSupabaseServerClient(cookieStorePromise);
     const admin = createSupabaseAdminClient();
 
     // Tentar obter usuário
@@ -32,8 +32,8 @@ export async function checkAdminAuth(): Promise<User | null> {
     const metadataRole = (authUser.user_metadata?.role as string | undefined) || undefined;
     const normalizedRole = metadataRole?.toUpperCase() as User["role"] | undefined;
 
-    const { data: dbUser, error: upsertError } = await admin
-      .from("User")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: dbUser, error: upsertError } = await (admin.from("User") as any)
       .upsert(
         {
           id: authUser.id,

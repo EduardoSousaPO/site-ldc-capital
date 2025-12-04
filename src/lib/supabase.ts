@@ -47,7 +47,8 @@ export const createSupabaseAdminClient = () => {
 }
 
 // Cliente para uso em Server Components e API Routes
-export const createSupabaseServerClient = (cookieStore: ReturnType<typeof cookies>) => {
+export const createSupabaseServerClient = async (cookieStorePromise: ReturnType<typeof cookies>) => {
+  const cookieStore = await cookieStorePromise;
   // Extrair o project ref da URL para filtrar cookies corretos
   const projectRef = supabaseUrl.match(/https?:\/\/([^.]+)\.supabase\.co/)?.[1];
   const cookiePrefix = projectRef ? `sb-${projectRef}-` : 'sb-';

@@ -18,7 +18,8 @@ export async function GET(request: Request, { params }: RouteParams) {
     const { id } = await params;
     const supabase = createSupabaseAdminClient();
 
-    let query = supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let query: any = supabase
       .from("WealthPlanningScenario")
       .select(`
         *,
@@ -71,7 +72,8 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     const supabase = createSupabaseAdminClient();
 
     // Verificar se cenário existe e se usuário tem permissão
-    let query = supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let query: any = supabase
       .from("WealthPlanningScenario")
       .select("id, consultantId")
       .eq("id", id)
@@ -118,8 +120,8 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       updateData.calculatedResults = null;
     }
 
-    const { data: scenario, error } = await supabase
-      .from("WealthPlanningScenario")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: scenario, error } = await (supabase.from("WealthPlanningScenario") as any)
       .update(updateData)
       .eq("id", id)
       .select()
@@ -161,7 +163,8 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     const supabase = createSupabaseAdminClient();
 
     // Verificar se cenário existe e se usuário tem permissão
-    let query = supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let query: any = supabase
       .from("WealthPlanningScenario")
       .select("id, consultantId")
       .eq("id", id)
