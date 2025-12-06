@@ -46,9 +46,12 @@ export function convertAnnualToMonthlyRate(annualRate: number): number {
 }
 
 /**
- * Calcula Valor Futuro com capitalização mensal e aportes mensais
- * Fórmula: FV = PV × (1 + r/m)^(m×t) + PMT × [((1 + r/m)^(m×t) - 1) / (r/m)]
+ * Calcula Valor Futuro com capitalização mensal e aportes mensais ANTECIPADOS
+ * Fórmula para aportes ANTECIPADOS (início do mês):
+ * FV = PV × (1 + i)^n + PMT × [((1 + i)^n - 1) / i] × (1 + i)
+ * 
  * Onde: r = taxa anual, m = 12 (meses), t = anos, PMT = aporte mensal
+ * Em wealth planning, aportes são feitos no INÍCIO do mês (antecipados)
  * 
  * @param annualRate Taxa de juros anual (decimal, ex: 0.097 para 9.7%)
  * @param years Número de anos
@@ -82,7 +85,8 @@ export function calculateFutureValueMonthly(
     return Math.min(presentValue + monthlyPayment * limitedMonths, 1e15);
   }
 
-  // FV = PV × (1 + i)^n + PMT × [((1 + i)^n - 1) / i]
+  // Fórmula para aportes ANTECIPADOS (início do mês)
+  // FV = PV × (1 + i)^n + PMT × [((1 + i)^n - 1) / i] × (1 + i)
   const factor = Math.pow(1 + limitedMonthlyRate, limitedMonths);
   
   if (!isFinite(factor) || factor > 1e10) {
@@ -90,7 +94,8 @@ export function calculateFutureValueMonthly(
     return Math.min(presentValue * 1.1 + monthlyPayment * limitedMonths * 1.1, 1e15);
   }
 
-  const fv = presentValue * factor + monthlyPayment * ((factor - 1) / limitedMonthlyRate);
+  // Aportes ANTECIPADOS: multiplicar a parte dos aportes por (1 + i)
+  const fv = presentValue * factor + monthlyPayment * ((factor - 1) / limitedMonthlyRate) * (1 + limitedMonthlyRate);
 
   if (!isFinite(fv) || fv < 0) {
     console.warn('calculateFutureValueMonthly: Resultado inválido', { fv, monthlyRate: limitedMonthlyRate, months: limitedMonths });
@@ -316,7 +321,9 @@ export function calculateMaintenanceCapital(
 
 /**
  * Calcula aporte mensal necessário para atingir objetivo
- * Usa fórmula PMT da HP12C com conversão anual → mensal
+ * Usa fórmula para aportes ANTECIPADOS (início do mês)
+ * 
+ * Fórmula inversa de: FV = PV × (1 + i)^n + PMT × [((1 + i)^n - 1) / i] × (1 + i)
  * 
  * @param objetivoAposentadoria Valor que se deseja acumular (R$)
  * @param patrimonioAtual Valor já investido atualmente (R$)
@@ -337,17 +344,27 @@ export function calculateRequiredMonthlyContribution(
   const taxaMensal = Math.pow(1 + retornoAnual, 1/12) - 1;
   const periodosMensais = anosAteAposentar * 12;
   
-  // Usar fórmula PMT: PMT = [PV × i × (1+i)^n + FV × i] / [(1+i)^n - 1]
-  // PV negativo (patrimônio atual investido), FV positivo (objetivo)
-  const pmtMensal = calculatePayment(
-    taxaMensal,
-    periodosMensais,
-    -patrimonioAtual, // PV negativo (investimento inicial)
-    objetivoAposentadoria // FV positivo (objetivo)
-  );
+  if (taxaMensal === 0 || Math.abs(taxaMensal) < 1e-10) {
+    // Sem juros: PMT = (FV - PV) / n
+    return Math.max(0, (objetivoAposentadoria - patrimonioAtual) / periodosMensais);
+  }
   
-  // PMT retorna negativo (aporte), converter para positivo
-  return Math.max(0, -pmtMensal);
+  // Fórmula para aportes ANTECIPADOS
+  // FV = PV × (1 + i)^n + PMT × [((1 + i)^n - 1) / i] × (1 + i)
+  // Isolando PMT:
+  // PMT = (FV - PV × (1 + i)^n) / ([((1 + i)^n - 1) / i] × (1 + i))
+  const factor = Math.pow(1 + taxaMensal, periodosMensais);
+  const valorFuturoDoPatrimonio = patrimonioAtual * factor;
+  const diferenca = objetivoAposentadoria - valorFuturoDoPatrimonio;
+  
+  if (diferenca <= 0) return 0;
+  
+  // Denominador: [((1 + i)^n - 1) / i] × (1 + i)
+  const denominador = ((factor - 1) / taxaMensal) * (1 + taxaMensal);
+  
+  const pmtMensal = diferenca / denominador;
+  
+  return Math.max(0, pmtMensal);
 }
 
 /**
@@ -424,9 +441,10 @@ function projectYearly(
   for (let age = currentAge; age <= lifeExpectancy; age++) {
     if (age <= retirementAge) {
       // Antes da aposentadoria: acumula com capitalização mensal
-      // Aplicar 12 meses de capitalização mensal + aportes mensais
+      // Aportes são ANTECIPADOS (início do mês): primeiro adiciona aporte, depois capitaliza
       for (let month = 0; month < 12; month++) {
-        capital = capital * (1 + limitedMonthlyRate) + limitedMonthlyContribution;
+        // Aporte ANTECIPADO: (capital + aporte) × (1 + taxa)
+        capital = (capital + limitedMonthlyContribution) * (1 + limitedMonthlyRate);
         // Validar após cada mês
         if (!isFinite(capital) || capital < 0) {
           capital = 0;
@@ -439,9 +457,10 @@ function projectYearly(
       }
     } else {
       // Depois da aposentadoria: retira renda mensalmente
-      // Aplicar 12 meses de capitalização mensal - saques mensais
+      // Saques são POSTECIPADOS (final do mês): primeiro capitaliza, depois retira
       const monthlyWithdrawal = extraIncomeNeeded / 12;
       for (let month = 0; month < 12; month++) {
+        // Saque POSTECIPADO: capital × (1 + taxa) - saque
         capital = capital * (1 + limitedMonthlyRate) - monthlyWithdrawal;
         
         if (!isFinite(capital) || capital < 0) {

@@ -1,12 +1,7 @@
 "use client";
 
 import { Info, BookOpen } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { CollapsibleSection } from "@/components/wealth-planning/CollapsibleSection";
 import type { WealthPlanningScenario } from "@/types/wealth-planning";
 
@@ -59,22 +54,25 @@ export function MethodologyExplanation({ scenario }: MethodologyExplanationProps
           <div className="space-y-4">
             <div className="border-l-4 border-[#98ab44] pl-4">
               <h4 className="font-semibold text-[#262d3d] mb-2 font-sans">
-                1. Valor Futuro com Capitalização Mensal
+                1. Valor Futuro com Capitalização Mensal e Aportes Antecipados
               </h4>
               <p className="text-sm text-[#577171] mb-2 font-sans">
-                Para calcular o patrimônio futuro, usamos:
+                Para calcular o patrimônio futuro, usamos aportes ANTECIPADOS (início do mês):
               </p>
               <div className="bg-gray-50 rounded p-3 font-mono text-xs text-[#262d3d] mb-2">
-                FV = PV × (1 + r/m)^(m×t) + PMT × [((1 + r/m)^(m×t) - 1) / (r/m)]
+                FV = PV × (1 + i)^n + PMT × [((1 + i)^n - 1) / i] × (1 + i)
               </div>
               <div className="text-xs text-[#577171] space-y-1 font-sans">
                 <p><strong>Onde:</strong></p>
                 <p>• FV = Valor Futuro (patrimônio projetado)</p>
                 <p>• PV = Valor Presente (capital inicial: {formatCurrency(initialCapital)})</p>
-                <p>• r = Taxa anual nominal ({formatPercentage(nominalRate * 100)})</p>
-                <p>• m = 12 (capitalização mensal)</p>
-                <p>• t = Anos até aposentadoria ({yearsToRetirement} anos)</p>
-                <p>• PMT = Aporte mensal ({formatCurrency(monthlySavings)})</p>
+                <p>• i = Taxa mensal ({formatPercentage((Math.pow(1 + nominalRate, 1/12) - 1) * 100)})</p>
+                <p>• n = Número de meses ({yearsToRetirement * 12} meses)</p>
+                <p>• PMT = Aporte mensal ({formatCurrency(monthlySavings)}) - <strong>ANTECIPADO</strong></p>
+                <p className="mt-2 italic text-xs">
+                  <strong>Nota:</strong> Aportes são considerados ANTECIPADOS (início do mês), 
+                  recebendo juros durante todo o período, o que é o padrão em wealth planning.
+                </p>
               </div>
             </div>
 
