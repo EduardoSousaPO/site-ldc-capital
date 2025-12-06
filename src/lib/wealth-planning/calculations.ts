@@ -31,7 +31,77 @@ export function calculateRealRate(nominalRate: number, inflation: number): numbe
 }
 
 /**
- * Calcula Valor Futuro (FV) - Fórmula HP12C
+ * Converte taxa anual para taxa mensal
+ * Fórmula: taxa_mensal = (1 + taxa_anual)^(1/12) - 1
+ * 
+ * @param annualRate Taxa anual (decimal, ex: 0.097 para 9.7%)
+ * @returns Taxa mensal (decimal)
+ */
+export function convertAnnualToMonthlyRate(annualRate: number): number {
+  if (!isFinite(annualRate) || annualRate < -0.99) {
+    return 0;
+  }
+  // Converter taxa anual para mensal: (1 + r_anual)^(1/12) - 1
+  return Math.pow(1 + annualRate, 1/12) - 1;
+}
+
+/**
+ * Calcula Valor Futuro com capitalização mensal e aportes mensais
+ * Fórmula: FV = PV × (1 + r/m)^(m×t) + PMT × [((1 + r/m)^(m×t) - 1) / (r/m)]
+ * Onde: r = taxa anual, m = 12 (meses), t = anos, PMT = aporte mensal
+ * 
+ * @param annualRate Taxa de juros anual (decimal, ex: 0.097 para 9.7%)
+ * @param years Número de anos
+ * @param monthlyPayment Aporte mensal (positivo)
+ * @param presentValue Valor presente inicial (positivo)
+ * @returns Valor futuro (positivo)
+ */
+export function calculateFutureValueMonthly(
+  annualRate: number,
+  years: number,
+  monthlyPayment: number,
+  presentValue: number
+): number {
+  if (years <= 0) return Math.max(0, presentValue);
+  if (!isFinite(annualRate) || !isFinite(years) || !isFinite(monthlyPayment) || !isFinite(presentValue)) {
+    console.warn('calculateFutureValueMonthly: Valores não finitos detectados', { annualRate, years, monthlyPayment, presentValue });
+    return Math.max(0, presentValue);
+  }
+
+  // Converter taxa anual para mensal
+  const monthlyRate = convertAnnualToMonthlyRate(annualRate);
+  const totalMonths = years * 12;
+
+  // Limitar valores para evitar overflow
+  const maxRate = 1.0;
+  const limitedMonthlyRate = Math.max(-0.99, Math.min(maxRate, monthlyRate));
+  const limitedMonths = Math.max(0, Math.min(1200, totalMonths)); // Máximo 100 anos em meses
+
+  if (limitedMonthlyRate === 0 || Math.abs(limitedMonthlyRate) < 1e-10) {
+    // Sem juros: FV = PV + PMT × n
+    return Math.min(presentValue + monthlyPayment * limitedMonths, 1e15);
+  }
+
+  // FV = PV × (1 + i)^n + PMT × [((1 + i)^n - 1) / i]
+  const factor = Math.pow(1 + limitedMonthlyRate, limitedMonths);
+  
+  if (!isFinite(factor) || factor > 1e10) {
+    console.warn('calculateFutureValueMonthly: Fator exponencial muito alto', { factor, monthlyRate: limitedMonthlyRate, months: limitedMonths });
+    return Math.min(presentValue * 1.1 + monthlyPayment * limitedMonths * 1.1, 1e15);
+  }
+
+  const fv = presentValue * factor + monthlyPayment * ((factor - 1) / limitedMonthlyRate);
+
+  if (!isFinite(fv) || fv < 0) {
+    console.warn('calculateFutureValueMonthly: Resultado inválido', { fv, monthlyRate: limitedMonthlyRate, months: limitedMonths });
+    return Math.min(presentValue + monthlyPayment * limitedMonths, 1e15);
+  }
+
+  return Math.min(Math.max(0, fv), 1e15);
+}
+
+/**
+ * Calcula Valor Futuro (FV) - Fórmula HP12C (para compatibilidade com código existente)
  * Fórmula: FV = PV × (1 + i)^n + PMT × [((1 + i)^n - 1) / i]
  * 
  * Convenção de sinais HP12C:
@@ -304,12 +374,13 @@ export function calculateConsumptionCapital(
 }
 
 /**
- * Projeta patrimônio ano a ano
+ * Projeta patrimônio ano a ano usando capitalização mensal
+ * Agora usa taxa nominal e capitalização mensal correta
  */
 function projectYearly(
   initialCapital: number,
-  realRate: number,
-  annualContribution: number,
+  nominalAnnualRate: number, // Taxa nominal anual (decimal)
+  monthlyContribution: number, // Aporte mensal (positivo)
   retirementAge: number,
   lifeExpectancy: number,
   currentAge: number,
@@ -319,11 +390,11 @@ function projectYearly(
   const projections: YearlyProjection[] = [];
   
   // Validações de entrada
-  if (!isFinite(initialCapital) || !isFinite(realRate) || !isFinite(annualContribution)) {
+  if (!isFinite(initialCapital) || !isFinite(nominalAnnualRate) || !isFinite(monthlyContribution)) {
     console.warn('projectYearly: Valores de entrada inválidos', {
       initialCapital,
-      realRate,
-      annualContribution
+      nominalAnnualRate,
+      monthlyContribution
     });
     // Retornar projeção vazia ou com valores zerados
     for (let age = currentAge; age <= lifeExpectancy; age++) {
@@ -337,45 +408,50 @@ function projectYearly(
     return projections;
   }
   
-  // Limitar taxa a valores razoáveis
-  const maxRate = 1.0; // 100% ao ano máximo
-  const limitedRate = Math.max(-0.99, Math.min(maxRate, realRate));
+  // Converter taxa anual para mensal
+  const monthlyRate = convertAnnualToMonthlyRate(nominalAnnualRate);
   
-  // Limitar capital inicial e contribuição
-  const maxInitialCapital = 1e12; // 1 trilhão máximo
-  const maxAnnualContribution = 1e9; // 1 bilhão máximo por ano
+  // Limitar valores
+  const maxRate = 1.0;
+  const limitedMonthlyRate = Math.max(-0.99, Math.min(maxRate, monthlyRate));
+  const maxInitialCapital = 1e12;
   let capital = Math.min(Math.max(0, initialCapital), maxInitialCapital);
-  const limitedContribution = Math.min(Math.max(-maxAnnualContribution, annualContribution), maxAnnualContribution);
+  const limitedMonthlyContribution = Math.min(Math.max(0, monthlyContribution), 1e9);
   
   const extraIncomeNeeded = desiredAnnualIncome - expectedAnnualRevenues;
-  const maxReasonableValue = 1e15; // 1 quatrilhão máximo
+  const maxReasonableValue = 1e15;
   
   for (let age = currentAge; age <= lifeExpectancy; age++) {
     if (age <= retirementAge) {
-      // Antes da aposentadoria: acumula
-      // Verificar se vai causar overflow antes de calcular
-      const nextCapital = capital * (1 + limitedRate) + limitedContribution;
-      
-      if (!isFinite(nextCapital) || nextCapital > maxReasonableValue) {
-        // Se ultrapassar o limite, usar extrapolação linear conservadora
-        capital = Math.min(capital * 1.1 + limitedContribution, maxReasonableValue);
-        console.warn(`projectYearly: Limite atingido na idade ${age}`, { capital: nextCapital });
-      } else {
-        capital = nextCapital;
+      // Antes da aposentadoria: acumula com capitalização mensal
+      // Aplicar 12 meses de capitalização mensal + aportes mensais
+      for (let month = 0; month < 12; month++) {
+        capital = capital * (1 + limitedMonthlyRate) + limitedMonthlyContribution;
+        // Validar após cada mês
+        if (!isFinite(capital) || capital < 0) {
+          capital = 0;
+          break;
+        }
+        if (capital > maxReasonableValue) {
+          capital = maxReasonableValue;
+          break;
+        }
       }
     } else {
-      // Depois da aposentadoria: retira renda
-      const nextCapital = capital * (1 + limitedRate) - extraIncomeNeeded;
-      
-      if (!isFinite(nextCapital)) {
-        capital = 0;
-      } else if (nextCapital < 0) {
-        capital = 0;
-      } else if (nextCapital > maxReasonableValue) {
-        capital = maxReasonableValue;
-        console.warn(`projectYearly: Limite atingido na idade ${age} (aposentadoria)`, { capital: nextCapital });
-      } else {
-        capital = nextCapital;
+      // Depois da aposentadoria: retira renda mensalmente
+      // Aplicar 12 meses de capitalização mensal - saques mensais
+      const monthlyWithdrawal = extraIncomeNeeded / 12;
+      for (let month = 0; month < 12; month++) {
+        capital = capital * (1 + limitedMonthlyRate) - monthlyWithdrawal;
+        
+        if (!isFinite(capital) || capital < 0) {
+          capital = 0;
+          break;
+        }
+        if (capital > maxReasonableValue) {
+          capital = maxReasonableValue;
+          break;
+        }
       }
     }
     
@@ -408,41 +484,59 @@ export function calculateNotRetired(
     assumptions,
   } = data;
   
-  // Converter valores mensais para anuais
-  const annualSavings = financialData.monthlySavings * 12;
-  const desiredAnnualIncome = financialData.desiredMonthlyRetirementIncome * 12;
-  const expectedAnnualRevenues = financialData.expectedMonthlyRetirementRevenues * 12;
+  // Obter aporte mensal (garantir que seja considerado)
+  const monthlySavings = financialData.monthlySavings || 0;
+  const annualSavings = monthlySavings * 12;
   
-  // Calcular taxa real atual
-  // cdiRate já está em decimal (ex: 0.097 para 9.7%), annualCDI está em percentual (ex: 9.7)
-  const currentNominalRateDecimal = portfolio.assets[0]?.cdiRate || assumptions.annualCDI / 100;
-  const currentNominalRatePercent = currentNominalRateDecimal * 100; // Converter para percentual para calculateRealRate
-  const realRateCurrent = calculateRealRate(
-    currentNominalRatePercent,
-    assumptions.annualInflation
-  );
+  // Aplicar inflação aos valores futuros
+  // Ajustar renda desejada e receitas pela inflação até a idade de aposentadoria
+  const yearsToRetirement = personalData.retirementAge - personalData.age;
+  const inflationDecimal = assumptions.annualInflation / 100;
+  const inflationFactor = Math.pow(1 + inflationDecimal, yearsToRetirement);
   
+  // Valores futuros ajustados pela inflação
+  const desiredMonthlyIncomeFuture = financialData.desiredMonthlyRetirementIncome * inflationFactor;
+  const expectedMonthlyRevenuesFuture = financialData.expectedMonthlyRetirementRevenues * inflationFactor;
+  const desiredAnnualIncome = desiredMonthlyIncomeFuture * 12;
+  const expectedAnnualRevenues = expectedMonthlyRevenuesFuture * 12;
+  
+  // Usar taxa NOMINAL para projeções de crescimento (não taxa real)
+  // retirementReturnNominal está em percentual (ex: 9.7), converter para decimal
+  const nominalRateForProjection = assumptions.retirementReturnNominal / 100;
+  
+  // Taxa real apenas para cálculos de capital necessário (regra dos 4%)
   const realRateRetirement = assumptions.retirementRealRate / 100;
   
   // Capital inicial (total da carteira)
   const initialCapital = portfolio.total;
   
-  // Anos até aposentadoria
-  const yearsToRetirement = personalData.retirementAge - personalData.age;
-  
   // Anos na aposentadoria
   const yearsInRetirement = personalData.lifeExpectancy - personalData.retirementAge;
+  
+  // Log de debug para verificar valores
+  if (process.env.NODE_ENV === 'development') {
+    console.log('calculateNotRetired: Parâmetros de cálculo', {
+      initialCapital,
+      monthlySavings,
+      annualSavings,
+      nominalRateForProjection: nominalRateForProjection * 100 + '%',
+      yearsToRetirement,
+      desiredAnnualIncome,
+      expectedAnnualRevenues,
+      inflationFactor: (inflationFactor - 1) * 100 + '%'
+    });
+  }
   
   // ========================================================================
   // CENÁRIO 1: Projeção atual
   // ========================================================================
   
   // Validar valores antes de calcular
-  if (!isFinite(realRateCurrent) || !isFinite(yearsToRetirement) || !isFinite(annualSavings) || !isFinite(initialCapital)) {
+  if (!isFinite(nominalRateForProjection) || !isFinite(yearsToRetirement) || !isFinite(monthlySavings) || !isFinite(initialCapital)) {
     console.error('calculateNotRetired: Valores inválidos detectados', {
-      realRateCurrent,
+      nominalRateForProjection,
       yearsToRetirement,
-      annualSavings,
+      monthlySavings,
       initialCapital
     });
     // Retornar valores padrão seguros
@@ -482,17 +576,29 @@ export function calculateNotRetired(
     };
   }
   
-  // FV com PV negativo (capital inicial) e PMT negativo (aportes anuais)
-  const projectedCapital = calculateFutureValue(
-    realRateCurrent,
-    yearsToRetirement,
-    -annualSavings, // PMT negativo (aportes são saídas)
-    -initialCapital // PV negativo (investimento inicial é saída)
+  // Calcular capital projetado usando capitalização mensal e aportes mensais
+  // Usar taxa NOMINAL para crescimento do patrimônio
+  const projectedCapital = calculateFutureValueMonthly(
+    nominalRateForProjection, // Taxa nominal anual (decimal)
+    yearsToRetirement, // Anos até aposentadoria
+    monthlySavings, // Aporte mensal (positivo)
+    initialCapital // Capital inicial (positivo)
   );
   
   // Validar resultado do capital projetado
   if (!isFinite(projectedCapital) || projectedCapital < 0) {
     console.error('calculateNotRetired: Capital projetado inválido', { projectedCapital });
+  }
+  
+  // Log de debug
+  if (process.env.NODE_ENV === 'development') {
+    console.log('calculateNotRetired: Capital projetado', {
+      initialCapital,
+      monthlySavings,
+      yearsToRetirement,
+      nominalRate: nominalRateForProjection * 100 + '%',
+      projectedCapital
+    });
   }
   
   const extraIncomeNeeded = desiredAnnualIncome - expectedAnnualRevenues;
@@ -506,11 +612,11 @@ export function calculateNotRetired(
     yearsInRetirement
   );
   
-  // Projeção ano a ano - Cenário 1
+  // Projeção ano a ano - Cenário 1 (usando capitalização mensal)
   const yearlyProjections = projectYearly(
     initialCapital,
-    realRateCurrent,
-    annualSavings,
+    nominalRateForProjection, // Taxa nominal anual
+    monthlySavings, // Aporte mensal
     personalData.retirementAge,
     personalData.lifeExpectancy,
     personalData.age,
@@ -522,20 +628,20 @@ export function calculateNotRetired(
   // CENÁRIO 2: Manutenção do patrimônio
   // ========================================================================
   
-  // Calcular PMT necessário para atingir capital de manutenção
-  // PMT retorna negativo (aporte necessário), converter para positivo depois
-  const requiredPMTMaintenance = calculatePayment(
-    realRateCurrent,
+  // Calcular aporte mensal necessário para atingir capital de manutenção
+  // Usar taxa nominal e capitalização mensal
+  const requiredMonthlyPMTMaintenance = calculateRequiredMonthlyContribution(
+    requiredCapitalMaintenance,
+    initialCapital,
     yearsToRetirement,
-    -initialCapital, // PV negativo (investimento inicial)
-    requiredCapitalMaintenance // FV positivo (objetivo)
+    nominalRateForProjection
   );
   
-  // Projeção ano a ano - Cenário 2
+  // Projeção ano a ano - Cenário 2 (usando capitalização mensal)
   const maintenanceProjections = projectYearly(
     initialCapital,
-    realRateCurrent,
-    Math.abs(requiredPMTMaintenance), // Aporte anual positivo
+    nominalRateForProjection, // Taxa nominal anual
+    requiredMonthlyPMTMaintenance, // Aporte mensal necessário
     personalData.retirementAge,
     personalData.lifeExpectancy,
     personalData.age,
@@ -547,20 +653,20 @@ export function calculateNotRetired(
   // CENÁRIO 3: Consumo do patrimônio
   // ========================================================================
   
-  // Calcular PMT necessário para atingir capital de consumo
-  // PMT retorna negativo (aporte necessário), converter para positivo depois
-  const requiredPMTConsumption = calculatePayment(
-    realRateCurrent,
+  // Calcular aporte mensal necessário para atingir capital de consumo
+  // Usar taxa nominal e capitalização mensal
+  const requiredMonthlyPMTConsumption = calculateRequiredMonthlyContribution(
+    requiredCapitalConsumption,
+    initialCapital,
     yearsToRetirement,
-    -initialCapital, // PV negativo (investimento inicial)
-    requiredCapitalConsumption // FV positivo (objetivo)
+    nominalRateForProjection
   );
   
-  // Projeção ano a ano - Cenário 3
+  // Projeção ano a ano - Cenário 3 (usando capitalização mensal)
   const consumptionProjections = projectYearly(
     initialCapital,
-    realRateCurrent,
-    Math.abs(requiredPMTConsumption), // Aporte anual positivo
+    nominalRateForProjection, // Taxa nominal anual
+    requiredMonthlyPMTConsumption, // Aporte mensal necessário
     personalData.retirementAge,
     personalData.lifeExpectancy,
     personalData.age,
@@ -588,11 +694,20 @@ export function calculateNotRetired(
   // CALCULAR RENTABILIDADES NECESSÁRIAS PARA CADA CENÁRIO
   // ========================================================================
   
+  // Calcular rentabilidades necessárias usando capitalização mensal
+  // Converter aportes mensais para anuais equivalentes para cálculo de taxa necessária
+  // (Usar aproximação anual para cálculo de taxa, mas projeção usa mensal)
+  
   // Cenário 1: Rentabilidade necessária para atingir capital de manutenção
-  // PMT e PV negativos (aportes e investimento inicial são saídas)
+  // Usar taxa mensal equivalente para cálculo
+  const monthlyRateForRequired = convertAnnualToMonthlyRate(nominalRateForProjection);
+  const totalMonths = yearsToRetirement * 12;
+  
+  // Calcular taxa necessária usando método iterativo com capitalização mensal
+  // Aproximação: usar taxa anual equivalente
   const requiredRateCurrent = calculateRequiredRate(
     yearsToRetirement,
-    -annualSavings, // PMT negativo (aportes)
+    -annualSavings, // PMT negativo (aportes anuais equivalentes)
     -initialCapital, // PV negativo (investimento inicial)
     requiredCapitalMaintenance // FV positivo (objetivo)
   );
@@ -602,11 +717,11 @@ export function calculateNotRetired(
     : undefined;
   
   // Cenário 2: Rentabilidade necessária para manutenção (viver de renda)
-  // PMT retorna negativo, usar valor absoluto
-  const requiredRateMaintenance = Math.abs(requiredPMTMaintenance) > 0
+  const requiredAnnualPMTMaintenance = requiredMonthlyPMTMaintenance * 12;
+  const requiredRateMaintenance = requiredAnnualPMTMaintenance > 0
     ? calculateRequiredRate(
         yearsToRetirement,
-        requiredPMTMaintenance, // Já é negativo (aporte necessário)
+        -requiredAnnualPMTMaintenance, // PMT negativo (aporte anual necessário)
         -initialCapital, // PV negativo (investimento inicial)
         requiredCapitalMaintenance // FV positivo (objetivo)
       )
@@ -617,11 +732,11 @@ export function calculateNotRetired(
     : undefined;
   
   // Cenário 3: Rentabilidade necessária para consumo
-  // PMT retorna negativo, usar valor absoluto
-  const requiredRateConsumption = Math.abs(requiredPMTConsumption) > 0
+  const requiredAnnualPMTConsumption = requiredMonthlyPMTConsumption * 12;
+  const requiredRateConsumption = requiredAnnualPMTConsumption > 0
     ? calculateRequiredRate(
         yearsToRetirement,
-        requiredPMTConsumption, // Já é negativo (aporte necessário)
+        -requiredAnnualPMTConsumption, // PMT negativo (aporte anual necessário)
         -initialCapital, // PV negativo (investimento inicial)
         requiredCapitalConsumption // FV positivo (objetivo)
       )
@@ -706,8 +821,8 @@ export function calculateNotRetired(
   const safeProjectedCapital = validateMonetaryValue(projectedCapital, initialCapital);
   const safeRequiredCapitalMaintenance = validateMonetaryValue(requiredCapitalMaintenance);
   const safeRequiredCapitalConsumption = validateMonetaryValue(requiredCapitalConsumption);
-  const safeRequiredPMTMaintenance = validateMonetaryValue(Math.abs(requiredPMTMaintenance), 0);
-  const safeRequiredPMTConsumption = validateMonetaryValue(Math.abs(requiredPMTConsumption), 0);
+  const safeRequiredPMTMaintenance = validateMonetaryValue(requiredMonthlyPMTMaintenance * 12, 0); // Converter para anual para exibição
+  const safeRequiredPMTConsumption = validateMonetaryValue(requiredMonthlyPMTConsumption * 12, 0); // Converter para anual para exibição
   
   // Validar projeções anuais
   const safeYearlyProjections = combinedProjections.map(proj => ({

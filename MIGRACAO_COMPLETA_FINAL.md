@@ -109,3 +109,6 @@ Tudo funcionando sem erros de Prisma ou RLS!
 
 
 
+
+
+

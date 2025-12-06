@@ -21,6 +21,7 @@ import InvestmentProjectionTable from "@/components/wealth-planning/InvestmentPr
 import WealthGoalCalculator from "@/components/wealth-planning/WealthGoalCalculator";
 import { DashboardSummary } from "@/components/wealth-planning/DashboardSummary";
 import { CollapsibleSection } from "@/components/wealth-planning/CollapsibleSection";
+import { MethodologyExplanation } from "@/components/wealth-planning/MethodologyExplanation";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { SaveIndicator, useSaveIndicator } from "@/components/wealth-planning/SaveIndicator";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -608,13 +609,52 @@ export default function InteractiveDashboard({
               <span className="text-sm font-semibold text-[#262d3d] font-sans">{pd?.suitability || "Não informado"}</span>
             </div>
             <div className="flex items-center justify-between py-3 border-b border-[#e3e3e3]">
-              <span className="text-sm text-[#262d3d] font-sans">Rentabilidade Aposentadoria (Nominal)</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-[#262d3d] font-sans">Rentabilidade Aposentadoria (Nominal)</span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="inline-flex items-center justify-center"
+                      aria-label="Mais informações sobre Taxa Nominal"
+                    >
+                      <Info className="h-3 w-3 text-[#577171] hover:text-[#262d3d] transition-colors" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="font-sans text-sm mb-2">
+                      <strong>Taxa Nominal:</strong> Taxa de retorno antes de descontar a inflação. Esta é a taxa usada para calcular o crescimento do patrimônio.
+                    </p>
+                    <p className="font-sans text-sm">
+                      <strong>Taxa Real:</strong> Taxa de retorno após descontar a inflação. Usada para calcular o capital necessário (poder de compra).
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
               <span className="text-sm font-semibold text-[#262d3d] font-sans">
                 {formatPercentage((localScenario.assumptions?.retirementReturnNominal || 0) / 100)}
               </span>
             </div>
             <div className="flex items-center justify-between py-3 border-b border-[#e3e3e3]">
-              <span className="text-sm text-[#262d3d] font-sans">Juro Real na Aposentadoria</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-[#262d3d] font-sans">Juro Real na Aposentadoria</span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="inline-flex items-center justify-center"
+                      aria-label="Mais informações sobre Taxa Real"
+                    >
+                      <Info className="h-3 w-3 text-[#577171] hover:text-[#262d3d] transition-colors" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p className="font-sans text-sm">
+                      Taxa de retorno real (após inflação) usada para calcular o capital necessário para manter o poder de compra na aposentadoria.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
               <span className="text-sm font-semibold text-[#262d3d] font-sans">
                 {formatPercentage((localScenario.assumptions?.retirementRealRate || 0) / 100)}
               </span>
@@ -633,6 +673,9 @@ export default function InteractiveDashboard({
             </div>
             </div>
           </CollapsibleSection>
+
+          {/* Como Calculamos */}
+          <MethodologyExplanation scenario={localScenario} />
 
           {/* Proteção Familiar */}
           {localResults.familyProtection && (
