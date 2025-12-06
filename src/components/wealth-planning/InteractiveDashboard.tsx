@@ -3,18 +3,25 @@
 import { useState, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Info } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { calculateScenario } from "@/lib/wealth-planning/calculations";
 import { calculateRequiredMonthlyContribution, calculateCapitalUsing4PercentRule } from "@/lib/wealth-planning/calculations";
 import type { WealthPlanningScenario, CalculationResults, ScenarioData } from "@/types/wealth-planning";
 import ProjectionChartFixed from "@/components/wealth-planning/ProjectionChartFixed";
-import FinancialThermometer from "@/components/wealth-planning/FinancialThermometer";
 import ScenariosTable from "@/components/wealth-planning/ScenariosTable";
 import ProtectionChart from "@/components/wealth-planning/ProtectionChart";
 import FinancialSummary from "@/components/wealth-planning/FinancialSummary";
 import InvestmentProjectionTable from "@/components/wealth-planning/InvestmentProjectionTable";
 import WealthGoalCalculator from "@/components/wealth-planning/WealthGoalCalculator";
+import { DashboardSummary } from "@/components/wealth-planning/DashboardSummary";
+import { CollapsibleSection } from "@/components/wealth-planning/CollapsibleSection";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { AnimatedNumber, formatters } from "@/components/wealth-planning/AnimatedNumber";
 import { SaveIndicator, useSaveIndicator } from "@/components/wealth-planning/SaveIndicator";
 import { useDebounce } from "@/hooks/useDebounce";
 
@@ -183,184 +190,288 @@ export default function InteractiveDashboard({
         onDismiss={saveIndicator.reset}
       />
       
-      <div className="space-y-12">
-        {/* Resumo Financeiro */}
+      <div className="space-y-8">
+        {/* Resumo Executivo - Sempre visível no topo */}
+        <DashboardSummary
+          results={results}
+          requiredMonthlyContribution={requiredMonthlyContribution}
+          gap={gap}
+        />
+
+        {/* Resumo Financeiro - Colapsável */}
+        <CollapsibleSection
+          title="Resumo Financeiro"
+          description="Renda, despesas e saldo atual"
+          defaultOpen={false}
+        >
         <FinancialSummary
           financialData={fd}
           currentAnnualIncome={fd?.currentAnnualIncome}
         />
+        </CollapsibleSection>
 
-        {/* Métricas Principais - Grid Minimalista */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white border border-[#e3e3e3] rounded-lg p-6">
-            <div className="text-xs text-[#577171] uppercase tracking-wide mb-3 font-sans">Capital Projetado</div>
-            <div className="text-3xl font-semibold text-[#262d3d] font-sans">
-              <AnimatedNumber
-                value={results.currentScenario.projectedCapital}
-                format={formatters.currency}
-              />
+        {/* Parâmetros Editáveis - Colapsável */}
+        <TooltipProvider>
+          <CollapsibleSection
+            title="Parâmetros Editáveis"
+            description="Ajuste os valores para ver como impactam o planejamento"
+            defaultOpen={false}
+          >
+            <div className="bg-white border border-[#e3e3e3] rounded-lg p-6">
+              <div className="space-y-1">
+                <div className="flex items-center justify-between py-3 border-b border-[#e3e3e3] hover:bg-[#e3e3e3]/30 px-2 -mx-2 rounded transition-colors">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm text-[#262d3d] font-sans">Idade Atual</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center"
+                          aria-label="Mais informações sobre Idade Atual"
+                        >
+                          <Info className="h-3 w-3 text-[#577171] hover:text-[#262d3d] transition-colors" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="font-sans text-sm">
+                          Idade atual do cliente. Determina o horizonte de investimento até a aposentadoria.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input
+                    type="number"
+                    value={pd?.age || 0}
+                    onChange={(e) => updateField("personalData.age", parseInt(e.target.value) || 0)}
+                    className="w-20 text-right border-0 focus:ring-0 focus-visible:ring-0 p-0 h-auto text-sm font-medium font-sans text-[#262d3d] bg-transparent"
+                  />
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-[#e3e3e3] hover:bg-[#e3e3e3]/30 px-2 -mx-2 rounded transition-colors">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm text-[#262d3d] font-sans">Idade Aposentadoria</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center"
+                          aria-label="Mais informações sobre Idade de Aposentadoria"
+                        >
+                          <Info className="h-3 w-3 text-[#577171] hover:text-[#262d3d] transition-colors" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="font-sans text-sm">
+                          Idade em que o cliente planeja se aposentar. Deve ser maior que a idade atual.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input
+                    type="number"
+                    value={pd?.retirementAge || 0}
+                    onChange={(e) => updateField("personalData.retirementAge", parseInt(e.target.value) || 0)}
+                    className="w-20 text-right border-0 focus:ring-0 focus-visible:ring-0 p-0 h-auto text-sm font-medium font-sans text-[#262d3d] bg-transparent"
+                  />
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-[#e3e3e3] hover:bg-[#e3e3e3]/30 px-2 -mx-2 rounded transition-colors">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm text-[#262d3d] font-sans">Capital Atual</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center"
+                          aria-label="Mais informações sobre Capital Atual"
+                        >
+                          <Info className="h-3 w-3 text-[#577171] hover:text-[#262d3d] transition-colors" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="font-sans text-sm">
+                          Valor total atual do patrimônio investido. Inclui todos os investimentos e ativos financeiros.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input
+                    type="number"
+                    value={portfolio?.total || 0}
+                    onChange={(e) => {
+                      const newTotal = parseFloat(e.target.value) || 0;
+                      const updatedAssets = portfolio.assets.map((asset, idx) => 
+                        idx === 0 ? { ...asset, value: newTotal } : asset
+                      );
+                      updateField("portfolio.total", newTotal);
+                      updateField("portfolio.assets", updatedAssets);
+                    }}
+                    className="w-32 text-right border-0 focus:ring-0 focus-visible:ring-0 p-0 h-auto text-sm font-medium"
+                  />
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-[#e3e3e3] hover:bg-[#e3e3e3]/30 px-2 -mx-2 rounded transition-colors">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm text-[#262d3d] font-sans">Poupança Mensal</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center"
+                          aria-label="Mais informações sobre Poupança Mensal"
+                        >
+                          <Info className="h-3 w-3 text-[#577171] hover:text-[#262d3d] transition-colors" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="font-sans text-sm">
+                          Valor que o cliente consegue poupar e investir mensalmente. Este é o aporte mensal que será aplicado.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input
+                    type="number"
+                    value={fd?.monthlySavings || 0}
+                    onChange={(e) => updateField("financialData.monthlySavings", parseFloat(e.target.value) || 0)}
+                    className="w-32 text-right border-0 focus:ring-0 focus-visible:ring-0 p-0 h-auto text-sm font-medium"
+                  />
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-[#e3e3e3] hover:bg-[#e3e3e3]/30 px-2 -mx-2 rounded transition-colors">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm text-[#262d3d] font-sans">Renda Desejada (Mensal)</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center"
+                          aria-label="Mais informações sobre Renda Desejada"
+                        >
+                          <Info className="h-3 w-3 text-[#577171] hover:text-[#262d3d] transition-colors" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="font-sans text-sm">
+                          Renda mensal que o cliente deseja ter durante a aposentadoria para manter o padrão de vida desejado.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input
+                    type="number"
+                    value={fd?.desiredMonthlyRetirementIncome || 0}
+                    onChange={(e) => updateField("financialData.desiredMonthlyRetirementIncome", parseFloat(e.target.value) || 0)}
+                    className="w-32 text-right border-0 focus:ring-0 focus-visible:ring-0 p-0 h-auto text-sm font-medium"
+                  />
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-[#e3e3e3] hover:bg-[#e3e3e3]/30 px-2 -mx-2 rounded transition-colors">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm text-[#262d3d] font-sans">Receitas Previstas (Mensal)</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center"
+                          aria-label="Mais informações sobre Receitas Previstas"
+                        >
+                          <Info className="h-3 w-3 text-[#577171] hover:text-[#262d3d] transition-colors" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="font-sans text-sm">
+                          Receitas mensais esperadas durante a aposentadoria, como aposentadoria do INSS, aluguéis ou pensões.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input
+                    type="number"
+                    value={fd?.expectedMonthlyRetirementRevenues || 0}
+                    onChange={(e) => updateField("financialData.expectedMonthlyRetirementRevenues", parseFloat(e.target.value) || 0)}
+                    className="w-32 text-right border-0 focus:ring-0 focus-visible:ring-0 p-0 h-auto text-sm font-medium"
+                  />
+                </div>
+                <div className="flex items-center justify-between py-3 border-b border-[#e3e3e3] hover:bg-[#e3e3e3]/30 px-2 -mx-2 rounded transition-colors">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm text-[#262d3d] font-sans">Retorno Esperado (%)</Label>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex items-center justify-center"
+                          aria-label="Mais informações sobre Retorno Esperado"
+                        >
+                          <Info className="h-3 w-3 text-[#577171] hover:text-[#262d3d] transition-colors" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p className="font-sans text-sm">
+                          Taxa de retorno anual esperada dos investimentos, considerando o perfil de risco e a alocação de ativos.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={localScenario.assumptions?.retirementReturnNominal || 0}
+                    onChange={(e) => updateField("assumptions.retirementReturnNominal", parseFloat(e.target.value) || 0)}
+                    className="w-24 text-right border-0 focus:ring-0 focus-visible:ring-0 p-0 h-auto text-sm font-medium"
+                  />
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="bg-white border border-[#e3e3e3] rounded-lg p-6">
-            <div className="text-xs text-[#577171] uppercase tracking-wide mb-3 font-sans">Capital Necessário</div>
-            <div className="text-3xl font-semibold text-[#262d3d] font-sans">
-              <AnimatedNumber
-                value={results.currentScenario.requiredCapital}
-                format={formatters.currency}
-              />
-            </div>
-          {results.currentScenario.requiredCapital > results.currentScenario.projectedCapital && (
-            <div className="text-xs text-[#262d3d] mt-2 font-medium font-sans">
-              Faltam {formatCurrency(results.currentScenario.requiredCapital - results.currentScenario.projectedCapital)}
-            </div>
-          )}
-        </div>
+          </CollapsibleSection>
+        </TooltipProvider>
+
+        {/* Projeções e Análises - Sistema de Tabs */}
         <div className="bg-white border border-[#e3e3e3] rounded-lg p-6">
-          <div className="text-xs text-[#577171] uppercase tracking-wide mb-3 font-sans">Rentabilidade Necessária</div>
-          <div className="text-3xl font-semibold text-[#262d3d] font-sans">
-            {formatPercentage(results.currentScenario.requiredRate || 0)}
-          </div>
-          {results.currentScenario.requiredRealRate !== undefined && (
-            <div className="text-xs text-[#577171] mt-2 font-sans">
-              Real: {formatPercentage(results.currentScenario.requiredRealRate)}
-            </div>
-          )}
-        </div>
-        <div className="bg-white border border-[#e3e3e3] rounded-lg p-6">
-          <div className="text-xs text-[#577171] uppercase tracking-wide mb-3 font-sans">Aporte Mensal Necessário</div>
-          <div className="text-3xl font-semibold text-[#262d3d] font-sans">
-            {formatCurrency(requiredMonthlyContribution)}
-          </div>
-          {gap > 0 && (
-            <div className="text-xs text-[#262d3d] mt-2 font-medium font-sans">
-              +{formatCurrency(gap)} necessário
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Termômetro Financeiro */}
-      {results.financialThermometer !== undefined && (
-        <div>
-          <div className="text-xs font-semibold text-[#577171] uppercase tracking-wide mb-4 font-sans">Indicador Financeiro</div>
-          <FinancialThermometer value={results.financialThermometer} />
-        </div>
-      )}
-
-      {/* Parâmetros Editáveis - Estilo Planilha */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        {/* Coluna Esquerda: Parâmetros */}
-        <div>
-          <div className="text-xs font-semibold text-[#577171] uppercase tracking-wide mb-6 font-sans">Parâmetros</div>
-          <div className="space-y-1">
-            <div className="flex items-center justify-between py-3 border-b border-[#e3e3e3] hover:bg-[#e3e3e3]/30 px-2 -mx-2 rounded transition-colors">
-              <Label className="text-sm text-[#262d3d] font-sans">Idade Atual</Label>
-              <Input
-                type="number"
-                value={pd?.age || 0}
-                onChange={(e) => updateField("personalData.age", parseInt(e.target.value) || 0)}
-                className="w-20 text-right border-0 focus:ring-0 focus-visible:ring-0 p-0 h-auto text-sm font-medium font-sans text-[#262d3d] bg-transparent"
-              />
-            </div>
-            <div className="flex items-center justify-between py-3 border-b border-[#e3e3e3] hover:bg-[#e3e3e3]/30 px-2 -mx-2 rounded transition-colors">
-              <Label className="text-sm text-[#262d3d] font-sans">Idade Aposentadoria</Label>
-              <Input
-                type="number"
-                value={pd?.retirementAge || 0}
-                onChange={(e) => updateField("personalData.retirementAge", parseInt(e.target.value) || 0)}
-                className="w-20 text-right border-0 focus:ring-0 focus-visible:ring-0 p-0 h-auto text-sm font-medium font-sans text-[#262d3d] bg-transparent"
-              />
-            </div>
-            <div className="flex items-center justify-between py-3 border-b border-[#e3e3e3] hover:bg-[#e3e3e3]/30 px-2 -mx-2 rounded transition-colors">
-              <Label className="text-sm text-[#262d3d] font-sans">Capital Atual</Label>
-              <Input
-                type="number"
-                value={portfolio?.total || 0}
-                onChange={(e) => {
-                  const newTotal = parseFloat(e.target.value) || 0;
-                  const updatedAssets = portfolio.assets.map((asset, idx) => 
-                    idx === 0 ? { ...asset, value: newTotal } : asset
-                  );
-                  updateField("portfolio.total", newTotal);
-                  updateField("portfolio.assets", updatedAssets);
-                }}
-                className="w-32 text-right border-0 focus:ring-0 focus-visible:ring-0 p-0 h-auto text-sm font-medium"
-              />
-            </div>
-            <div className="flex items-center justify-between py-3 border-b border-[#e3e3e3] hover:bg-[#e3e3e3]/30 px-2 -mx-2 rounded transition-colors">
-              <Label className="text-sm text-[#262d3d] font-sans">Poupança Mensal</Label>
-              <Input
-                type="number"
-                value={fd?.monthlySavings || 0}
-                onChange={(e) => updateField("financialData.monthlySavings", parseFloat(e.target.value) || 0)}
-                className="w-32 text-right border-0 focus:ring-0 focus-visible:ring-0 p-0 h-auto text-sm font-medium"
-              />
-            </div>
-            <div className="flex items-center justify-between py-3 border-b border-[#e3e3e3] hover:bg-[#e3e3e3]/30 px-2 -mx-2 rounded transition-colors">
-              <Label className="text-sm text-[#262d3d] font-sans">Renda Desejada (Mensal)</Label>
-              <Input
-                type="number"
-                value={fd?.desiredMonthlyRetirementIncome || 0}
-                onChange={(e) => updateField("financialData.desiredMonthlyRetirementIncome", parseFloat(e.target.value) || 0)}
-                className="w-32 text-right border-0 focus:ring-0 focus-visible:ring-0 p-0 h-auto text-sm font-medium"
-              />
-            </div>
-            <div className="flex items-center justify-between py-3 border-b border-[#e3e3e3] hover:bg-[#e3e3e3]/30 px-2 -mx-2 rounded transition-colors">
-              <Label className="text-sm text-[#262d3d] font-sans">Receitas Previstas (Mensal)</Label>
-              <Input
-                type="number"
-                value={fd?.expectedMonthlyRetirementRevenues || 0}
-                onChange={(e) => updateField("financialData.expectedMonthlyRetirementRevenues", parseFloat(e.target.value) || 0)}
-                className="w-32 text-right border-0 focus:ring-0 focus-visible:ring-0 p-0 h-auto text-sm font-medium"
-              />
-            </div>
-            <div className="flex items-center justify-between py-3 border-b border-[#e3e3e3] hover:bg-[#e3e3e3]/30 px-2 -mx-2 rounded transition-colors">
-              <Label className="text-sm text-[#262d3d] font-sans">Retorno Esperado (%)</Label>
-              <Input
-                type="number"
-                step="0.1"
-                value={localScenario.assumptions?.retirementReturnNominal || 0}
-                onChange={(e) => updateField("assumptions.retirementReturnNominal", parseFloat(e.target.value) || 0)}
-                className="w-24 text-right border-0 focus:ring-0 focus-visible:ring-0 p-0 h-auto text-sm font-medium"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Coluna Direita: Sistema de Tabs */}
-        <div>
           <Tabs defaultValue="projecao" className="w-full">
             <TabsList className="mb-6">
-              <TabsTrigger value="projecao">Projeção</TabsTrigger>
-              <TabsTrigger value="objetivo">Objetivo</TabsTrigger>
+              <TabsTrigger value="projecao">Projeções</TabsTrigger>
+              <TabsTrigger value="cenarios">Cenários</TabsTrigger>
+              <TabsTrigger value="objetivo">Calculadora de Objetivo</TabsTrigger>
             </TabsList>
 
             <TabsContent value="projecao" className="space-y-8">
               {/* Gráfico de Projeção de Patrimônio */}
-              <div>
+              <CollapsibleSection
+                title="Gráfico de Projeção de Patrimônio"
+                description="Evolução do patrimônio ao longo do tempo"
+                defaultOpen={true}
+              >
                 <ProjectionChartFixed data={localScenario} />
-              </div>
+              </CollapsibleSection>
 
               {/* Tabela de Investimento */}
-              <div>
+              <CollapsibleSection
+                title="Tabela de Projeção de Investimentos"
+                description="Detalhamento mês a mês do crescimento do patrimônio"
+                defaultOpen={false}
+              >
                 <InvestmentProjectionTable
                   monthlyBalance={monthlyBalance}
                   currentCapital={currentCapital}
                   monthlyReturnRate={monthlyReturnRate}
                 />
-              </div>
+              </CollapsibleSection>
+            </TabsContent>
 
+            <TabsContent value="cenarios" className="space-y-6">
               {/* Tabela Comparativa de Cenários */}
-              <div>
-                <div className="text-xs font-semibold text-[#577171] uppercase tracking-wide mb-4 font-sans">Comparação de Cenários</div>
+              <CollapsibleSection
+                title="Comparação de Cenários"
+                description="Visão comparativa entre diferentes estratégias"
+                defaultOpen={true}
+              >
                 <div className="bg-white border border-[#e3e3e3] rounded-lg p-4">
                   <ScenariosTable results={results} />
                 </div>
-              </div>
+              </CollapsibleSection>
 
               {/* Cenários Detalhados - Cards */}
-              <div>
-                <div className="text-xs font-semibold text-[#577171] uppercase tracking-wide mb-4 font-sans">Detalhes dos Cenários</div>
+              <CollapsibleSection
+                title="Detalhes dos Cenários"
+                description="Análise detalhada de cada estratégia de aposentadoria"
+                defaultOpen={false}
+              >
                 <div className="space-y-4">
                   {/* Cenário 1: Projeção Atual */}
                   <div className="border border-[#e3e3e3] rounded-lg p-6 bg-white">
@@ -470,7 +581,7 @@ export default function InteractiveDashboard({
                     </div>
                   </div>
                 </div>
-              </div>
+              </CollapsibleSection>
             </TabsContent>
 
             <TabsContent value="objetivo">
@@ -482,14 +593,16 @@ export default function InteractiveDashboard({
             </TabsContent>
           </Tabs>
         </div>
-      </div>
 
-      {/* Informações Adicionais */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 border-t border-[#e3e3e3] pt-8 mt-8">
-        {/* Perfil e Premissas */}
-        <div>
-          <div className="text-xs font-semibold text-[#577171] uppercase tracking-wide mb-4 font-sans">Perfil e Premissas</div>
-          <div className="space-y-3 bg-white border border-[#e3e3e3] rounded-lg p-4">
+        {/* Informações Adicionais - Colapsáveis */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Perfil e Premissas */}
+          <CollapsibleSection
+            title="Perfil e Premissas"
+            description="Configurações de risco e premissas macroeconômicas"
+            defaultOpen={false}
+          >
+            <div className="space-y-3 bg-white border border-[#e3e3e3] rounded-lg p-4">
             <div className="flex items-center justify-between py-3 border-b border-[#e3e3e3]">
               <span className="text-sm text-[#262d3d] font-sans">Perfil de Risco</span>
               <span className="text-sm font-semibold text-[#262d3d] font-sans">{pd?.suitability || "Não informado"}</span>
@@ -518,17 +631,20 @@ export default function InteractiveDashboard({
                 {formatPercentage(localScenario.assumptions?.annualCDI || 0)}
               </span>
             </div>
-          </div>
-        </div>
-
-        {/* Proteção Familiar */}
-        {localResults.familyProtection && (
-          <div>
-            <div className="text-xs font-semibold text-[#577171] uppercase tracking-wide mb-4 font-sans">Proteção Familiar</div>
-            <div className="bg-white border border-[#e3e3e3] rounded-lg p-4 mb-4">
-              <ProtectionChart protection={localResults.familyProtection} />
             </div>
-            <div className="space-y-3 bg-white border border-[#e3e3e3] rounded-lg p-4">
+          </CollapsibleSection>
+
+          {/* Proteção Familiar */}
+          {localResults.familyProtection && (
+            <CollapsibleSection
+              title="Proteção Familiar"
+              description="Análise de proteção e sucessão familiar"
+              defaultOpen={false}
+            >
+              <div className="bg-white border border-[#e3e3e3] rounded-lg p-4 mb-4">
+                <ProtectionChart protection={localResults.familyProtection} />
+              </div>
+              <div className="space-y-3 bg-white border border-[#e3e3e3] rounded-lg p-4">
               <div className="flex items-center justify-between py-3 border-b border-[#e3e3e3]">
                 <span className="text-sm text-[#262d3d] font-sans">Proteção Total Necessária</span>
                 <span className="text-sm font-semibold text-[#262d3d] font-sans">
@@ -547,11 +663,11 @@ export default function InteractiveDashboard({
                   {formatCurrency(localResults.familyProtection.successionLiquidity)}
                 </span>
               </div>
-              {/* spouseProtection e dependentsProtection não existem em FamilyProtection */}
-            </div>
-          </div>
-        )}
-      </div>
+                {/* spouseProtection e dependentsProtection não existem em FamilyProtection */}
+              </div>
+            </CollapsibleSection>
+          )}
+        </div>
 
         {isCalculating && (
           <div className="text-xs text-[#577171] text-center py-2 font-sans">Atualizando...</div>

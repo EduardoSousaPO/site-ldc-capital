@@ -275,6 +275,137 @@ function generatePDFHTML(scenario: any): string {
     yearsToRetirement,
     nominalRate
   );
+  
+  // Calcular valores para o resumo executivo
+  const summaryCapitalGap = notRetired ? ((notRetired.currentScenario?.requiredCapital || 0) - (notRetired.currentScenario?.projectedCapital || 0)) : 0;
+  const summaryIsOnTrack = summaryCapitalGap <= 0;
+
+  // Construir seção do resumo executivo
+  const summarySection = notRetired ? `
+  <!-- RESUMO EXECUTIVO (ESTILO DASHBOARD) -->
+  <div class="summary-section">
+    <div class="summary-header">
+      <div>
+        <h2 class="summary-title sans">Resumo Executivo</h2>
+        <p class="summary-description sans">Uma visão geral dos principais indicadores do seu cenário financeiro.</p>
+      </div>
+      ${notRetired.financialThermometer !== undefined ? `
+      <div class="thermometer-container">
+        <div class="thermometer-label-text sans">Indicador Financeiro</div>
+        <div class="thermometer-bar" style="width: 120px;">
+          <div class="thermometer-fill" style="width: ${Math.min(100, (notRetired.financialThermometer / 10) * 100)}%;">
+            ${notRetired.financialThermometer.toFixed(1)}
+          </div>
+        </div>
+        <div class="thermometer-markers" style="width: 120px;">
+          <span>0</span>
+          <span>7</span>
+          <span>10</span>
+        </div>
+      </div>
+      ` : ''}
+    </div>
+    
+    <!-- KPIs PRINCIPAIS -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label sans">Capital Projetado</div>
+        <div class="metric-value sans">${formatCurrency(notRetired.currentScenario?.projectedCapital || 0)}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label sans">Capital Necessário</div>
+        <div class="metric-value sans">${formatCurrency(notRetired.currentScenario?.requiredCapital || 0)}</div>
+        ${summaryCapitalGap > 0 ? `
+        <div class="metric-subtext sans">Faltam ${formatCurrency(summaryCapitalGap)}</div>
+        ` : `
+        <div class="metric-subtext-success sans">Meta alcançada ✓</div>
+        `}
+      </div>
+      <div class="metric-card">
+        <div class="metric-label sans">Rentabilidade Necessária</div>
+        <div class="metric-value sans">${formatPercentage((notRetired.currentScenario?.requiredRate || 0) * 100)}</div>
+        ${notRetired.currentScenario?.requiredRealRate !== undefined ? `
+        <div class="metric-subtext sans" style="color: #577171;">Real: ${formatPercentage(notRetired.currentScenario.requiredRealRate * 100)}</div>
+        ` : ''}
+      </div>
+      <div class="metric-card">
+        <div class="metric-label sans">Aporte Mensal Necessário</div>
+        <div class="metric-value sans">${formatCurrency(requiredMonthlyContribution)}</div>
+        ${requiredMonthlyContribution > (financialData?.monthlySavings || 0) ? `
+        <div class="metric-subtext sans">+${formatCurrency(requiredMonthlyContribution - (financialData?.monthlySavings || 0))} necessário</div>
+        ` : `
+        <div class="metric-subtext-success sans">Aporte suficiente ✓</div>
+        `}
+      </div>
+    </div>
+    
+    <!-- STATUS GERAL -->
+    <div class="status-section">
+      <div class="status-content">
+        <div class="status-text">
+          <div class="status-label sans">Status do Planejamento</div>
+          <div class="status-description sans">
+            ${summaryIsOnTrack
+              ? "Seu planejamento está no caminho certo para alcançar seus objetivos."
+              : "Ajustes são necessários para alcançar seus objetivos de aposentadoria."}
+          </div>
+        </div>
+        <div class="status-badge ${summaryIsOnTrack ? 'status-badge-success' : 'status-badge-warning'} sans">
+          ${summaryIsOnTrack ? "No Caminho Certo" : "Ajustes Necessários"}
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- TERMÔMETRO FINANCEIRO DETALHADO -->
+  ${notRetired.financialThermometer !== undefined ? `
+  <div class="thermometer-container" style="border: 1px solid #e3e3e3; border-radius: 6px; padding: 12px; margin: 12px 0; background: white;">
+    <h3 class="sans">Termômetro Financeiro</h3>
+    <div>
+      <div class="thermometer-bar">
+        <div class="thermometer-fill" style="width: ${Math.min(100, (notRetired.financialThermometer / 10) * 100)}%;">
+          ${notRetired.financialThermometer.toFixed(1)}
+        </div>
+      </div>
+      <div class="thermometer-markers">
+        <span>0</span>
+        <span>7</span>
+        <span>10</span>
+      </div>
+      
+      <div class="thermometer-info">
+        <div class="thermometer-label sans">
+          ${notRetired.financialThermometer >= 10 ? 'Em linha para viver de renda' : 
+            notRetired.financialThermometer >= 7 ? 'Em linha para manter o padrão de vida desejado' : 
+            'Atenção, padrão de vida ameaçado'}
+        </div>
+        <p class="thermometer-description sans">
+          ${notRetired.financialThermometer >= 10 ? 
+            'Seu capital projetado é suficiente para viver apenas dos rendimentos, sem consumir o principal.' : 
+            notRetired.financialThermometer >= 7 ? 
+            'Seu capital projetado permite manter o padrão de vida desejado, mas pode ser necessário consumir parte do patrimônio.' : 
+            'Seu capital projetado é insuficiente. Considere aumentar a poupança, adiar a aposentadoria ou ajustar suas expectativas.'}
+        </p>
+      </div>
+      
+      <div class="thermometer-legend">
+        <div class="legend-item legend-item-10">
+          <div class="legend-value legend-value-10 sans">≥10</div>
+          <div class="sans" style="color: #262d3d; font-size: 7pt;">Em linha para viver de renda</div>
+        </div>
+        <div class="legend-item legend-item-7">
+          <div class="legend-value legend-value-7 sans">≥7</div>
+          <div class="sans" style="color: #262d3d; font-size: 7pt;">Em linha para manter padrão</div>
+        </div>
+        <div class="legend-item legend-item-0">
+          <div class="legend-value legend-value-0 sans">0</div>
+          <div class="sans" style="color: #262d3d; font-size: 7pt;">Atenção, padrão ameaçado</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  ` : ''}
+  ` : '';
 
   return `
 <!DOCTYPE html>
@@ -394,18 +525,50 @@ function generatePDFHTML(scenario: any): string {
       font-family: 'Public Sans', 'Arial', sans-serif;
     }
     
+    .summary-section {
+      background: linear-gradient(to bottom right, rgba(152, 171, 68, 0.05), transparent);
+      border: 2px solid rgba(152, 171, 68, 0.2);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+    
+    .summary-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    
+    .summary-title {
+      font-size: 24pt;
+      font-weight: bold;
+      color: #262d3d;
+      font-family: 'Public Sans', 'Arial', sans-serif;
+      margin: 0;
+    }
+    
+    .summary-description {
+      font-size: 9pt;
+      color: #577171;
+      font-family: 'Public Sans', 'Arial', sans-serif;
+      margin-top: 4px;
+    }
+    
     .metrics-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      margin: 12px 0;
+      gap: 24px;
+      margin-bottom: 24px;
     }
     
     .metric-card {
       background: white;
-      border: 1px solid #e3e3e3;
-      border-radius: 6px;
-      padding: 12px;
+      border: 2px solid #e3e3e3;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      transition: box-shadow 0.2s;
     }
     
     .metric-label {
@@ -413,32 +576,100 @@ function generatePDFHTML(scenario: any): string {
       color: #577171;
       text-transform: uppercase;
       letter-spacing: 0.3px;
-      margin-bottom: 6px;
+      margin-bottom: 12px;
       font-weight: 600;
       font-family: 'Public Sans', 'Arial', sans-serif;
     }
     
     .metric-value {
-      font-size: 16pt;
-      font-weight: 600;
+      font-size: 24pt;
+      font-weight: bold;
       color: #262d3d;
       font-family: 'Public Sans', 'Arial', sans-serif;
+      line-height: 1.2;
     }
     
     .metric-subtext {
-      font-size: 7pt;
-      color: #262d3d;
-      margin-top: 4px;
+      font-size: 9pt;
+      color: #dc2626;
+      margin-top: 8px;
       font-weight: 500;
       font-family: 'Public Sans', 'Arial', sans-serif;
     }
     
+    .metric-subtext-success {
+      font-size: 9pt;
+      color: #16a34a;
+      margin-top: 8px;
+      font-weight: 500;
+      font-family: 'Public Sans', 'Arial', sans-serif;
+    }
+    
+    .status-section {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid #e3e3e3;
+    }
+    
+    .status-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .status-text {
+      flex: 1;
+    }
+    
+    .status-label {
+      font-size: 9pt;
+      font-weight: 600;
+      color: #262d3d;
+      font-family: 'Public Sans', 'Arial', sans-serif;
+      margin-bottom: 4px;
+    }
+    
+    .status-description {
+      font-size: 8pt;
+      color: #577171;
+      font-family: 'Public Sans', 'Arial', sans-serif;
+    }
+    
+    .status-badge {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-family: 'Public Sans', 'Arial', sans-serif;
+      font-weight: 600;
+      font-size: 9pt;
+    }
+    
+    .status-badge-success {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #86efac;
+    }
+    
+    .status-badge-warning {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+    
     .thermometer-container {
-      border: 1px solid #e3e3e3;
-      border-radius: 6px;
-      padding: 12px;
-      margin: 12px 0;
-      background: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .thermometer-label-text {
+      font-size: 7pt;
+      color: #577171;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      font-weight: 600;
+      font-family: 'Public Sans', 'Arial', sans-serif;
+      margin-bottom: 4px;
     }
     
     .thermometer-bar {
@@ -818,38 +1049,85 @@ function generatePDFHTML(scenario: any): string {
   </div>
   
   ${notRetired ? `
-  <!-- MÉTRICAS PRINCIPAIS -->
-  <div class="metrics-grid">
-    <div class="metric-card">
-      <div class="metric-label sans">Capital Projetado</div>
-      <div class="metric-value sans">${formatCurrency(notRetired.currentScenario?.projectedCapital || 0)}</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-label sans">Capital Necessário</div>
-      <div class="metric-value sans">${formatCurrency(notRetired.currentScenario?.requiredCapital || 0)}</div>
-      ${(notRetired.currentScenario?.requiredCapital || 0) > (notRetired.currentScenario?.projectedCapital || 0) ? `
-      <div class="metric-subtext sans">Faltam ${formatCurrency((notRetired.currentScenario?.requiredCapital || 0) - (notRetired.currentScenario?.projectedCapital || 0))}</div>
+  <!-- RESUMO EXECUTIVO (ESTILO DASHBOARD) -->
+  <div class="summary-section">
+    <div class="summary-header">
+      <div>
+        <h2 class="summary-title sans">Resumo Executivo</h2>
+        <p class="summary-description sans">Uma visão geral dos principais indicadores do seu cenário financeiro.</p>
+      </div>
+      ${notRetired.financialThermometer !== undefined ? `
+      <div class="thermometer-container">
+        <div class="thermometer-label-text sans">Indicador Financeiro</div>
+        <div class="thermometer-bar" style="width: 120px;">
+          <div class="thermometer-fill" style="width: ${Math.min(100, (notRetired.financialThermometer / 10) * 100)}%;">
+            ${notRetired.financialThermometer.toFixed(1)}
+          </div>
+        </div>
+        <div class="thermometer-markers" style="width: 120px;">
+          <span>0</span>
+          <span>7</span>
+          <span>10</span>
+        </div>
+      </div>
       ` : ''}
     </div>
-    <div class="metric-card">
-      <div class="metric-label sans">Rentabilidade Necessária</div>
-      <div class="metric-value sans">${formatPercentage((notRetired.currentScenario?.requiredRate || 0) * 100)}</div>
-      ${notRetired.currentScenario?.requiredRealRate !== undefined ? `
-      <div class="metric-subtext sans">Real: ${formatPercentage(notRetired.currentScenario.requiredRealRate * 100)}</div>
-      ` : ''}
+    
+    <!-- KPIs PRINCIPAIS -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-label sans">Capital Projetado</div>
+        <div class="metric-value sans">${formatCurrency(notRetired.currentScenario?.projectedCapital || 0)}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label sans">Capital Necessário</div>
+        <div class="metric-value sans">${formatCurrency(notRetired.currentScenario?.requiredCapital || 0)}</div>
+        ${summaryCapitalGap > 0 ? `
+        <div class="metric-subtext sans">Faltam ${formatCurrency(summaryCapitalGap)}</div>
+        ` : `
+        <div class="metric-subtext-success sans">Meta alcançada ✓</div>
+        `}
+      </div>
+      <div class="metric-card">
+        <div class="metric-label sans">Rentabilidade Necessária</div>
+        <div class="metric-value sans">${formatPercentage((notRetired.currentScenario?.requiredRate || 0) * 100)}</div>
+        ${notRetired.currentScenario?.requiredRealRate !== undefined ? `
+        <div class="metric-subtext sans" style="color: #577171;">Real: ${formatPercentage(notRetired.currentScenario.requiredRealRate * 100)}</div>
+        ` : ''}
+      </div>
+      <div class="metric-card">
+        <div class="metric-label sans">Aporte Mensal Necessário</div>
+        <div class="metric-value sans">${formatCurrency(requiredMonthlyContribution)}</div>
+        ${requiredMonthlyContribution > (financialData?.monthlySavings || 0) ? `
+        <div class="metric-subtext sans">+${formatCurrency(requiredMonthlyContribution - (financialData?.monthlySavings || 0))} necessário</div>
+        ` : `
+        <div class="metric-subtext-success sans">Aporte suficiente ✓</div>
+        `}
+      </div>
     </div>
-    <div class="metric-card">
-      <div class="metric-label sans">Aporte Mensal Necessário</div>
-      <div class="metric-value sans">${formatCurrency(requiredMonthlyContribution)}</div>
-      ${requiredMonthlyContribution > (financialData?.monthlySavings || 0) ? `
-      <div class="metric-subtext sans">+${formatCurrency(requiredMonthlyContribution - (financialData?.monthlySavings || 0))} necessário</div>
-      ` : ''}
+    
+    <!-- STATUS GERAL -->
+    <div class="status-section">
+      <div class="status-content">
+        <div class="status-text">
+          <div class="status-label sans">Status do Planejamento</div>
+          <div class="status-description sans">
+            ${summaryIsOnTrack
+              ? "Seu planejamento está no caminho certo para alcançar seus objetivos."
+              : "Ajustes são necessários para alcançar seus objetivos de aposentadoria."}
+          </div>
+        </div>
+        <div class="status-badge ${summaryIsOnTrack ? 'status-badge-success' : 'status-badge-warning'} sans">
+          ${summaryIsOnTrack ? "No Caminho Certo" : "Ajustes Necessários"}
+        </div>
+      </div>
     </div>
   </div>
+  ` : ''}
   
-  <!-- TERMÔMETRO FINANCEIRO -->
+  <!-- TERMÔMETRO FINANCEIRO DETALHADO -->
   ${notRetired.financialThermometer !== undefined ? `
-  <div class="thermometer-container">
+  <div class="thermometer-container" style="border: 1px solid #e3e3e3; border-radius: 6px; padding: 12px; margin: 12px 0; background: white;">
     <h3 class="sans">Termômetro Financeiro</h3>
     <div>
       <div class="thermometer-bar">
@@ -1051,7 +1329,7 @@ function generatePDFHTML(scenario: any): string {
             <div class="scenario-item-value sans">
               ${formatPercentage((notRetired.currentScenario?.requiredRate || 0) * 100)}
               ${notRetired.currentScenario?.requiredRealRate !== undefined ? 
-                `<span style="color: #577171; font-weight: normal; font-size: 8pt;">(${formatPercentage(notRetired.currentScenario.requiredRealRate * 100)} real)</span>` : ''}
+                '<span style="color: #577171; font-weight: normal; font-size: 8pt;">(' + formatPercentage(notRetired.currentScenario.requiredRealRate * 100) + ' real)</span>' : ''}
             </div>
           </div>
           <div class="scenario-item">
@@ -1085,7 +1363,7 @@ function generatePDFHTML(scenario: any): string {
             <div class="scenario-item-value sans">
               ${formatPercentage((notRetired.maintenanceScenario?.requiredRate || 0) * 100)}
               ${notRetired.maintenanceScenario?.requiredRealRate !== undefined ? 
-                `<span style="color: #577171; font-weight: normal; font-size: 8pt;">(${formatPercentage(notRetired.maintenanceScenario.requiredRealRate * 100)} real)</span>` : ''}
+                '<span style="color: #577171; font-weight: normal; font-size: 8pt;">(' + formatPercentage(notRetired.maintenanceScenario.requiredRealRate * 100) + ' real)</span>' : ''}
             </div>
           </div>
           <div class="scenario-item">
@@ -1119,7 +1397,7 @@ function generatePDFHTML(scenario: any): string {
             <div class="scenario-item-value sans">
               ${formatPercentage((notRetired.consumptionScenario?.requiredRate || 0) * 100)}
               ${notRetired.consumptionScenario?.requiredRealRate !== undefined ? 
-                `<span style="color: #577171; font-weight: normal; font-size: 8pt;">(${formatPercentage(notRetired.consumptionScenario.requiredRealRate * 100)} real)</span>` : ''}
+                '<span style="color: #577171; font-weight: normal; font-size: 8pt;">(' + formatPercentage(notRetired.consumptionScenario.requiredRealRate * 100) + ' real)</span>' : ''}
             </div>
           </div>
           <div class="scenario-item">
@@ -1129,10 +1407,6 @@ function generatePDFHTML(scenario: any): string {
         </div>
       </div>
     </div>
-  </div>
-  
-  <div class="page-break"></div>
-  ` : ''}
   
   <!-- PERFIL E PREMISSAS / PROTEÇÃO FAMILIAR -->
   <div class="two-columns">

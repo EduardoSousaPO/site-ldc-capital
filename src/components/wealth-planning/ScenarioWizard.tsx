@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, ArrowRight, Save } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, ArrowRight, Save, Check } from "lucide-react";
 import PersonalDataForm from "@/components/wealth-planning/PersonalDataForm";
 import FinancialDataForm from "@/components/wealth-planning/FinancialDataForm";
 import PortfolioForm from "@/components/wealth-planning/PortfolioForm";
@@ -12,6 +14,8 @@ import ProjectsForm from "@/components/wealth-planning/ProjectsForm";
 import DebtsForm from "@/components/wealth-planning/DebtsForm";
 import OtherRevenuesForm from "@/components/wealth-planning/OtherRevenuesForm";
 import AssumptionsForm from "@/components/wealth-planning/AssumptionsForm";
+import { ValidationMessage } from "@/components/wealth-planning/ValidationMessage";
+import { FieldWithTooltip } from "@/components/wealth-planning/FieldWithTooltip";
 import type { ScenarioData, ScenarioFormData } from "@/types/wealth-planning";
 
 const STEPS = [
@@ -58,6 +62,10 @@ export default function ScenarioWizard({
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState(initialTitle);
+  const [titleError, setTitleError] = useState("");
+  const [titleTouched, setTitleTouched] = useState(false);
+  const [visitedSteps, setVisitedSteps] = useState<Set<number>>(new Set([0]));
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
 
   const [formData, setFormData] = useState<Partial<ScenarioFormData>>({
     title: initialTitle,
@@ -107,23 +115,40 @@ export default function ScenarioWizard({
     },
   });
 
+  // Validação do título em tempo real
+  useEffect(() => {
+    if (titleTouched) {
+      if (!title || !title.trim()) {
+        setTitleError("Título é obrigatório");
+      } else {
+        setTitleError("");
+      }
+    }
+  }, [title, titleTouched]);
+
+  const validateTitle = (): boolean => {
+    setTitleTouched(true);
+    if (!title || !title.trim()) {
+      setTitleError("Título é obrigatório");
+      return false;
+    }
+    setTitleError("");
+    return true;
+  };
+
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 0: // Dados Pessoais
         if (!formData.personalData?.name?.trim()) {
-          alert("Nome do cliente é obrigatório");
           return false;
         }
         if (!formData.personalData?.age || formData.personalData.age < 18 || formData.personalData.age > 120) {
-          alert("Idade deve estar entre 18 e 120 anos");
           return false;
         }
         if (!formData.personalData?.retirementAge || formData.personalData.retirementAge < formData.personalData.age) {
-          alert("Idade de aposentadoria deve ser maior que idade atual");
           return false;
         }
         if (!formData.personalData?.lifeExpectancy || formData.personalData.lifeExpectancy <= formData.personalData.retirementAge) {
-          alert("Expectativa de vida deve ser maior que idade de aposentadoria");
           return false;
         }
         return true;
@@ -131,7 +156,6 @@ export default function ScenarioWizard({
         return true; // Todos os campos são opcionais
       case 2: // Carteira
         if (!formData.portfolio?.assets || formData.portfolio.assets.length === 0) {
-          alert("Adicione pelo menos um ativo à carteira");
           return false;
         }
         return true;
@@ -140,10 +164,27 @@ export default function ScenarioWizard({
     }
   };
 
+  const handleStepClick = (stepIndex: number) => {
+    // Permitir navegação para etapas já visitadas ou para a próxima etapa
+    const maxVisited = visitedSteps.size > 0 ? Math.max(...Array.from(visitedSteps)) : -1;
+    if (stepIndex <= maxVisited + 1 || visitedSteps.has(stepIndex)) {
+      setCurrentStep(stepIndex);
+      setVisitedSteps((prev) => new Set([...prev, stepIndex]));
+    }
+  };
+
   const handleNext = () => {
+    // Validar título se estiver na etapa 1
+    if (currentStep === 0 && !validateTitle()) {
+      return;
+    }
+
     if (validateStep(currentStep)) {
+      setCompletedSteps((prev) => new Set([...prev, currentStep]));
       if (currentStep < STEPS.length - 1) {
-        setCurrentStep(currentStep + 1);
+        const nextStep = currentStep + 1;
+        setCurrentStep(nextStep);
+        setVisitedSteps((prev) => new Set([...prev, nextStep]));
       }
     }
   };
@@ -155,8 +196,7 @@ export default function ScenarioWizard({
   };
 
   const handleSubmit = async () => {
-    if (!title || !title.trim()) {
-      alert("Título é obrigatório");
+    if (!validateTitle()) {
       return;
     }
 
@@ -190,12 +230,48 @@ export default function ScenarioWizard({
     switch (currentStep) {
       case 0: // Dados Pessoais
         return (
-          <PersonalDataForm
-            data={formData.personalData!}
-            onChange={(data) =>
-              setFormData({ ...formData, personalData: data })
-            }
-          />
+          <div className="space-y-6">
+            {/* Campo de título movido para dentro do fluxo principal */}
+            <div className="bg-[#e3e3e3]/20 border border-[#e3e3e3] rounded-lg p-6">
+              <FieldWithTooltip
+                label="Título do Cenário"
+                tooltip="Dê um nome descritivo para este cenário de planejamento financeiro. Ex: 'Plano Aposentadoria aos 50' ou 'Cenário Conservador'"
+                required
+                htmlFor="scenario-title"
+              />
+              <Input
+                id="scenario-title"
+                type="text"
+                required
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  if (titleTouched) {
+                    validateTitle();
+                  }
+                }}
+                onBlur={() => {
+                  setTitleTouched(true);
+                  validateTitle();
+                }}
+                className={`font-sans mt-2 ${
+                  titleError && titleTouched
+                    ? "border-red-300 focus:border-red-500 focus:ring-red-500"
+                    : ""
+                }`}
+                placeholder="Ex: Plano Aposentadoria aos 50"
+              />
+              {titleTouched && titleError && (
+                <ValidationMessage message={titleError} />
+              )}
+            </div>
+            <PersonalDataForm
+              data={formData.personalData!}
+              onChange={(data) =>
+                setFormData({ ...formData, personalData: data })
+              }
+            />
+          </div>
         );
       case 1: // Situação Financeira
         return (
@@ -295,61 +371,75 @@ export default function ScenarioWizard({
                 </p>
               </div>
             </div>
-            {currentStep === 0 && (
-              <div className="w-80 space-y-2">
-                <label className="font-sans font-medium text-sm block">
-                  Título do Cenário *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#98ab44] focus-visible:border-[#98ab44] font-sans transition-all"
-                  placeholder="Ex: Plano Aposentadoria aos 50"
-                />
-              </div>
-            )}
           </div>
         </div>
         
-        {/* Indicador de Progresso */}
+        {/* Indicador de Progresso Interativo */}
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-2">
-            {STEPS.map((step, index) => (
-              <div
-                key={index}
-                className="flex-1 flex flex-col items-center"
-              >
-                <div className="relative w-full">
-                  <div
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      index < currentStep
-                        ? "bg-[#98ab44]"
-                        : index === currentStep
-                        ? "bg-[#98ab44]"
-                        : "bg-gray-200"
-                    }`}
-                  />
-                </div>
-                <div className="mt-2 text-center">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold font-sans transition-all ${
-                      index < currentStep
-                        ? "bg-[#98ab44] text-white"
-                        : index === currentStep
-                        ? "bg-[#98ab44] text-white scale-110 shadow-lg"
-                        : "bg-gray-200 text-gray-500"
-                    }`}
-                  >
-                    {index < currentStep ? "✓" : index + 1}
+            {STEPS.map((step, index) => {
+              const isCompleted = completedSteps.has(index);
+              const isCurrent = index === currentStep;
+              const isVisited = visitedSteps.has(index);
+              const canNavigate = isVisited || index <= Math.max(...Array.from(visitedSteps)) + 1;
+              
+              return (
+                <div
+                  key={index}
+                  className={`flex-1 flex flex-col items-center ${
+                    canNavigate ? "cursor-pointer" : "cursor-not-allowed opacity-60"
+                  }`}
+                  onClick={() => canNavigate && handleStepClick(index)}
+                  role="button"
+                  tabIndex={canNavigate ? 0 : -1}
+                  onKeyDown={(e) => {
+                    if (canNavigate && (e.key === "Enter" || e.key === " ")) {
+                      e.preventDefault();
+                      handleStepClick(index);
+                    }
+                  }}
+                  aria-label={`${step.title} - ${isCompleted ? "Concluída" : isCurrent ? "Atual" : "Não visitada"}`}
+                >
+                  <div className="relative w-full">
+                    <div
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        isCompleted || isCurrent
+                          ? "bg-[#98ab44]"
+                          : isVisited
+                          ? "bg-[#98ab44]/50"
+                          : "bg-gray-200"
+                      }`}
+                    />
                   </div>
-                  <p className="text-xs mt-1 font-sans font-medium max-w-[90px]">
-                    {step.short || step.title}
-                  </p>
+                  <div className="mt-2 text-center">
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold font-sans transition-all ${
+                        isCompleted
+                          ? "bg-[#98ab44] text-white"
+                          : isCurrent
+                          ? "bg-[#98ab44] text-white scale-110 shadow-lg ring-2 ring-[#98ab44]/30"
+                          : isVisited
+                          ? "bg-[#98ab44]/30 text-[#98ab44] border-2 border-[#98ab44]/50"
+                          : "bg-gray-200 text-gray-500"
+                      } ${canNavigate ? "hover:scale-105" : ""}`}
+                    >
+                      {isCompleted ? (
+                        <Check className="h-5 w-5" />
+                      ) : (
+                        index + 1
+                      )}
+                    </div>
+                    <p
+                      className={`text-xs mt-1 font-sans font-medium max-w-[90px] ${
+                        isCurrent ? "text-[#262d3d]" : isVisited ? "text-[#577171]" : "text-gray-400"
+                      }`}
+                    >
+                      {step.short || step.title}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </CardHeader>
@@ -396,6 +486,8 @@ export default function ScenarioWizard({
     </Card>
   );
 }
+
+
 
 
 
