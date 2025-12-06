@@ -386,7 +386,7 @@ export default function ScenarioWizard({
                 <div
                   key={index}
                   className={`flex-1 flex flex-col items-center ${
-                    canNavigate ? "cursor-pointer" : "cursor-not-allowed opacity-60"
+                    canNavigate ? "cursor-pointer group" : "cursor-not-allowed opacity-60"
                   }`}
                   onClick={() => canNavigate && handleStepClick(index)}
                   role="button"
@@ -399,7 +399,6 @@ export default function ScenarioWizard({
                   }}
                   aria-label={`${step.title} - ${isCompleted ? "Concluída" : isCurrent ? "Atual" : isVisited ? "Visitada" : "Não visitada"}`}
                   aria-current={isCurrent ? "step" : undefined}
-                  className={canNavigate ? "group" : ""}
                 >
                   <div className="relative w-full">
                     <div

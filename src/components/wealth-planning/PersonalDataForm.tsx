@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Trash2, Info, CheckCircle2, AlertCircle } from "lucide-react";
-import type { PersonalData, Dependent, MaritalStatus, Suitability } from "@/types/wealth-planning";
+import type { PersonalData, Dependent } from "@/types/wealth-planning";
 import {
   Tooltip,
   TooltipContent,

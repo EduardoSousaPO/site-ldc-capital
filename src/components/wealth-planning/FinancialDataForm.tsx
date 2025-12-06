@@ -19,7 +19,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ValidationMessage } from "@/components/wealth-planning/ValidationMessage";
-import type { FinancialData, InvestmentObjective } from "@/types/wealth-planning";
+import type { FinancialData } from "@/types/wealth-planning";
 
 interface FinancialDataFormProps {
   data: FinancialData;
