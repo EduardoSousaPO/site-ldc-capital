@@ -204,10 +204,10 @@ export default function InteractiveDashboard({
           description="Renda, despesas e saldo atual"
           defaultOpen={false}
         >
-        <FinancialSummary
-          financialData={fd}
-          currentAnnualIncome={fd?.currentAnnualIncome}
-        />
+          <FinancialSummary
+            financialData={fd}
+            currentAnnualIncome={fd?.currentAnnualIncome}
+          />
         </CollapsibleSection>
 
         {/* Parâmetros Editáveis - Colapsável */}
@@ -435,7 +435,7 @@ export default function InteractiveDashboard({
               <CollapsibleSection
                 title="Gráfico de Projeção de Patrimônio"
                 description="Evolução do patrimônio ao longo do tempo"
-                defaultOpen={true}
+                defaultOpen={false}
               >
                 <ProjectionChartFixed data={localScenario} />
               </CollapsibleSection>
@@ -459,7 +459,7 @@ export default function InteractiveDashboard({
               <CollapsibleSection
                 title="Comparação de Cenários"
                 description="Visão comparativa entre diferentes estratégias"
-                defaultOpen={true}
+                defaultOpen={false}
               >
                 <div className="bg-white border border-[#e3e3e3] rounded-lg p-4">
                   <ScenariosTable results={results} />
@@ -510,73 +510,73 @@ export default function InteractiveDashboard({
                   </div>
 
                   {/* Cenário 2: Manutenção */}
-                  <div className="border border-gray-200 rounded p-4">
-                    <div className="flex items-center justify-between mb-3">
+                  <div className="border border-[#e3e3e3] rounded-lg p-6 bg-white hover:shadow-md transition-all duration-300">
+                    <div className="flex items-center justify-between mb-4">
                       <div>
-                        <div className="text-sm font-semibold text-gray-900">Manutenção do Patrimônio</div>
-                        <div className="text-xs text-gray-500">Viver apenas dos rendimentos</div>
+                        <div className="text-sm font-semibold text-[#262d3d] font-sans">Manutenção do Patrimônio</div>
+                        <div className="text-xs text-[#577171] font-sans mt-1">Viver apenas dos rendimentos</div>
                       </div>
                       {results.maintenanceScenario.withinProfile && (
-                        <span className="text-xs px-2 py-1 bg-[#98ab44]/20 text-[#98ab44] rounded border border-[#98ab44]/30">Dentro do Perfil</span>
+                        <span className="text-xs px-2 py-1 bg-[#98ab44]/20 text-[#98ab44] rounded border border-[#98ab44]/30 font-sans">Dentro do Perfil</span>
                       )}
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <div className="text-xs text-gray-500 mb-1">Poupança Anual</div>
-                        <div className="font-semibold">{formatCurrency(results.maintenanceScenario.annualSavings)}</div>
+                        <div className="text-xs text-[#577171] mb-1 font-sans uppercase tracking-wide">Poupança Anual</div>
+                        <div className="font-semibold text-[#262d3d] font-sans">{formatCurrency(results.maintenanceScenario.annualSavings)}</div>
                       </div>
                       <div>
-                        <div className="text-xs text-gray-500 mb-1">Capital Acumulado</div>
-                        <div className="font-semibold">{formatCurrency(results.maintenanceScenario.accumulatedCapital)}</div>
+                        <div className="text-xs text-[#577171] mb-1 font-sans uppercase tracking-wide">Capital Acumulado</div>
+                        <div className="font-semibold text-[#262d3d] font-sans">{formatCurrency(results.maintenanceScenario.accumulatedCapital)}</div>
                       </div>
                       <div>
-                        <div className="text-xs text-gray-500 mb-1">Rentabilidade Necessária</div>
-                        <div className="font-semibold">
+                        <div className="text-xs text-[#577171] mb-1 font-sans uppercase tracking-wide">Rentabilidade Necessária</div>
+                        <div className="font-semibold text-[#262d3d] font-sans">
                           {results.maintenanceScenario.requiredRate ? formatPercentage(results.maintenanceScenario.requiredRate) : "N/A"}
                           {results.maintenanceScenario.requiredRealRate !== undefined && (
-                            <span className="text-gray-500 ml-1">({formatPercentage(results.maintenanceScenario.requiredRealRate)} real)</span>
+                            <span className="text-[#577171] ml-1 font-normal">({formatPercentage(results.maintenanceScenario.requiredRealRate)} real)</span>
                           )}
                         </div>
                       </div>
                       <div>
-                        <div className="text-xs text-gray-500 mb-1">Capital Necessário</div>
-                        <div className="font-semibold">{formatCurrency(results.maintenanceScenario.requiredCapital)}</div>
+                        <div className="text-xs text-[#577171] mb-1 font-sans uppercase tracking-wide">Capital Necessário</div>
+                        <div className="font-semibold text-[#262d3d] font-sans">{formatCurrency(results.maintenanceScenario.requiredCapital)}</div>
                       </div>
                     </div>
                   </div>
 
                   {/* Cenário 3: Consumo */}
-                  <div className="border border-gray-200 rounded p-4">
-                    <div className="flex items-center justify-between mb-3">
+                  <div className="border border-[#e3e3e3] rounded-lg p-6 bg-white hover:shadow-md transition-all duration-300">
+                    <div className="flex items-center justify-between mb-4">
                       <div>
-                        <div className="text-sm font-semibold text-gray-900">Consumo do Patrimônio</div>
-                        <div className="text-xs text-gray-500">Consumir parte do patrimônio</div>
+                        <div className="text-sm font-semibold text-[#262d3d] font-sans">Consumo do Patrimônio</div>
+                        <div className="text-xs text-[#577171] font-sans mt-1">Consumir parte do patrimônio</div>
                       </div>
                       {results.consumptionScenario.withinProfile && (
-                        <span className="text-xs px-2 py-1 bg-[#98ab44]/20 text-[#98ab44] rounded border border-[#98ab44]/30">Dentro do Perfil</span>
+                        <span className="text-xs px-2 py-1 bg-[#98ab44]/20 text-[#98ab44] rounded border border-[#98ab44]/30 font-sans">Dentro do Perfil</span>
                       )}
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <div className="text-xs text-gray-500 mb-1">Poupança Anual</div>
-                        <div className="font-semibold">{formatCurrency(results.consumptionScenario.annualSavings)}</div>
+                        <div className="text-xs text-[#577171] mb-1 font-sans uppercase tracking-wide">Poupança Anual</div>
+                        <div className="font-semibold text-[#262d3d] font-sans">{formatCurrency(results.consumptionScenario.annualSavings)}</div>
                       </div>
                       <div>
-                        <div className="text-xs text-gray-500 mb-1">Capital Acumulado</div>
-                        <div className="font-semibold">{formatCurrency(results.consumptionScenario.accumulatedCapital)}</div>
+                        <div className="text-xs text-[#577171] mb-1 font-sans uppercase tracking-wide">Capital Acumulado</div>
+                        <div className="font-semibold text-[#262d3d] font-sans">{formatCurrency(results.consumptionScenario.accumulatedCapital)}</div>
                       </div>
                       <div>
-                        <div className="text-xs text-gray-500 mb-1">Rentabilidade Necessária</div>
-                        <div className="font-semibold">
+                        <div className="text-xs text-[#577171] mb-1 font-sans uppercase tracking-wide">Rentabilidade Necessária</div>
+                        <div className="font-semibold text-[#262d3d] font-sans">
                           {results.consumptionScenario.requiredRate ? formatPercentage(results.consumptionScenario.requiredRate) : "N/A"}
                           {results.consumptionScenario.requiredRealRate !== undefined && (
-                            <span className="text-gray-500 ml-1">({formatPercentage(results.consumptionScenario.requiredRealRate)} real)</span>
+                            <span className="text-[#577171] ml-1 font-normal">({formatPercentage(results.consumptionScenario.requiredRealRate)} real)</span>
                           )}
                         </div>
                       </div>
                       <div>
-                        <div className="text-xs text-gray-500 mb-1">Capital Necessário</div>
-                        <div className="font-semibold">{formatCurrency(results.consumptionScenario.requiredCapital)}</div>
+                        <div className="text-xs text-[#577171] mb-1 font-sans uppercase tracking-wide">Capital Necessário</div>
+                        <div className="font-semibold text-[#262d3d] font-sans">{formatCurrency(results.consumptionScenario.requiredCapital)}</div>
                       </div>
                     </div>
                   </div>

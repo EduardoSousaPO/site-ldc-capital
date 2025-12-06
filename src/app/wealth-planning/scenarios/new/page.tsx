@@ -565,7 +565,9 @@ function NewScenarioPageContent() {
                             handleStepClick(index);
                         }
                       }}
-                        aria-label={`${step.title} - ${isCompleted ? "Concluída" : isCurrent ? "Atual" : "Não visitada"}`}
+                        aria-label={`${step.title} - ${isCompleted ? "Concluída" : isCurrent ? "Atual" : isVisited ? "Visitada" : "Não visitada"}`}
+                        aria-current={isCurrent ? "step" : undefined}
+                        className={canNavigate ? "group" : ""}
                     >
                       <div className="relative w-full">
                         <div
@@ -575,37 +577,46 @@ function NewScenarioPageContent() {
                                 : isVisited
                                 ? "bg-[#98ab44]/50"
                               : "bg-gray-200"
-                          }`}
+                          } ${canNavigate ? "group-hover:bg-[#98ab44]/70" : ""}`}
                         />
                           {isCurrent && (
-                            <div className="absolute inset-0 bg-[#98ab44] rounded-full animate-pulse opacity-50" />
+                            <div className="absolute inset-0 bg-[#98ab44] rounded-full animate-pulse opacity-30" />
                         )}
                       </div>
                         <div className="mt-2 text-center">
                         <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold font-sans transition-all ${
+                          className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold font-sans transition-all duration-300 ${
                               isCompleted
-                              ? "bg-[#98ab44] text-white"
+                              ? "bg-[#98ab44] text-white shadow-md"
                                 : isCurrent
-                                ? "bg-[#98ab44] text-white scale-110 shadow-lg ring-2 ring-[#98ab44]/30"
+                                ? "bg-[#98ab44] text-white scale-110 shadow-lg ring-2 ring-[#98ab44]/30 animate-pulse"
                                 : isVisited
                                 ? "bg-[#98ab44]/30 text-[#98ab44] border-2 border-[#98ab44]/50"
                               : "bg-gray-200 text-gray-500"
-                            } ${canNavigate ? "hover:scale-105" : ""}`}
+                          } ${canNavigate ? "hover:scale-110 hover:shadow-md cursor-pointer" : "cursor-not-allowed"}`}
                         >
-                            {isCompleted ? (
-                              <Check className="h-5 w-5" />
-                            ) : (
-                              index + 1
-                            )}
+                          {isCompleted ? (
+                            <Check className="h-5 w-5" />
+                          ) : (
+                            index + 1
+                          )}
                         </div>
-                          <p
-                            className={`text-xs mt-1 font-sans font-medium max-w-[90px] ${
-                              isCurrent ? "text-[#262d3d]" : isVisited ? "text-[#577171]" : "text-gray-400"
-                            }`}
-                          >
+                        <p
+                          className={`text-xs mt-1 font-sans font-medium max-w-[90px] transition-colors duration-200 ${
+                              isCurrent 
+                                ? "text-[#262d3d] font-semibold" 
+                                : isVisited 
+                                ? "text-[#577171]" 
+                                : "text-gray-400"
+                          } ${canNavigate ? "group-hover:text-[#262d3d]" : ""}`}
+                        >
                           {step.short || step.title}
                         </p>
+                        {isCurrent && (
+                          <p className="text-[10px] text-[#98ab44] font-sans font-semibold mt-0.5 animate-pulse">
+                            Atual
+                          </p>
+                        )}
                       </div>
                     </div>
                     );
