@@ -76,14 +76,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .select("slug, updatedAt, publishedAt, published")
       .order("updatedAt", { ascending: false });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const blogPages: MetadataRoute.Sitemap =
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ((postsData || []) as any[])
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .filter((post: any) => post && post.published)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .map((post: any) => ({
+      ((postsData || []) as Array<{ slug: string; updatedAt: string; publishedAt: string; published: boolean }>)
+        .filter((post) => post && post.published)
+        .map((post) => ({
           url: `${baseUrl}/blog/${post.slug}`,
           lastModified: post.publishedAt ? new Date(post.publishedAt) : new Date(post.updatedAt || new Date()),
           changeFrequency: "monthly" as const,
@@ -95,14 +91,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .select("slug, updatedAt, publishedAt, published")
       .order("updatedAt", { ascending: false });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const materialPages: MetadataRoute.Sitemap =
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ((materialsData || []) as any[])
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .filter((material: any) => material && material.published)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .map((material: any) => ({
+      ((materialsData || []) as Array<{ slug: string; updatedAt: string; publishedAt: string; published: boolean }>)
+        .filter((material) => material && material.published)
+        .map((material) => ({
           url: `${baseUrl}/materiais/${material.slug}`,
           lastModified: material.publishedAt ? new Date(material.publishedAt) : new Date(material.updatedAt || new Date()),
           changeFrequency: "monthly" as const,
