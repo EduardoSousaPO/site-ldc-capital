@@ -3,6 +3,8 @@ import { createSupabaseAdminClient } from '@/lib/supabase';
 
 // Cupons válidos para teste (permitem avançar sem pagamento)
 const VALID_COUPONS = ['TESTE', 'FREE', 'DESCONTO100', 'DEV'];
+// Códigos de acesso/senha válidos (permitem avançar sem pagamento)
+const VALID_ACCESS_CODES = ['LDC2024', 'ACESSO2024', 'PREMIUM2024', 'TESTE123', 'SENHA123', 'CODE2024'];
 
 export async function POST(
   request: Request,
@@ -11,7 +13,7 @@ export async function POST(
   try {
     const { id } = await params;
     const body = await request.json().catch(() => ({}));
-    const { nome, email, telefone, cupom, usar_cupom } = body;
+    const { nome, email, telefone, cupom, usar_cupom, codigo_acesso, usar_codigo } = body;
     
     const supabase = createSupabaseAdminClient();
 
@@ -47,6 +49,23 @@ export async function POST(
       }
     }
 
+    // Validar código de acesso se fornecido
+    let codigoValido = false;
+    if (usar_codigo && codigo_acesso) {
+      const codigoUpper = codigo_acesso.toUpperCase().trim();
+      codigoValido = VALID_ACCESS_CODES.includes(codigoUpper);
+      
+      if (!codigoValido) {
+        return NextResponse.json(
+          { error: 'Código de acesso inválido' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Verificar se pelo menos um método de acesso foi validado
+    const acessoLiberado = cupomValido || codigoValido;
+
     // Salvar lead na tabela Lead (se dados fornecidos)
     if (nome && email) {
       try {
@@ -67,9 +86,9 @@ export async function POST(
             patrimonio: patrimonioEstimado,
             origem: 'checkup-ldc',
             origemFormulario: 'Checkup-LDC',
-            status: cupomValido ? 'Qualificado (Cupom)' : 'Qualificado',
-            observacoes: cupomValido 
-              ? `Checkup ID: ${id}. Acesso via cupom: ${cupom}. Score: ${scoreTotal || 'N/A'}`
+            status: acessoLiberado ? 'Qualificado (Código)' : 'Qualificado',
+            observacoes: acessoLiberado 
+              ? `Checkup ID: ${id}. Acesso via ${cupomValido ? `cupom: ${cupom}` : `código: ${codigo_acesso}`}. Score: ${scoreTotal || 'N/A'}`
               : `Checkup ID: ${id}. Score: ${scoreTotal || 'N/A'}`,
             ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
             userAgent: request.headers.get('user-agent') || null,
@@ -102,6 +121,8 @@ export async function POST(
       success: true, 
       status: 'paid',
       usado_cupom: cupomValido,
+      usado_codigo: codigoValido,
+      acesso_liberado: acessoLiberado,
     });
   } catch (error) {
     console.error('Error:', error);

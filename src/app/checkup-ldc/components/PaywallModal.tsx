@@ -23,8 +23,9 @@ interface PaywallModalProps {
   onClose: () => void;
 }
 
-// Cupons válidos para teste (permitem avançar sem pagamento)
+// Cupons e códigos de acesso válidos (permitem avançar sem pagamento)
 const VALID_COUPONS = ['TESTE', 'FREE', 'DESCONTO100', 'DEV'];
+const VALID_ACCESS_CODES = ['LDC2024', 'ACESSO2024', 'PREMIUM2024', 'TESTE123', 'SENHA123', 'CODE2024'];
 
 export function PaywallModal({ checkupId, onSuccess, onClose }: PaywallModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -33,6 +34,8 @@ export function PaywallModal({ checkupId, onSuccess, onClose }: PaywallModalProp
   const [telefone, setTelefone] = useState('');
   const [cupom, setCupom] = useState('');
   const [cupomAplicado, setCupomAplicado] = useState(false);
+  const [codigoAcesso, setCodigoAcesso] = useState('');
+  const [codigoAplicado, setCodigoAplicado] = useState(false);
   const [precoFinal, setPrecoFinal] = useState(47);
 
   const handleApplyCoupon = () => {
@@ -43,6 +46,17 @@ export function PaywallModal({ checkupId, onSuccess, onClose }: PaywallModalProp
       toast.success('Cupom aplicado com sucesso!');
     } else {
       toast.error('Cupom inválido');
+    }
+  };
+
+  const handleApplyAccessCode = () => {
+    const codigoUpper = codigoAcesso.toUpperCase().trim();
+    if (VALID_ACCESS_CODES.includes(codigoUpper)) {
+      setCodigoAplicado(true);
+      setPrecoFinal(0);
+      toast.success('Código de acesso válido! Acesso liberado.');
+    } else {
+      toast.error('Código de acesso inválido');
     }
   };
 
@@ -68,6 +82,8 @@ export function PaywallModal({ checkupId, onSuccess, onClose }: PaywallModalProp
           telefone: telefone.trim(),
           cupom: cupom.trim().toUpperCase(),
           usar_cupom: cupomAplicado,
+          codigo_acesso: codigoAcesso.trim().toUpperCase(),
+          usar_codigo: codigoAplicado,
         }),
       });
 
@@ -78,8 +94,8 @@ export function PaywallModal({ checkupId, onSuccess, onClose }: PaywallModalProp
 
       const data = await res.json();
       
-      if (cupomAplicado) {
-        toast.success('Acesso liberado com cupom!');
+      if (cupomAplicado || codigoAplicado) {
+        toast.success('Acesso liberado com código!');
       } else {
         toast.success('Pagamento processado com sucesso!');
       }
@@ -98,130 +114,228 @@ export function PaywallModal({ checkupId, onSuccess, onClose }: PaywallModalProp
 
   return (
     <AlertDialog open={true} onOpenChange={onClose}>
-      <AlertDialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <AlertDialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-6">
         <AlertDialogHeader>
-          <AlertDialogTitle>Desbloquear Relatório Completo</AlertDialogTitle>
-          <AlertDialogDescription className="space-y-4">
-            <div>
-              <p className="mb-2">
-                {cupomAplicado ? (
-                  <>
-                    <span className="line-through text-muted-foreground">R$ 47</span>{' '}
-                    <strong className="text-green-600">Grátis com cupom!</strong>
-                  </>
-                ) : (
-                  <>
-                    Por apenas <strong>R$ {precoFinal}</strong>, você terá acesso a:
-                  </>
-                )}
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-sm">
-                <li>Score breakdown detalhado (5 dimensões)</li>
-                <li>Simulações "antes vs depois"</li>
-                <li>Top 5 posições da carteira</li>
-                <li>Análise de riscos e melhorias personalizadas</li>
-                <li>Plano de ação copiável + WhatsApp + e-mail</li>
-                <li>PDF premium para arquivar</li>
-              </ul>
-            </div>
+          <AlertDialogTitle className="text-xl font-semibold mb-2">Desbloquear Relatório Completo</AlertDialogTitle>
+          <AlertDialogDescription asChild>
+            <div className="space-y-6 text-sm text-muted-foreground">
+              {/* Preço e benefícios */}
+              <div className="space-y-3">
+                <div className="text-base font-medium text-foreground">
+                  {(cupomAplicado || codigoAplicado) ? (
+                    <span>
+                      <span className="line-through text-muted-foreground mr-2">R$ 47</span>
+                      <span className="text-green-600 font-semibold">Acesso liberado!</span>
+                    </span>
+                  ) : (
+                    <span>
+                      Por apenas <strong className="text-foreground">R$ {precoFinal}</strong>, você terá acesso a:
+                    </span>
+                  )}
+                </div>
+                <ul className="list-none space-y-2.5 pl-0">
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 mt-0.5">✓</span>
+                    <span>Score breakdown detalhado (5 dimensões)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 mt-0.5">✓</span>
+                    <span>Simulações "antes vs depois"</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 mt-0.5">✓</span>
+                    <span>Top 5 posições da carteira</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 mt-0.5">✓</span>
+                    <span>Análise de riscos e melhorias personalizadas</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 mt-0.5">✓</span>
+                    <span>Plano de ação copiável + WhatsApp + e-mail</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 mt-0.5">✓</span>
+                    <span>PDF premium para arquivar</span>
+                  </li>
+                </ul>
+              </div>
 
-            {/* Campos de captura de lead */}
-            <div className="space-y-3 pt-4 border-t">
-              <div className="space-y-2">
-                <Label htmlFor="nome">Nome *</Label>
-                <Input
-                  id="nome"
-                  placeholder="Seu nome completo"
-                  value={nome}
-                  onChange={(e) => setNome(e.target.value)}
-                  required
-                />
+              {/* Campos de captura de lead */}
+              <div className="space-y-4 pt-4 border-t border-gray-200">
+                <h3 className="text-sm font-semibold text-foreground mb-1">Seus dados</h3>
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="nome" className="text-sm font-medium">Nome completo *</Label>
+                    <Input
+                      id="nome"
+                      placeholder="Seu nome completo"
+                      value={nome}
+                      onChange={(e) => setNome(e.target.value)}
+                      required
+                      className="h-10"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="email" className="text-sm font-medium">E-mail *</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="h-10"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="telefone" className="text-sm font-medium">Telefone <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+                    <Input
+                      id="telefone"
+                      type="tel"
+                      placeholder="(11) 99999-9999"
+                      value={telefone}
+                      onChange={(e) => setTelefone(e.target.value)}
+                      className="h-10"
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">E-mail *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="seu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="telefone">Telefone (opcional)</Label>
-                <Input
-                  id="telefone"
-                  type="tel"
-                  placeholder="(11) 99999-9999"
-                  value={telefone}
-                  onChange={(e) => setTelefone(e.target.value)}
-                />
-              </div>
-            </div>
 
-            {/* Campo de cupom */}
-            <div className="space-y-2 pt-2 border-t">
-              <Label htmlFor="cupom">Cupom de desconto (opcional)</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="cupom"
-                  placeholder="Digite o cupom"
-                  value={cupom}
-                  onChange={(e) => {
-                    setCupom(e.target.value);
-                    setCupomAplicado(false);
-                    setPrecoFinal(47);
-                  }}
-                  disabled={cupomAplicado}
-                />
-                {!cupomAplicado && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleApplyCoupon}
-                    disabled={!cupom.trim()}
-                  >
-                    <Tag className="w-4 h-4 mr-1" />
-                    Aplicar
-                  </Button>
-                )}
-                {cupomAplicado && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
+              {/* Campo de cupom */}
+              <div className="space-y-2.5 pt-4 border-t border-gray-200">
+                <Label htmlFor="cupom" className="text-sm font-medium">
+                  Cupom de desconto <span className="text-muted-foreground font-normal">(opcional)</span>
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="cupom"
+                    placeholder="Ex: TESTE, FREE"
+                    value={cupom}
+                    onChange={(e) => {
+                      setCupom(e.target.value);
                       setCupomAplicado(false);
-                      setPrecoFinal(47);
-                      setCupom('');
+                      if (!codigoAplicado) setPrecoFinal(47);
                     }}
-                  >
-                    Remover
-                  </Button>
+                    disabled={cupomAplicado || codigoAplicado}
+                    className="h-10 flex-1"
+                  />
+                  {!cupomAplicado && !codigoAplicado && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleApplyCoupon}
+                      disabled={!cupom.trim()}
+                      className="h-10 px-4"
+                    >
+                      <Tag className="w-4 h-4 mr-1.5" />
+                      Aplicar
+                    </Button>
+                  )}
+                  {cupomAplicado && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCupomAplicado(false);
+                        setPrecoFinal(47);
+                        setCupom('');
+                      }}
+                      className="h-10 px-4"
+                    >
+                      Remover
+                    </Button>
+                  )}
+                </div>
+                {cupomAplicado && (
+                  <div className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
+                    <span>✓</span>
+                    <span>Cupom aplicado! Acesso liberado.</span>
+                  </div>
                 )}
               </div>
-              {cupomAplicado && (
-                <p className="text-xs text-green-600">
-                  ✓ Cupom aplicado! Acesso liberado.
-                </p>
-              )}
-            </div>
 
-            <p className="text-xs text-muted-foreground mt-4">
-              {cupomAplicado 
-                ? 'Acesso liberado com cupom de teste.'
-                : 'Este é um pagamento simulado. Em produção, será integrado com gateway de pagamento.'}
-            </p>
+              {/* Campo de código de acesso/senha */}
+              <div className="space-y-2.5 pt-4 border-t border-gray-200">
+                <Label htmlFor="codigo-acesso" className="text-sm font-medium">
+                  Código de Acesso / Senha <span className="text-muted-foreground font-normal">(opcional)</span>
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="codigo-acesso"
+                    type="password"
+                    placeholder="Digite o código de acesso"
+                    value={codigoAcesso}
+                    onChange={(e) => {
+                      setCodigoAcesso(e.target.value);
+                      setCodigoAplicado(false);
+                      if (!cupomAplicado) setPrecoFinal(47);
+                    }}
+                    disabled={codigoAplicado || cupomAplicado}
+                    className="h-10 flex-1"
+                  />
+                  {!codigoAplicado && !cupomAplicado && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleApplyAccessCode}
+                      disabled={!codigoAcesso.trim()}
+                      className="h-10 px-4"
+                    >
+                      <Tag className="w-4 h-4 mr-1.5" />
+                      Validar
+                    </Button>
+                  )}
+                  {codigoAplicado && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setCodigoAplicado(false);
+                        setPrecoFinal(47);
+                        setCodigoAcesso('');
+                      }}
+                      className="h-10 px-4"
+                    >
+                      Remover
+                    </Button>
+                  )}
+                </div>
+                {codigoAplicado && (
+                  <div className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
+                    <span>✓</span>
+                    <span>Código válido! Acesso liberado.</span>
+                  </div>
+                )}
+                <div className="text-xs text-muted-foreground pt-1">
+                  <span className="font-medium">Códigos válidos:</span>{' '}
+                  <span className="font-mono">LDC2024, ACESSO2024, PREMIUM2024, TESTE123, SENHA123, CODE2024</span>
+                </div>
+              </div>
+
+              {/* Nota informativa */}
+              <div className="pt-2 border-t border-gray-200">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {(cupomAplicado || codigoAplicado)
+                    ? 'Acesso liberado com código de teste.'
+                    : 'Este é um pagamento simulado. Em produção, será integrado com gateway de pagamento.'}
+                </p>
+              </div>
+            </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isProcessing}>Cancelar</AlertDialogCancel>
+        <AlertDialogFooter className="gap-3 pt-4 border-t border-gray-200">
+          <AlertDialogCancel disabled={isProcessing} className="h-11">
+            Cancelar
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={handlePayment}
             disabled={isProcessing || !nome.trim() || !email.trim()}
-            className="bg-primary"
+            className="bg-[#98ab44] hover:bg-[#98ab44]/90 text-white h-11 px-6 font-medium"
           >
             {isProcessing ? (
               <>
@@ -231,7 +345,7 @@ export function PaywallModal({ checkupId, onSuccess, onClose }: PaywallModalProp
             ) : (
               <>
                 <CreditCard className="w-4 h-4 mr-2" />
-                {cupomAplicado ? 'Continuar Grátis' : 'Simular Pagamento'}
+                {(cupomAplicado || codigoAplicado) ? 'Continuar com Acesso Liberado' : 'Simular Pagamento'}
               </>
             )}
           </AlertDialogAction>
