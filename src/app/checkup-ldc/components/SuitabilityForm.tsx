@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,47 +21,6 @@ export function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {
   const [idadeFaixa, setIdadeFaixa] = useState<string>("");
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Interceptar navegação acidental quando clicar em elementos do Select
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      
-      // Verificar se há um Link sendo acionado dentro de um elemento do Select
-      const linkElement = target.closest('a[href]');
-      if (linkElement) {
-        // Verificar se o Link está dentro de um elemento do Select
-        const isInsideSelect = 
-          linkElement.closest('[data-slot="select-content"]') ||
-          linkElement.closest('[data-slot="select-item"]') ||
-          linkElement.closest('[data-slot="select-trigger"]') ||
-          linkElement.closest('[role="option"]') ||
-          linkElement.closest('[data-radix-select-content]') ||
-          linkElement.closest('[data-radix-select-item]') ||
-          linkElement.closest('[data-radix-select-trigger]') ||
-          linkElement.closest('[role="listbox"]') ||
-          (cardRef.current && cardRef.current.contains(linkElement));
-
-        if (isInsideSelect) {
-          const href = linkElement.getAttribute('href');
-          // Prevenir navegação apenas se for um link válido (não vazio ou âncora)
-          if (href && href !== '#' && !href.startsWith('#')) {
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            return false;
-          }
-        }
-      }
-    };
-
-    // Adicionar listener com capture: true para interceptar antes de qualquer outro handler
-    // Mas apenas para prevenir navegação de Links, não para bloquear o Select
-    document.addEventListener('click', handleClick, true);
-
-    return () => {
-      document.removeEventListener('click', handleClick, true);
-    };
-  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,53 +48,8 @@ export function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {
     });
   };
 
-
-  // Handler para prevenir navegação em qualquer clique dentro do Card
-  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement;
-    
-    // Se for um elemento do Select, prevenir qualquer ação
-    if (
-      target.closest('[data-slot="select-trigger"]') ||
-      target.closest('[data-slot="select-content"]') ||
-      target.closest('[data-slot="select-item"]') ||
-      target.closest('[role="option"]')
-    ) {
-      e.preventDefault();
-      e.stopPropagation();
-      // Usar evento nativo para stopImmediatePropagation
-      const nativeEvent = e.nativeEvent as MouseEvent;
-      if (nativeEvent && typeof nativeEvent.stopImmediatePropagation === 'function') {
-        nativeEvent.stopImmediatePropagation();
-      }
-    }
-  };
-
-  const handleCardPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement;
-    
-    if (
-      target.closest('[data-slot="select-trigger"]') ||
-      target.closest('[data-slot="select-content"]') ||
-      target.closest('[data-slot="select-item"]') ||
-      target.closest('[role="option"]')
-    ) {
-      e.preventDefault();
-      e.stopPropagation();
-      const nativeEvent = e.nativeEvent as PointerEvent;
-      if (nativeEvent && typeof nativeEvent.stopImmediatePropagation === 'function') {
-        nativeEvent.stopImmediatePropagation();
-      }
-    }
-  };
-
   return (
-    <Card
-      ref={cardRef}
-      onClick={handleCardClick}
-      onMouseDown={handleCardClick}
-      onPointerDown={handleCardPointerDown}
-    >
+    <Card ref={cardRef}>
       <CardHeader>
         <CardTitle>Perfil de Investimento</CardTitle>
         <CardDescription>
