@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,12 +19,10 @@ export function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {
   const [prazo, setPrazo] = useState<string>("");
   const [tolerancia, setTolerancia] = useState<string>("");
   const [idadeFaixa, setIdadeFaixa] = useState<string>("");
-  const cardRef = useRef<HTMLDivElement>(null);
 
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    e.stopPropagation();
     
     if (!objetivo || !prazo || !tolerancia) {
       // Mostrar mensagem de erro se campos obrigatórios não estiverem preenchidos
@@ -49,7 +47,7 @@ export function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {
   };
 
   return (
-    <Card ref={cardRef}>
+    <Card>
       <CardHeader>
         <CardTitle>Perfil de Investimento</CardTitle>
         <CardDescription>
@@ -57,22 +55,9 @@ export function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div 
+        <form 
           className="space-y-4"
-          onKeyDown={(e) => {
-            // Permitir submit apenas quando Enter é pressionado no botão ou em inputs
-            if (e.key === 'Enter') {
-              const target = e.target as HTMLElement;
-              // Se não for um Select, permitir submit
-              if (!target.closest('[data-slot="select-trigger"]') &&
-                  !target.closest('[data-slot="select-content"]') &&
-                  !target.closest('[data-slot="select-item"]') &&
-                  !target.closest('[role="option"]')) {
-                e.preventDefault();
-                handleSubmit(e as unknown as React.FormEvent);
-              }
-            }
-          }}
+          onSubmit={handleSubmit}
         >
           <div className="space-y-2">
             <Label htmlFor="objetivo">Qual seu objetivo principal? *</Label>
@@ -181,14 +166,13 @@ export function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {
           </div>
 
           <Button 
-            type="button"
-            onClick={handleSubmit}
+            type="submit"
             className="w-full" 
             disabled={!objetivo || !prazo || !tolerancia}
           >
             Continuar
           </Button>
-        </div>
+        </form>
       </CardContent>
     </Card>
   );
