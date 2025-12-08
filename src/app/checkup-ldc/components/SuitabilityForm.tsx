@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,6 +19,49 @@ export function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {
   const [prazo, setPrazo] = useState<string>("");
   const [tolerancia, setTolerancia] = useState<string>("");
   const [idadeFaixa, setIdadeFaixa] = useState<string>("");
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Interceptar navegação acidental quando clicar em elementos do Select
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      
+      // Verificar se há um Link sendo acionado dentro de um elemento do Select
+      const linkElement = target.closest('a[href]');
+      if (linkElement) {
+        // Verificar se o Link está dentro de um elemento do Select
+        const isInsideSelect = 
+          linkElement.closest('[data-slot="select-content"]') ||
+          linkElement.closest('[data-slot="select-item"]') ||
+          linkElement.closest('[data-slot="select-trigger"]') ||
+          linkElement.closest('[role="option"]') ||
+          linkElement.closest('[data-radix-select-content]') ||
+          linkElement.closest('[data-radix-select-item]') ||
+          linkElement.closest('[data-radix-select-trigger]') ||
+          linkElement.closest('[role="listbox"]') ||
+          (cardRef.current && cardRef.current.contains(linkElement));
+
+        if (isInsideSelect) {
+          const href = linkElement.getAttribute('href');
+          // Prevenir navegação apenas se for um link válido (não vazio ou âncora)
+          if (href && href !== '#' && !href.startsWith('#')) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            return false;
+          }
+        }
+      }
+    };
+
+    // Adicionar listener com capture: true para interceptar antes de qualquer outro handler
+    // Mas apenas para prevenir navegação de Links, não para bloquear o Select
+    document.addEventListener('click', handleClick, true);
+
+    return () => {
+      document.removeEventListener('click', handleClick, true);
+    };
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,8 +90,52 @@ export function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {
   };
 
 
+  // Handler para prevenir navegação em qualquer clique dentro do Card
+  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    
+    // Se for um elemento do Select, prevenir qualquer ação
+    if (
+      target.closest('[data-slot="select-trigger"]') ||
+      target.closest('[data-slot="select-content"]') ||
+      target.closest('[data-slot="select-item"]') ||
+      target.closest('[role="option"]')
+    ) {
+      e.preventDefault();
+      e.stopPropagation();
+      // Usar evento nativo para stopImmediatePropagation
+      const nativeEvent = e.nativeEvent as MouseEvent;
+      if (nativeEvent && typeof nativeEvent.stopImmediatePropagation === 'function') {
+        nativeEvent.stopImmediatePropagation();
+      }
+    }
+  };
+
+  const handleCardPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    
+    if (
+      target.closest('[data-slot="select-trigger"]') ||
+      target.closest('[data-slot="select-content"]') ||
+      target.closest('[data-slot="select-item"]') ||
+      target.closest('[role="option"]')
+    ) {
+      e.preventDefault();
+      e.stopPropagation();
+      const nativeEvent = e.nativeEvent as PointerEvent;
+      if (nativeEvent && typeof nativeEvent.stopImmediatePropagation === 'function') {
+        nativeEvent.stopImmediatePropagation();
+      }
+    }
+  };
+
   return (
-    <Card>
+    <Card
+      ref={cardRef}
+      onClick={handleCardClick}
+      onMouseDown={handleCardClick}
+      onPointerDown={handleCardPointerDown}
+    >
       <CardHeader>
         <CardTitle>Perfil de Investimento</CardTitle>
         <CardDescription>
@@ -73,71 +160,32 @@ export function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {
             }
           }}
         >
-          <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+          <div className="space-y-2">
             <Label htmlFor="objetivo">Qual seu objetivo principal? *</Label>
-            <div 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
+            <Select 
+              value={objetivo} 
+              onValueChange={(value) => {
+                setObjetivo(value);
               }}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
+              required
             >
-              <Select 
-                value={objetivo} 
-                onValueChange={(value) => {
-                  setObjetivo(value);
-                }}
-                onOpenChange={() => {
-                  // Prevenir submit quando Select é aberto/fechado
-                }}
-                required
+              <SelectTrigger 
+                id="objetivo" 
+                className="w-full"
               >
-                <SelectTrigger 
-                  id="objetivo" 
-                  className="w-full"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                >
-                  <SelectValue placeholder="Selecione o objetivo" />
-                </SelectTrigger>
-                <SelectContent
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                >
-                  {OBJETIVOS.map(obj => (
-                    <SelectItem 
-                      key={obj.value} 
-                      value={obj.value}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }}
-                    >
-                      {obj.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                <SelectValue placeholder="Selecione o objetivo" />
+              </SelectTrigger>
+              <SelectContent>
+                {OBJETIVOS.map(obj => (
+                  <SelectItem 
+                    key={obj.value} 
+                    value={obj.value}
+                  >
+                    {obj.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {!objetivo && (
               <p className="text-xs text-destructive">Este campo é obrigatório</p>
             )}
@@ -160,140 +208,62 @@ export function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {
             )}
           </div>
 
-          <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+          <div className="space-y-2">
             <Label htmlFor="tolerancia">Tolerância a risco *</Label>
-            <div 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
+            <Select 
+              value={tolerancia} 
+              onValueChange={(value) => {
+                setTolerancia(value);
               }}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
+              required
             >
-              <Select 
-                value={tolerancia} 
-                onValueChange={(value) => {
-                  setTolerancia(value);
-                }}
-                onOpenChange={() => {
-                  // Prevenir submit quando Select é aberto/fechado
-                }}
-                required
+              <SelectTrigger 
+                id="tolerancia" 
+                className="w-full"
               >
-                <SelectTrigger 
-                  id="tolerancia" 
-                  className="w-full"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                >
-                  <SelectValue placeholder="Selecione a tolerância" />
-                </SelectTrigger>
-                <SelectContent
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                >
-                  {TOLERANCIAS_RISCO.map(tol => (
-                    <SelectItem 
-                      key={tol.value} 
-                      value={tol.value}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }}
-                    >
-                      {tol.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                <SelectValue placeholder="Selecione a tolerância" />
+              </SelectTrigger>
+              <SelectContent>
+                {TOLERANCIAS_RISCO.map(tol => (
+                  <SelectItem 
+                    key={tol.value} 
+                    value={tol.value}
+                  >
+                    {tol.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {!tolerancia && (
               <p className="text-xs text-destructive">Este campo é obrigatório</p>
             )}
           </div>
 
-          <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+          <div className="space-y-2">
             <Label htmlFor="idade">Faixa etária (opcional)</Label>
-            <div 
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
+            <Select 
+              value={idadeFaixa} 
+              onValueChange={(value) => {
+                setIdadeFaixa(value);
               }}
             >
-              <Select 
-                value={idadeFaixa} 
-                onValueChange={(value) => {
-                  setIdadeFaixa(value);
-                }}
-                onOpenChange={() => {
-                  // Prevenir submit quando Select é aberto/fechado
-                }}
+              <SelectTrigger 
+                id="idade" 
+                className="w-full"
               >
-                <SelectTrigger 
-                  id="idade" 
-                  className="w-full"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                >
-                  <SelectValue placeholder="Selecione a faixa" />
-                </SelectTrigger>
-                <SelectContent
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                >
-                  {IDADE_FAIXAS.map(faixa => (
-                    <SelectItem 
-                      key={faixa.value} 
-                      value={faixa.value}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                      }}
-                    >
-                      {faixa.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                <SelectValue placeholder="Selecione a faixa" />
+              </SelectTrigger>
+              <SelectContent>
+                {IDADE_FAIXAS.map(faixa => (
+                  <SelectItem 
+                    key={faixa.value} 
+                    value={faixa.value}
+                  >
+                    {faixa.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <Button 

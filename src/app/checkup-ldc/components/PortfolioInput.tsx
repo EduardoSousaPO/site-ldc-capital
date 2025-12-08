@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, Copy, Image as ImageIcon } from "lucide-react";
+import { Upload, Copy, Image as ImageIcon, FileText } from "lucide-react";
 import { parseText, parseCSV, parseExcel, type ParseResult } from "@/features/checkup-ldc/ingestion/parser";
 import type { RawHolding } from "@/features/checkup-ldc/types";
 import { toast } from "sonner";
@@ -23,6 +23,7 @@ export function PortfolioInput({ onHoldingsParsed }: PortfolioInputProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
 
   const handleParse = async (result: ParseResult) => {
     if (result.errors.length > 0) {
@@ -202,6 +203,82 @@ export function PortfolioInput({ onHoldingsParsed }: PortfolioInputProps) {
     }
   };
 
+  const handlePDFUpload = async (file: File) => {
+    setIsProcessing(true);
+    
+    try {
+      toast.info('Processando PDF com IA...');
+
+      const formData = new FormData();
+      formData.append('pdf', file);
+
+      const res = await fetch('/api/checkup-ldc/pdf-extract', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        toast.error(`Erro ao processar PDF: ${error.error || 'Erro desconhecido'}`);
+        return;
+      }
+
+      const data = await res.json();
+
+      if (!data.holdings || data.holdings.length === 0) {
+        toast.error('Nenhum holding encontrado no PDF');
+        return;
+      }
+
+      // Converter para formato RawHolding
+      interface PDFHolding {
+        nome: string;
+        quantidade?: number | null;
+        preco?: number | null;
+        valor?: number | null;
+        tipo_sugerido?: string;
+      }
+      const holdings: RawHolding[] = data.holdings.map((h: PDFHolding) => {
+        // Calcular valor se não estiver presente mas tiver quantidade e preço
+        let valor = h.valor;
+        if (!valor && h.quantidade && h.preco) {
+          valor = h.quantidade * h.preco;
+        }
+        
+        return {
+          nome_ou_codigo: h.nome || '',
+          valor: valor || undefined,
+          quantidade: h.quantidade || undefined,
+          preco: h.preco || undefined,
+          tipo: h.tipo_sugerido || undefined,
+        };
+      }).filter((h: RawHolding) => h.nome_ou_codigo && (h.valor || h.quantidade));
+
+      if (holdings.length === 0) {
+        toast.error('Nenhum holding válido extraído do PDF');
+        return;
+      }
+
+      toast.success(`${holdings.length} holdings extraídos do PDF${data.paginas_processadas ? ` (${data.paginas_processadas} página${data.paginas_processadas > 1 ? 's' : ''})` : ''}`);
+      onHoldingsParsed(holdings);
+    } catch (error) {
+      toast.error((error as Error).message || 'Erro ao processar PDF');
+      console.error(error);
+    } finally {
+      setIsProcessing(false);
+      if (pdfInputRef.current) {
+        pdfInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handlePDFSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handlePDFUpload(file);
+    }
+  };
+
   const copyExample = () => {
     setText(EXAMPLE_TEXT);
     toast.success("Exemplo copiado");
@@ -212,7 +289,7 @@ export function PortfolioInput({ onHoldingsParsed }: PortfolioInputProps) {
       <CardHeader>
         <CardTitle>Cole sua carteira</CardTitle>
         <CardDescription>
-          Cole os dados da sua carteira, faça upload de um arquivo CSV/Excel ou envie uma ou mais imagens da sua carteira
+          Cole os dados da sua carteira, faça upload de um arquivo CSV/Excel, PDF ou envie uma ou mais imagens da sua carteira
         </CardDescription>
         {/* Stepper */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground mt-4">
@@ -257,7 +334,7 @@ export function PortfolioInput({ onHoldingsParsed }: PortfolioInputProps) {
           <div className="flex-1 border-t"></div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <div>
             <input
               ref={fileInputRef}
@@ -294,7 +371,26 @@ export function PortfolioInput({ onHoldingsParsed }: PortfolioInputProps) {
               className="w-full"
             >
               <ImageIcon className="w-4 h-4 mr-2" />
-              Upload Imagem(ns)
+              Imagem(ns)
+            </Button>
+          </div>
+          <div>
+            <input
+              ref={pdfInputRef}
+              type="file"
+              accept=".pdf,application/pdf"
+              onChange={handlePDFSelect}
+              className="hidden"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => pdfInputRef.current?.click()}
+              disabled={isProcessing}
+              className="w-full"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              PDF
             </Button>
           </div>
         </div>
