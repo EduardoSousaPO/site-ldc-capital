@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createSupabaseAdminClient } from '@/lib/supabase';
 import { calculateAnalytics } from '@/features/checkup-ldc/analytics/engine';
 import { calculateScore } from '@/features/checkup-ldc/analytics/score';
-import type { UserProfile, PolicyProfile } from '@/features/checkup-ldc/types';
+import type { UserProfile, PolicyProfile, Checkup } from '@/features/checkup-ldc/types';
 
 export async function POST(
   request: Request,
@@ -23,15 +23,19 @@ export async function POST(
       return NextResponse.json({ error: 'Checkup not found' }, { status: 404 });
     }
 
+    const checkupData = checkup as Checkup;
+
     // Buscar policy profile
     let policyProfile: PolicyProfile | null = null;
-    if (checkup.policy_profile_id) {
+    if (checkupData.policy_profile_id) {
       const { data: profile } = await supabase
         .from('PolicyProfile')
         .select('*')
-        .eq('id', checkup.policy_profile_id)
+        .eq('id', checkupData.policy_profile_id)
         .single();
-      policyProfile = profile as PolicyProfile;
+      if (profile) {
+        policyProfile = profile as PolicyProfile;
+      }
     }
 
     // Se não tiver policy profile, buscar padrão
@@ -41,7 +45,9 @@ export async function POST(
         .select('*')
         .eq('name', 'Padrão LDC')
         .single();
-      policyProfile = defaultProfile as PolicyProfile;
+      if (defaultProfile) {
+        policyProfile = defaultProfile as PolicyProfile;
+      }
     }
 
     if (!policyProfile) {
@@ -60,10 +66,10 @@ export async function POST(
 
     // Preparar dados
     const userProfile: UserProfile = {
-      objetivo_principal: checkup.objetivo_principal as UserProfile['objetivo_principal'],
-      prazo_anos: checkup.prazo_anos || 10,
-      tolerancia_risco: checkup.tolerancia_risco as UserProfile['tolerancia_risco'],
-      idade_faixa: checkup.idade_faixa,
+      objetivo_principal: checkupData.objetivo_principal as UserProfile['objetivo_principal'],
+      prazo_anos: checkupData.prazo_anos || 10,
+      tolerancia_risco: checkupData.tolerancia_risco as UserProfile['tolerancia_risco'],
+      idade_faixa: checkupData.idade_faixa,
     };
 
     // Calcular analytics
@@ -74,10 +80,10 @@ export async function POST(
     const { error: updateError } = await supabase
       .from('Checkup')
       .update({
-        analytics_json: analytics,
+        analytics_json: analytics as unknown,
         score_total: score,
-        status: 'preview',
-      })
+        status: 'preview' as const,
+      } as never)
       .eq('id', id);
 
     if (updateError) {

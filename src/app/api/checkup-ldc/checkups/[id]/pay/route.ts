@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdminClient } from '@/lib/supabase';
+import type { Analytics, Checkup } from '@/features/checkup-ldc/types';
 
 // Cupons válidos para teste (permitem avançar sem pagamento)
 const VALID_COUPONS = ['TESTE', 'FREE', 'DESCONTO100', 'DEV'];
@@ -28,7 +29,8 @@ export async function POST(
       return NextResponse.json({ error: 'Checkup not found' }, { status: 404 });
     }
 
-    if (checkup.status !== 'preview') {
+    const checkupData = checkup as Checkup;
+    if (checkupData.status !== 'preview') {
       return NextResponse.json(
         { error: 'Checkup already paid or invalid status' },
         { status: 400 }
@@ -69,13 +71,13 @@ export async function POST(
     // Salvar lead na tabela Lead (se dados fornecidos)
     if (nome && email) {
       try {
-        const analytics = checkup.analytics_json as any;
+        const analytics = checkupData.analytics_json as Analytics | null;
         // Estimar patrimônio baseado na análise (se disponível)
         const patrimonioEstimado = analytics?.concentration_top5 
           ? '1m-5m' // Estimativa baseada na análise
           : '0-300k';
 
-        const scoreTotal = checkup.score_total || null;
+        const scoreTotal = checkupData.score_total || null;
         
         const { error: leadError } = await supabase
           .from('Lead')
@@ -92,7 +94,7 @@ export async function POST(
               : `Checkup ID: ${id}. Score: ${scoreTotal || 'N/A'}`,
             ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
             userAgent: request.headers.get('user-agent') || null,
-          });
+          } as never);
 
         if (leadError) {
           console.error('Error saving lead:', leadError);
@@ -109,7 +111,7 @@ export async function POST(
     // Se cupom válido, também atualiza para 'paid' (acesso liberado)
     const { error: updateError } = await supabase
       .from('Checkup')
-      .update({ status: 'paid' })
+      .update({ status: 'paid' as const } as never)
       .eq('id', id);
 
     if (updateError) {

@@ -92,6 +92,7 @@ export function PaywallModal({ checkupId, onSuccess, onClose }: PaywallModalProp
         throw new Error(errorData.error || 'Erro ao processar pagamento');
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const data = await res.json();
       
       if (cupomAplicado || codigoAplicado) {
@@ -140,7 +141,7 @@ export function PaywallModal({ checkupId, onSuccess, onClose }: PaywallModalProp
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-green-600 mt-0.5">✓</span>
-                    <span>Simulações "antes vs depois"</span>
+                    <span>Simulações &quot;antes vs depois&quot;</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-green-600 mt-0.5">✓</span>

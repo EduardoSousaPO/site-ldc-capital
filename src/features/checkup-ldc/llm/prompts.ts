@@ -2,7 +2,8 @@
 
 import { PROMPT_VERSION } from '@/lib/checkup-ldc/constants';
 
-export function getDiagnosisPrompt(policyProfile: any): string {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function getDiagnosisPrompt(policyProfile: unknown): string {
   return `Você é um analista de carteiras experiente. Gere um diagnóstico educacional e neutro, baseado nos dados estruturados fornecidos.
 
 Siga a política (policy_profile) fornecida como filosofia padrão, que valoriza:

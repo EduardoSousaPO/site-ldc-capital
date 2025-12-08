@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, FileText, Copy, Image as ImageIcon } from "lucide-react";
+import { Upload, Copy, Image as ImageIcon } from "lucide-react";
 import { parseText, parseCSV, parseExcel, type ParseResult } from "@/features/checkup-ldc/ingestion/parser";
 import type { RawHolding } from "@/features/checkup-ldc/types";
 import { toast } from "sonner";
@@ -129,7 +129,14 @@ export function PortfolioInput({ onHoldingsParsed }: PortfolioInputProps) {
         }
 
         // Converter para formato RawHolding
-        const holdings: RawHolding[] = data.holdings.map((h: any) => {
+        interface OCRHolding {
+          nome: string;
+          quantidade?: number | null;
+          preco?: number | null;
+          valor?: number | null;
+          tipo_sugerido?: string;
+        }
+        const holdings: RawHolding[] = data.holdings.map((h: OCRHolding) => {
           // Calcular valor se não estiver presente mas tiver quantidade e preço
           let valor = h.valor;
           if (!valor && h.quantidade && h.preco) {

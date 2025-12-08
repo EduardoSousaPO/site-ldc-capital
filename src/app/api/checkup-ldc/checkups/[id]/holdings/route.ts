@@ -24,7 +24,7 @@ export async function POST(
 
     const { error } = await supabase
       .from('Holding')
-      .insert(holdings);
+      .insert(holdings as never);
 
     if (error) {
       console.error('Error saving holdings:', error);

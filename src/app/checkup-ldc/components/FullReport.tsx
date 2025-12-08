@@ -309,7 +309,7 @@ export function FullReport({ checkupId, analytics, score, report, status = 'paid
                   try {
                     await navigator.clipboard.writeText(planText);
                     toast.success('Plano copiado para a área de transferência!');
-                  } catch (error) {
+                  } catch {
                     toast.error('Erro ao copiar plano');
                   }
                 }}
@@ -349,7 +349,7 @@ export function FullReport({ checkupId, analytics, score, report, status = 'paid
                     } else {
                       throw new Error('Erro ao enviar e-mail');
                     }
-                  } catch (error) {
+                  } catch {
                     toast.error('Erro ao enviar e-mail');
                   }
                 }}

@@ -6,8 +6,8 @@ export interface LLMProvider {
     model: string;
     schema: object;
     prompt: string;
-    input: any;
-  }): Promise<any>;
+    input: unknown;
+  }): Promise<unknown>;
 }
 
 export interface LLMConfig {

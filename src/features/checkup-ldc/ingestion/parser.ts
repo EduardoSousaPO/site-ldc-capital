@@ -95,7 +95,10 @@ export function parseCSV(file: File): Promise<ParseResult> {
         const holdings: RawHolding[] = [];
         const errors: string[] = [];
 
-        for (const row of results.data as any[]) {
+        interface CSVRow {
+          [key: string]: string | number | undefined;
+        }
+        for (const row of results.data as CSVRow[]) {
           const nome = row.nome || row.ativo || row.ticker || row['Nome'] || row['Ativo'] || row['Ticker'];
           const valor = parseNumber(row.valor || row['Valor'] || row.value || row['Value']);
           const quantidade = parseNumber(row.quantidade || row['Quantidade'] || row.qty || row['Qty']);
@@ -112,10 +115,10 @@ export function parseCSV(file: File): Promise<ParseResult> {
           }
 
           holdings.push({
-            nome_ou_codigo: nome,
+            nome_ou_codigo: String(nome),
             valor: valor || (quantidade && preco ? quantidade * preco : undefined),
-            quantidade,
-            preco,
+            quantidade: quantidade ?? undefined,
+            preco: preco ?? undefined,
           });
         }
 
@@ -145,7 +148,10 @@ export function parseExcel(file: File): Promise<ParseResult> {
         const holdings: RawHolding[] = [];
         const errors: string[] = [];
 
-        for (const row of jsonData as any[]) {
+        interface ExcelRow {
+          [key: string]: string | number | undefined;
+        }
+        for (const row of jsonData as ExcelRow[]) {
           const nome = row.nome || row.ativo || row.ticker || row['Nome'] || row['Ativo'] || row['Ticker'];
           const valor = parseNumber(row.valor || row['Valor'] || row.value || row['Value']);
           const quantidade = parseNumber(row.quantidade || row['Quantidade'] || row.qty || row['Qty']);
@@ -162,10 +168,10 @@ export function parseExcel(file: File): Promise<ParseResult> {
           }
 
           holdings.push({
-            nome_ou_codigo: nome,
+            nome_ou_codigo: String(nome),
             valor: valor || (quantidade && preco ? quantidade * preco : undefined),
-            quantidade,
-            preco,
+            quantidade: quantidade ?? undefined,
+            preco: preco ?? undefined,
           });
         }
 
@@ -186,7 +192,7 @@ export function parseExcel(file: File): Promise<ParseResult> {
 /**
  * Helper: parse number from string
  */
-function parseNumber(value: any): number | null {
+function parseNumber(value: unknown): number | null {
   if (typeof value === 'number') return value;
   if (typeof value !== 'string') return null;
   

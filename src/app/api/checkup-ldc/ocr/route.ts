@@ -27,7 +27,14 @@ export async function POST(request: Request) {
 
     // Processar primeira imagem (para manter compatibilidade com código existente)
     // Se houver múltiplas, processar todas e combinar resultados
-    const allHoldings: any[] = [];
+    interface OCRHolding {
+      nome: string;
+      quantidade?: number | null;
+      preco?: number | null;
+      valor?: number | null;
+      tipo_sugerido?: string;
+    }
+    const allHoldings: OCRHolding[] = [];
     const allObservacoes: string[] = [];
 
     for (const file of files) {

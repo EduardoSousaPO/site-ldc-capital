@@ -22,6 +22,7 @@ export function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     
     if (!objetivo || !prazo || !tolerancia) {
       // Mostrar mensagem de erro se campos obrigatórios não estiverem preenchidos
@@ -45,6 +46,12 @@ export function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {
     });
   };
 
+  // Handler para prevenir submit quando interagir com Select
+  const handleSelectInteraction = (e: React.MouseEvent | React.KeyboardEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -54,47 +61,84 @@ export function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form 
-          onSubmit={handleSubmit} 
+        <div 
           className="space-y-4"
-          onClick={(e) => {
-            // Prevenir que cliques em elementos do Select causem submit do form
-            const target = e.target as HTMLElement;
-            if (target.closest('[data-slot="select-trigger"]') || 
-                target.closest('[data-slot="select-content"]') ||
-                target.closest('[data-slot="select-item"]')) {
-              e.preventDefault();
-              e.stopPropagation();
-            }
-          }}
           onKeyDown={(e) => {
-            // Prevenir submit do form quando Enter é pressionado em um Select
-            if (e.key === 'Enter' && (e.target as HTMLElement).closest('[data-slot="select-trigger"]')) {
-              e.preventDefault();
+            // Permitir submit apenas quando Enter é pressionado no botão ou em inputs
+            if (e.key === 'Enter') {
+              const target = e.target as HTMLElement;
+              // Se não for um Select, permitir submit
+              if (!target.closest('[data-slot="select-trigger"]') &&
+                  !target.closest('[data-slot="select-content"]') &&
+                  !target.closest('[data-slot="select-item"]') &&
+                  !target.closest('[role="option"]')) {
+                e.preventDefault();
+                handleSubmit(e as unknown as React.FormEvent);
+              }
             }
           }}
         >
           <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
             <Label htmlFor="objetivo">Qual seu objetivo principal? *</Label>
-            <div onClick={(e) => e.stopPropagation()}>
+            <div 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
               <Select 
                 value={objetivo} 
                 onValueChange={(value) => {
                   setObjetivo(value);
+                }}
+                onOpenChange={(open) => {
+                  // Prevenir submit quando Select é aberto/fechado
+                  if (open) {
+                    // Select está abrindo - não fazer nada
+                  }
                 }}
                 required
               >
                 <SelectTrigger 
                   id="objetivo" 
                   className="w-full"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
                 >
                   <SelectValue placeholder="Selecione o objetivo" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                >
                   {OBJETIVOS.map(obj => (
                     <SelectItem 
                       key={obj.value} 
                       value={obj.value}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
                     >
                       {obj.label}
                     </SelectItem>
@@ -126,25 +170,62 @@ export function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {
 
           <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
             <Label htmlFor="tolerancia">Tolerância a risco *</Label>
-            <div onClick={(e) => e.stopPropagation()}>
+            <div 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
               <Select 
                 value={tolerancia} 
                 onValueChange={(value) => {
                   setTolerancia(value);
+                }}
+                onOpenChange={(open) => {
+                  // Prevenir submit quando Select é aberto/fechado
                 }}
                 required
               >
                 <SelectTrigger 
                   id="tolerancia" 
                   className="w-full"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
                 >
                   <SelectValue placeholder="Selecione a tolerância" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                >
                   {TOLERANCIAS_RISCO.map(tol => (
                     <SelectItem 
                       key={tol.value} 
                       value={tol.value}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
                     >
                       {tol.label}
                     </SelectItem>
@@ -159,24 +240,61 @@ export function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {
 
           <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
             <Label htmlFor="idade">Faixa etária (opcional)</Label>
-            <div onClick={(e) => e.stopPropagation()}>
+            <div 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
               <Select 
                 value={idadeFaixa} 
                 onValueChange={(value) => {
                   setIdadeFaixa(value);
                 }}
+                onOpenChange={(open) => {
+                  // Prevenir submit quando Select é aberto/fechado
+                }}
               >
                 <SelectTrigger 
                   id="idade" 
                   className="w-full"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
                 >
                   <SelectValue placeholder="Selecione a faixa" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                >
                   {IDADE_FAIXAS.map(faixa => (
                     <SelectItem 
                       key={faixa.value} 
                       value={faixa.value}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
                     >
                       {faixa.label}
                     </SelectItem>
@@ -186,10 +304,15 @@ export function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {
             </div>
           </div>
 
-          <Button type="submit" className="w-full" disabled={!objetivo || !prazo || !tolerancia}>
+          <Button 
+            type="button"
+            onClick={handleSubmit}
+            className="w-full" 
+            disabled={!objetivo || !prazo || !tolerancia}
+          >
             Continuar
           </Button>
-        </form>
+        </div>
       </CardContent>
     </Card>
   );

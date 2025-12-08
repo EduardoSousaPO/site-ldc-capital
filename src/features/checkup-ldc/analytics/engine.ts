@@ -235,6 +235,7 @@ function calculateSubscores(params: {
     }
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const lowCostPct = (lowCostTotal / total) * 100;
   const mediumCostPct = (mediumCostTotal / total) * 100;
   const highCostPct = (highCostTotal / total) * 100;

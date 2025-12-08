@@ -13,7 +13,7 @@ interface UpsellBlockProps {
 }
 
 export function UpsellBlock({ checkupId, analytics, showGuidedReview = false }: UpsellBlockProps) {
-  const handleUpsellClick = async (upsellType: 'guided_review' | 'consultancy', metadata?: Record<string, any>) => {
+  const handleUpsellClick = async (upsellType: 'guided_review' | 'consultancy', metadata?: Record<string, unknown>) => {
     try {
       const res = await fetch(`/api/checkup-ldc/checkups/${checkupId}/upsell`, {
         method: 'POST',

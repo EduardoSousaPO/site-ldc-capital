@@ -719,7 +719,9 @@ export function calculateNotRetired(
   
   // Cenário 1: Rentabilidade necessária para atingir capital de manutenção
   // Usar taxa mensal equivalente para cálculo
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const monthlyRateForRequired = convertAnnualToMonthlyRate(nominalRateForProjection);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const totalMonths = yearsToRetirement * 12;
   
   // Calcular taxa necessária usando método iterativo com capitalização mensal

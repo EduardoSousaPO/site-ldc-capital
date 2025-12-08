@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdminClient } from '@/lib/supabase';
+import type { Checkup } from '@/features/checkup-ldc/types';
 import { generatePDF } from '@/features/checkup-ldc/pdf/generator';
 
 export async function POST(
@@ -21,15 +22,17 @@ export async function POST(
       return NextResponse.json({ error: 'Checkup not found' }, { status: 404 });
     }
 
+    const checkupData = checkup as Checkup;
+
     // PDF só pode ser gerado após pagamento
-    if (checkup.status !== 'paid' && checkup.status !== 'done') {
+    if (checkupData.status !== 'paid' && checkupData.status !== 'done') {
       return NextResponse.json(
         { error: 'Checkup must be paid to generate PDF' },
         { status: 403 }
       );
     }
 
-    if (!checkup.analytics_json || !checkup.report_json) {
+    if (!checkupData.analytics_json || !checkupData.report_json) {
       return NextResponse.json(
         { error: 'Report not ready' },
         { status: 400 }
@@ -39,9 +42,9 @@ export async function POST(
     // Gerar PDF
     const pdfBuffer = await generatePDF(
       id,
-      checkup.score_total || 0,
-      checkup.analytics_json,
-      checkup.report_json
+      checkupData.score_total || 0,
+      checkupData.analytics_json,
+      checkupData.report_json
     );
 
     // Upload para Supabase Storage
@@ -63,7 +66,7 @@ export async function POST(
       }
     }
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from(bucket)
       .upload(filePath, pdfBuffer, {
         contentType: 'application/pdf',
@@ -85,7 +88,7 @@ export async function POST(
     // Atualizar checkup com URL do PDF
     await supabase
       .from('Checkup')
-      .update({ pdf_url: pdfUrl })
+      .update({ pdf_url: pdfUrl } as never)
       .eq('id', id);
 
     return NextResponse.json({ pdf_url: pdfUrl });

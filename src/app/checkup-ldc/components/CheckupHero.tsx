@@ -132,7 +132,7 @@ export function CheckupHero({ onStart }: CheckupHeroProps) {
                   <Check className="h-5 w-5 text-[#98ab44]" />
                 </div>
                 <div>
-                  <p className="font-semibold text-base sm:text-lg mb-1">Simulações "Antes vs Depois"</p>
+                  <p className="font-semibold text-base sm:text-lg mb-1">Simulações &quot;Antes vs Depois&quot;</p>
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     Veja como ajustes simples podem melhorar sua nota
                   </p>

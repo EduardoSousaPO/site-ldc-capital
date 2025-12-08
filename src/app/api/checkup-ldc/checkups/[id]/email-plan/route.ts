@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdminClient } from '@/lib/supabase';
+import type { DiagnosisReport, Checkup } from '@/features/checkup-ldc/types';
 
 export async function POST(
   request: Request,
@@ -26,7 +27,8 @@ export async function POST(
       return NextResponse.json({ error: 'Checkup not found' }, { status: 404 });
     }
 
-    const report = checkup.report_json as any;
+    const checkupData = checkup as Checkup;
+    const report = checkupData.report_json as DiagnosisReport | null;
     if (!report || !report.action_plan_7_days) {
       return NextResponse.json({ error: 'Relatório não encontrado' }, { status: 400 });
     }
@@ -37,6 +39,7 @@ export async function POST(
       ...report.action_plan_7_days,
     ];
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const htmlContent = `
       <!DOCTYPE html>
       <html>

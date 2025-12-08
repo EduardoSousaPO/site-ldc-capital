@@ -20,7 +20,7 @@ export async function generatePDF(
   try {
     const logoBuffer = readFileSync(logoPath);
     logoBase64 = `data:image/png;base64,${logoBuffer.toString('base64')}`;
-  } catch (error) {
+  } catch {
     console.warn('Logo não encontrado, continuando sem logo');
   }
 

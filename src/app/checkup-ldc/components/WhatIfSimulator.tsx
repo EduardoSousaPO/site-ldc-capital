@@ -13,7 +13,7 @@ interface WhatIfSimulatorProps {
   currentScore: number;
 }
 
-export function WhatIfSimulator({ analytics, policyProfile, currentScore }: WhatIfSimulatorProps) {
+export function WhatIfSimulator({ analytics, policyProfile }: WhatIfSimulatorProps) {
   const [selectedAdjustment, setSelectedAdjustment] = useState<WhatIfAdjustmentType | null>(null);
   const [simulation, setSimulation] = useState<ReturnType<typeof simulateAdjustment> | null>(null);
 

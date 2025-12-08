@@ -43,8 +43,8 @@ export class LLMOrchestrator {
     model: string,
     task: string,
     promptVersion: string,
-    input: any,
-    output: any
+    input: unknown,
+    output: unknown
   ) {
     try {
       const supabase = createSupabaseAdminClient();
@@ -58,7 +58,7 @@ export class LLMOrchestrator {
         prompt_version: promptVersion,
         input_hash: inputHash,
         output_json: output,
-      });
+      } as never);
     } catch (error) {
       console.error('Error logging LLM run:', error);
       // Não falhar se logging falhar
@@ -67,19 +67,19 @@ export class LLMOrchestrator {
 
   async generateDiagnosis(
     checkupId: string,
-    analytics: any,
-    userProfile: any,
-    policyProfile: any,
+    analytics: unknown,
+    userProfile: unknown,
+    policyProfile: unknown,
     prompt: string,
     promptVersion: string
-  ): Promise<any> {
+  ): Promise<unknown> {
     const primaryProvider = this.config.diagnosis_provider;
     const fallbackProvider = primaryProvider === 'openai' ? 'google' : 'openai';
 
     const input = {
       analytics,
       userProfile,
-      policyProfile: policyProfile.config,
+      policyProfile: (policyProfile as { config: unknown })?.config,
     };
 
     // Tentar provider primário
@@ -96,8 +96,7 @@ export class LLMOrchestrator {
       throw new Error('No LLM provider available');
     }
 
-    try {
-      const schema = {
+    const schema = {
         type: 'object',
         properties: {
           headline: { type: 'string' },
@@ -135,6 +134,7 @@ export class LLMOrchestrator {
         },
       };
 
+    try {
       const output = await provider.generateJSON({
         task: 'diagnosis',
         model,
@@ -217,7 +217,7 @@ export class LLMOrchestrator {
         input: { text, tone },
       });
 
-      const rewritten = result.text || text;
+      const rewritten = (result as { text?: string })?.text || text;
 
       await this.logRun(
         checkupId,

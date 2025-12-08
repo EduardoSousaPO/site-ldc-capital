@@ -18,7 +18,7 @@ export default function CheckupLDCPage() {
   const [step, setStep] = useState<Step>('input');
   const [rawHoldings, setRawHoldings] = useState<RawHolding[]>([]);
   const [typedHoldings, setTypedHoldings] = useState<Array<RawHolding & { tipo: HoldingType }>>([]);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [, setUserProfile] = useState<UserProfile | null>(null);
   const [checkupId, setCheckupId] = useState<string | null>(null);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [score, setScore] = useState<number | null>(null);

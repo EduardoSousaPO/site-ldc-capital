@@ -112,7 +112,7 @@ export function PreviewReport({ checkupId, analytics, score, onUnlock }: Preview
               <h3 className="font-semibold mb-3">O relatório completo inclui:</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>✓ Breakdown detalhado (5 dimensões)</li>
-                <li>✓ Simulações "antes vs depois"</li>
+                <li>✓ Simulações &quot;antes vs depois&quot;</li>
                 <li>✓ Top 5 posições da carteira</li>
                 <li>✓ Plano de ação copiável + WhatsApp + e-mail</li>
                 <li>✓ PDF premium para arquivar</li>

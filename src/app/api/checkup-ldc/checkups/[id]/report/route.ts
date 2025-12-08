@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdminClient } from '@/lib/supabase';
+import type { Checkup } from '@/features/checkup-ldc/types';
 import { LLMOrchestrator } from '@/features/checkup-ldc/llm/orchestrator';
 import { getDiagnosisPrompt, PROMPT_VERSION } from '@/features/checkup-ldc/llm/prompts';
 import type { PolicyProfile } from '@/features/checkup-ldc/types';
@@ -23,25 +24,29 @@ export async function POST(
       return NextResponse.json({ error: 'Checkup not found' }, { status: 404 });
     }
 
+    const checkupData = checkup as Checkup;
+
     // Relatório completo só pode ser gerado após pagamento
-    if (checkup.status !== 'paid' && checkup.status !== 'done') {
+    if (checkupData.status !== 'paid' && checkupData.status !== 'done') {
       return NextResponse.json(
         { error: 'Checkup must be paid to generate full report' },
         { status: 403 }
       );
     }
 
-    const analytics = checkup.analytics_json;
+    const analytics = checkupData.analytics_json;
 
     // Buscar policy profile
     let policyProfile: PolicyProfile | null = null;
-    if (checkup.policy_profile_id) {
+    if (checkupData.policy_profile_id) {
       const { data: profile } = await supabase
         .from('PolicyProfile')
         .select('*')
-        .eq('id', checkup.policy_profile_id)
+        .eq('id', checkupData.policy_profile_id)
         .single();
-      policyProfile = profile as PolicyProfile;
+      if (profile) {
+        policyProfile = profile as PolicyProfile;
+      }
     }
 
     // Se não tiver, buscar padrão
@@ -51,7 +56,9 @@ export async function POST(
         .select('*')
         .eq('name', 'Padrão LDC')
         .single();
-      policyProfile = defaultProfile as PolicyProfile;
+      if (defaultProfile) {
+        policyProfile = defaultProfile as PolicyProfile;
+      }
     }
 
     if (!policyProfile) {
@@ -64,10 +71,10 @@ export async function POST(
 
     // Preparar user profile
     const userProfile = {
-      objetivo_principal: checkup.objetivo_principal,
-      prazo_anos: checkup.prazo_anos,
-      tolerancia_risco: checkup.tolerancia_risco,
-      idade_faixa: checkup.idade_faixa,
+      objetivo_principal: checkupData.objetivo_principal,
+      prazo_anos: checkupData.prazo_anos,
+      tolerancia_risco: checkupData.tolerancia_risco,
+      idade_faixa: checkupData.idade_faixa,
     };
 
     // Gerar diagnóstico via LLM
@@ -87,10 +94,10 @@ export async function POST(
     const { error: updateError } = await supabase
       .from('Checkup')
       .update({
-        report_json: diagnosis,
+        report_json: diagnosis as unknown,
         // Manter status atual se for 'paid', caso contrário mudar para 'done'
-        status: checkup.status === 'paid' ? 'paid' : 'done',
-      })
+        status: checkupData.status === 'paid' ? 'paid' : 'done',
+      } as never)
       .eq('id', id);
 
     if (updateError) {

@@ -44,6 +44,7 @@ export function simulateAdjustment(
       // Reduzir concentração top5 para 45%
       const currentTop5 = simulatedAnalytics.concentration_top5;
       if (currentTop5 > 45) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const reduction = currentTop5 - 45;
         simulatedAnalytics.concentration_top5 = 45;
         

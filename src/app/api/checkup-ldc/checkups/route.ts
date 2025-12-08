@@ -15,6 +15,8 @@ export async function POST(request: Request) {
       .limit(1)
       .single();
 
+    const profileData = profiles as { id: string } | null;
+
     // Criar checkup
     const { data: checkup, error } = await supabase
       .from('Checkup')
@@ -23,9 +25,9 @@ export async function POST(request: Request) {
         prazo_anos: body.prazo_anos,
         tolerancia_risco: body.tolerancia_risco,
         idade_faixa: body.idade_faixa,
-        policy_profile_id: profiles?.id || null,
+        policy_profile_id: profileData?.id || null,
         status: 'draft',
-      })
+      } as never)
       .select()
       .single();
 

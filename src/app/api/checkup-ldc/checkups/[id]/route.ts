@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdminClient } from '@/lib/supabase';
-import type { PolicyProfile } from '@/features/checkup-ldc/types';
+import type { PolicyProfile, Checkup } from '@/features/checkup-ldc/types';
 
 export async function GET(
   request: Request,
@@ -21,15 +21,19 @@ export async function GET(
       return NextResponse.json({ error: 'Checkup not found' }, { status: 404 });
     }
 
+    const checkupData = checkup as Checkup;
+
     // Buscar policy profile se existir
     let policyProfile: PolicyProfile | null = null;
-    if (checkup.policy_profile_id) {
+    if (checkupData.policy_profile_id) {
       const { data: profile } = await supabase
         .from('PolicyProfile')
         .select('*')
-        .eq('id', checkup.policy_profile_id)
+        .eq('id', checkupData.policy_profile_id)
         .single();
-      policyProfile = profile as PolicyProfile;
+      if (profile) {
+        policyProfile = profile as PolicyProfile;
+      }
     }
 
     // Se não tiver policy profile, buscar padrão
@@ -39,12 +43,14 @@ export async function GET(
         .select('*')
         .eq('name', 'Padrão LDC')
         .single();
-      policyProfile = defaultProfile as PolicyProfile;
+      if (defaultProfile) {
+        policyProfile = defaultProfile as PolicyProfile;
+      }
     }
 
     return NextResponse.json({
-      id: checkup.id,
-      status: checkup.status,
+      id: checkupData.id,
+      status: checkupData.status,
       policy_profile: policyProfile,
     });
   } catch (error) {

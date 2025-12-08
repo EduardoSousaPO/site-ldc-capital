@@ -19,8 +19,8 @@ export class GeminiProvider implements LLMProvider {
     model: string;
     schema: object;
     prompt: string;
-    input: any;
-  }): Promise<any> {
+    input: unknown;
+  }): Promise<unknown> {
     try {
       const model = this.genAI.getGenerativeModel({ model: opts.model });
 

@@ -62,18 +62,18 @@ export function suggestHoldingType(holding: RawHolding): HoldingType {
  * Aplica tipo a todos os holdings similares (busca por substring)
  */
 export function applyTypeToSimilar(
-  holdings: RawHolding[],
+  holdings: Array<RawHolding & { tipo?: HoldingType }>,
   pattern: string,
   type: HoldingType
-): RawHolding[] {
+): Array<RawHolding & { tipo: HoldingType }> {
   const upperPattern = pattern.toUpperCase();
   
   return holdings.map(holding => {
     const nome = (holding.nome_ou_codigo || '').toUpperCase();
     if (nome.includes(upperPattern)) {
-      return { ...holding, tipo };
+      return { ...holding, tipo: type };
     }
-    return holding;
-  });
+    return { ...holding, tipo: (holding.tipo || type) as HoldingType };
+  }) as Array<RawHolding & { tipo: HoldingType }>;
 }
 

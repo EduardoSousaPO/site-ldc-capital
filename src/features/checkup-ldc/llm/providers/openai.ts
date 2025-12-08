@@ -19,8 +19,8 @@ export class OpenAIProvider implements LLMProvider {
     model: string;
     schema: object;
     prompt: string;
-    input: any;
-  }): Promise<any> {
+    input: unknown;
+  }): Promise<unknown> {
     try {
       const response = await this.client.chat.completions.create({
         model: opts.model,
