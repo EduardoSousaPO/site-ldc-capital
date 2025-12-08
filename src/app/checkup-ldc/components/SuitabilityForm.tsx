@@ -46,11 +46,6 @@ export function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {
     });
   };
 
-  // Handler para prevenir submit quando interagir com Select
-  const handleSelectInteraction = (e: React.MouseEvent | React.KeyboardEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
 
   return (
     <Card>
@@ -95,11 +90,8 @@ export function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {
                 onValueChange={(value) => {
                   setObjetivo(value);
                 }}
-                onOpenChange={(open) => {
+                onOpenChange={() => {
                   // Prevenir submit quando Select é aberto/fechado
-                  if (open) {
-                    // Select está abrindo - não fazer nada
-                  }
                 }}
                 required
               >
@@ -185,7 +177,7 @@ export function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {
                 onValueChange={(value) => {
                   setTolerancia(value);
                 }}
-                onOpenChange={(open) => {
+                onOpenChange={() => {
                   // Prevenir submit quando Select é aberto/fechado
                 }}
                 required
@@ -255,7 +247,7 @@ export function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {
                 onValueChange={(value) => {
                   setIdadeFaixa(value);
                 }}
-                onOpenChange={(open) => {
+                onOpenChange={() => {
                   // Prevenir submit quando Select é aberto/fechado
                 }}
               >

@@ -1,9 +1,16 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization - só cria o cliente quando necessário (em runtime, não durante build)
+function getOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY environment variable is not set');
+  }
+  return new OpenAI({
+    apiKey,
+  });
+}
 
 export async function POST(request: Request) {
   try {
@@ -45,6 +52,7 @@ export async function POST(request: Request) {
       const dataUrl = `data:${file.type};base64,${base64Image}`;
 
       // Chamar OpenAI Vision API
+      const openai = getOpenAIClient();
       const response = await openai.chat.completions.create({
         model: 'gpt-4o', // ou gpt-4o-mini para custo menor
         messages: [
