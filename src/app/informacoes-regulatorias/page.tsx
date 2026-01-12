@@ -144,7 +144,7 @@ export default function InformacoesRegulatorias() {
               <ul className="space-y-2 text-gray-600 font-sans">
                 <li><strong>Razão Social:</strong> LDC Capital Consultoria de Investimentos</li>
                 <li><strong>CNPJ:</strong> 58.321.323/0001-67</li>
-                <li><strong>Registro CVM:</strong> Em processo de regularização</li>
+                <li><strong>Registro CVM:</strong> 3976-4 (desde 13/08/2025)</li>
                 <li><strong>Endereço:</strong> Rua Rio Branco, 1290, sala 02, Centro - Taquara/RS</li>
                 <li><strong>CEP:</strong> 95600-074</li>
               </ul>

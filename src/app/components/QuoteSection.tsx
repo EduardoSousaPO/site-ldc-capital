@@ -24,10 +24,10 @@ export default function QuoteSection() {
   return (
     <section 
       id="quote-section"
-      className="relative py-16 lg:py-24 overflow-hidden min-h-screen bg-gradient-to-br from-slate-100 to-slate-200"
+      className="relative py-16 lg:py-24 overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200"
     >
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
-        <div className="grid lg:grid-cols-[1fr_1.5fr] gap-8 lg:gap-12 items-center min-h-screen">
+      <div className="relative z-10 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-full">
+        <div className="grid lg:grid-cols-[0.7fr_2.3fr] gap-8 lg:gap-12 items-center">
           {/* Lado Esquerdo - Citação */}
           <div 
             className={`transition-all duration-1000 ${
@@ -48,16 +48,16 @@ export default function QuoteSection() {
               isVisible ? 'animate-slide-up opacity-100' : 'opacity-0 translate-y-10'
             }`}
           >
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+            <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-slate-100">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
-                src="/images/jonas-wurster-3LwMyv3FiUE-unsplash.jpg"
-                alt="Pessoas no Preikestolen - Pulpit Rock"
-                className="w-full h-[600px] lg:h-[800px] object-cover"
+                src="/images/WhatsApp Image 2026-01-06 at 11.40.36.jpeg"
+                alt="Equipe LDC Capital"
+                className="w-full h-auto object-contain brightness-95 contrast-105"
               />
               
-              {/* Overlay sutil para profundidade */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#262d3d]/20 via-transparent to-transparent"></div>
+              {/* Overlay fosco para deixar a foto levemente opaca */}
+              <div className="absolute inset-0 bg-white/10"></div>
             </div>
           </div>
         </div>

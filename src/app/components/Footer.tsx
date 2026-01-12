@@ -111,9 +111,15 @@ export default function Footer() {
               >
                 <Youtube className="h-10 w-10" />
               </a>
-              <div className="text-gray-500 cursor-not-allowed transition-all duration-300 transform hover:scale-110" title="Instagram - Em breve">
+              <a
+                href="https://www.instagram.com/ldc.capital/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-300 hover:text-[#98ab44] transition-all duration-300 transform hover:scale-110"
+                title="Instagram"
+              >
                 <Instagram className="h-10 w-10" />
-              </div>
+              </a>
               <div className="text-gray-500 cursor-not-allowed transition-all duration-300 transform hover:scale-110" title="LinkedIn - Em breve">
                 <Linkedin className="h-10 w-10" />
               </div>
@@ -145,7 +151,7 @@ export default function Footer() {
           <div className="text-white space-y-1 font-sans">
             <p className="text-[10px]">
               <strong>CNPJ:</strong> 58.321.323/0001-67 | 
-              <strong> Registro CVM:</strong> 000000 (placeholder)
+              <strong> Registro CVM:</strong> 3976-4
             </p>
             <p className="text-[10px]">
               <strong>Endereço:</strong> Rua Rio Branco, 1290, sala 02, Centro de Taquara-RS - CEP 95600-074

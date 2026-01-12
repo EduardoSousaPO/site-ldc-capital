@@ -1,0 +1,78 @@
+warning: in the working copy of 'src/app/checkup-ldc/components/SuitabilityForm.tsx', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/src/app/checkup-ldc/components/SuitabilityForm.tsx b/src/app/checkup-ldc/components/SuitabilityForm.tsx[m
+[1mindex 3bf79ff..e43b295 100644[m
+[1m--- a/src/app/checkup-ldc/components/SuitabilityForm.tsx[m
+[1m+++ b/src/app/checkup-ldc/components/SuitabilityForm.tsx[m
+[36m@@ -1,6 +1,6 @@[m
+ "use client";[m
+ [m
+[31m-import { useState, useRef } from "react";[m
+[32m+[m[32mimport { useState } from "react";[m
+ import { Button } from "@/components/ui/button";[m
+ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";[m
+ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";[m
+[36m@@ -19,12 +19,10 @@[m [mexport function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {[m
+   const [prazo, setPrazo] = useState<string>("");[m
+   const [tolerancia, setTolerancia] = useState<string>("");[m
+   const [idadeFaixa, setIdadeFaixa] = useState<string>("");[m
+[31m-  const cardRef = useRef<HTMLDivElement>(null);[m
+ [m
+ [m
+[31m-  const handleSubmit = (e: React.FormEvent) => {[m
+[32m+[m[32m  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {[m
+     e.preventDefault();[m
+[31m-    e.stopPropagation();[m
+     [m
+     if (!objetivo || !prazo || !tolerancia) {[m
+       // Mostrar mensagem de erro se campos obrigatórios não estiverem preenchidos[m
+[36m@@ -49,7 +47,7 @@[m [mexport function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {[m
+   };[m
+ [m
+   return ([m
+[31m-    <Card ref={cardRef}>[m
+[32m+[m[32m    <Card>[m
+       <CardHeader>[m
+         <CardTitle>Perfil de Investimento</CardTitle>[m
+         <CardDescription>[m
+[36m@@ -57,22 +55,9 @@[m [mexport function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {[m
+         </CardDescription>[m
+       </CardHeader>[m
+       <CardContent>[m
+[31m-        <div [m
+[32m+[m[32m        <form[m[41m [m
+           className="space-y-4"[m
+[31m-          onKeyDown={(e) => {[m
+[31m-            // Permitir submit apenas quando Enter é pressionado no botão ou em inputs[m
+[31m-            if (e.key === 'Enter') {[m
+[31m-              const target = e.target as HTMLElement;[m
+[31m-              // Se não for um Select, permitir submit[m
+[31m-              if (!target.closest('[data-slot="select-trigger"]') &&[m
+[31m-                  !target.closest('[data-slot="select-content"]') &&[m
+[31m-                  !target.closest('[data-slot="select-item"]') &&[m
+[31m-                  !target.closest('[role="option"]')) {[m
+[31m-                e.preventDefault();[m
+[31m-                handleSubmit(e as unknown as React.FormEvent);[m
+[31m-              }[m
+[31m-            }[m
+[31m-          }}[m
+[32m+[m[32m          onSubmit={handleSubmit}[m
+         >[m
+           <div className="space-y-2">[m
+             <Label htmlFor="objetivo">Qual seu objetivo principal? *</Label>[m
+[36m@@ -181,14 +166,13 @@[m [mexport function SuitabilityForm({ onSubmit }: SuitabilityFormProps) {[m
+           </div>[m
+ [m
+           <Button [m
+[31m-            type="button"[m
+[31m-            onClick={handleSubmit}[m
+[32m+[m[32m            type="submit"[m
+             className="w-full" [m
+             disabled={!objetivo || !prazo || !tolerancia}[m
+           >[m
+             Continuar[m
+           </Button>[m
+[31m-        </div>[m
+[32m+[m[32m        </form>[m
+       </CardContent>[m
+     </Card>[m
+   );[m

@@ -65,18 +65,9 @@ export default function ContactForm() {
   };
 
   return (
-    <section className="py-16 lg:py-24 bg-[#262d3d]">
+    <section className="py-16 lg:py-24 bg-white">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="font-serif text-3xl lg:text-4xl font-bold text-white mb-4">
-            Fale com nossa equipe
-          </h2>
-          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-            Deixe aqui sua mensagem para que nosso time possa te ajudar.
-          </p>
-        </div>
-
-        <Card className="border-0 shadow-2xl bg-white/95 backdrop-blur-md">
+        <Card className="border-2 border-[#262d3d] shadow-2xl bg-white rounded-2xl">
           <CardHeader className="text-center pb-6">
             <div className="w-16 h-16 bg-gradient-to-br from-[#98ab44] to-[#becc6a] rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Mail className="w-8 h-8 text-white" />
