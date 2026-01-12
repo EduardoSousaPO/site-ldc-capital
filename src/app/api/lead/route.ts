@@ -119,9 +119,12 @@ export async function POST(request: NextRequest) {
       confirmationSent: confirmationResult.success,
     });
     
-    // Verificar se pelo menos o Supabase funcionou (método principal)
-    if (!supabaseResult.success) {
-      console.error("❌ Erro ao salvar lead no Supabase. Lead não foi salvo.");
+    // Verificar se pelo menos um dos métodos de armazenamento funcionou
+    // Prioridade: Google Sheets (principal para acompanhamento) ou Supabase (backup)
+    const leadSaved = sheetsResult.success || supabaseResult.success;
+    
+    if (!leadSaved) {
+      console.error("❌ Erro ao salvar lead. Nenhum método de armazenamento funcionou.");
       return NextResponse.json(
         { 
           success: false, 
@@ -131,7 +134,12 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Se Supabase funcionou, retornamos sucesso mesmo se Google Sheets falhar
+    // Se pelo menos um método funcionou, retornamos sucesso
+    console.log("✅ Lead salvo com sucesso:", {
+      sheets: sheetsResult.success,
+      supabase: supabaseResult.success
+    });
+    
     return NextResponse.json(
       { 
         success: true, 
