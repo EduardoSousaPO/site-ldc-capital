@@ -75,6 +75,19 @@ export async function POST(request: NextRequest) {
       confirmationSent: confirmationResult.success,
     });
     
+    // Verificar se pelo menos um método funcionou (Sheets ou Email)
+    const contactSaved = sheetsResult.success || emailResult.success;
+    
+    if (contactSaved) {
+      console.log("✅ Contato processado com sucesso:", {
+        sheets: sheetsResult.success,
+        email: emailResult.success
+      });
+    } else {
+      console.warn("⚠️ Contato recebido mas nenhuma integração funcionou");
+    }
+    
+    // Sempre retorna sucesso para o usuário (a mensagem foi recebida)
     return NextResponse.json(
       { 
         success: true, 

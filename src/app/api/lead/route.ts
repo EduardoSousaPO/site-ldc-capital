@@ -33,23 +33,19 @@ export async function POST(request: NextRequest) {
       userAgent: request.headers.get("user-agent") || "unknown",
     };
     
-    // Salvar no Supabase (sempre tenta, é o método principal)
+    // Salvar no Supabase usando a tabela Client (Lead não existe)
     let supabaseResult: { success: boolean; error?: string; leadId?: string } = { success: false };
     const supabase = createSupabaseAdminClient();
     
     try {
-      // Type casting necessário porque a tabela Lead ainda não está nos tipos gerados do Supabase
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: lead, error: supabaseError } = await (supabase.from("Lead") as any)
+      // Usando tabela Client como alternativa (tabela Lead não existe)
+      const { data: client, error: supabaseError } = await supabase
+        .from("Client")
         .insert({
-          nome: leadData.nome,
+          name: leadData.nome,
           email: leadData.email,
-          telefone: leadData.telefone || null,
-          patrimonio: leadData.patrimonio || null,
-          origem: leadData.origem || null,
-          origemFormulario: leadData.origemFormulario,
-          ip: leadData.ip,
-          userAgent: leadData.userAgent,
+          phone: leadData.telefone || null,
+          notes: `Patrimônio: ${leadData.patrimonio || 'N/I'} | Origem: ${leadData.origem || 'Home'} | IP: ${leadData.ip}`,
         })
         .select("id")
         .single();
@@ -58,8 +54,8 @@ export async function POST(request: NextRequest) {
         console.error('Erro ao salvar no Supabase:', supabaseError);
         supabaseResult = { success: false, error: supabaseError.message };
       } else {
-        supabaseResult = { success: true, leadId: lead?.id };
-        console.log('✅ Lead salvo no Supabase:', lead?.id);
+        supabaseResult = { success: true, leadId: client?.id };
+        console.log('✅ Lead salvo no Supabase (Client):', client?.id);
       }
     } catch (error) {
       console.error('Erro ao salvar no Supabase:', error);

@@ -21,7 +21,7 @@ export async function GET(
       return NextResponse.json({ error: 'Checkup not found' }, { status: 404 });
     }
 
-    const checkupData = checkup as Checkup;
+    const checkupData = checkup as unknown as Checkup;
 
     // Buscar policy profile se existir
     let policyProfile: PolicyProfile | null = null;
@@ -32,7 +32,7 @@ export async function GET(
         .eq('id', checkupData.policy_profile_id)
         .single();
       if (profile) {
-        policyProfile = profile as PolicyProfile;
+        policyProfile = profile as unknown as PolicyProfile;
       }
     }
 
@@ -44,7 +44,7 @@ export async function GET(
         .eq('name', 'Padrão LDC')
         .single();
       if (defaultProfile) {
-        policyProfile = defaultProfile as PolicyProfile;
+        policyProfile = defaultProfile as unknown as PolicyProfile;
       }
     }
 

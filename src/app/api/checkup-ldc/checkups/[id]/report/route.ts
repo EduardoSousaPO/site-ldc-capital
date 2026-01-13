@@ -24,7 +24,7 @@ export async function POST(
       return NextResponse.json({ error: 'Checkup not found' }, { status: 404 });
     }
 
-    const checkupData = checkup as Checkup;
+    const checkupData = checkup as unknown as Checkup;
 
     // Relatório completo só pode ser gerado após pagamento
     if (checkupData.status !== 'paid' && checkupData.status !== 'done') {
@@ -45,7 +45,7 @@ export async function POST(
         .eq('id', checkupData.policy_profile_id)
         .single();
       if (profile) {
-        policyProfile = profile as PolicyProfile;
+        policyProfile = profile as unknown as PolicyProfile;
       }
     }
 
@@ -57,7 +57,7 @@ export async function POST(
         .eq('name', 'Padrão LDC')
         .single();
       if (defaultProfile) {
-        policyProfile = defaultProfile as PolicyProfile;
+        policyProfile = defaultProfile as unknown as PolicyProfile;
       }
     }
 

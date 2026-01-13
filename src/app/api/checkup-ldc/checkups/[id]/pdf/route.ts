@@ -22,7 +22,7 @@ export async function POST(
       return NextResponse.json({ error: 'Checkup not found' }, { status: 404 });
     }
 
-    const checkupData = checkup as Checkup;
+    const checkupData = checkup as unknown as Checkup;
 
     // PDF só pode ser gerado após pagamento
     if (checkupData.status !== 'paid' && checkupData.status !== 'done') {

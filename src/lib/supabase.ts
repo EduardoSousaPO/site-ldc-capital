@@ -1,21 +1,22 @@
 import { createClient } from '@supabase/supabase-js'
 import { createBrowserClient, createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { Database } from '@/types/database.types'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 // Singleton para evitar múltiplas instâncias
-let browserClient: ReturnType<typeof createBrowserClient> | null = null
-let adminClient: ReturnType<typeof createClient> | null = null
+let browserClient: ReturnType<typeof createBrowserClient<Database>> | null = null
+let adminClient: ReturnType<typeof createClient<Database>> | null = null
 
 // Cliente para componentes do browser (usa createBrowserClient do @supabase/ssr)
 // Isso garante que os cookies sejam salvos corretamente para o servidor ler
 export const createSupabaseBrowserClient = () => {
   if (typeof window === 'undefined') {
     // Server-side: sempre criar nova instância sem cookies
-    return createClient(supabaseUrl, supabaseAnonKey, {
+    return createClient<Database>(supabaseUrl, supabaseAnonKey, {
       auth: {
         persistSession: false,
         autoRefreshToken: false,
@@ -26,7 +27,7 @@ export const createSupabaseBrowserClient = () => {
   // Client-side: usar createBrowserClient do @supabase/ssr
   // Isso salva cookies HTTP que o servidor pode ler
   if (!browserClient) {
-    browserClient = createBrowserClient(supabaseUrl, supabaseAnonKey)
+    browserClient = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey)
   }
   
   return browserClient
@@ -35,7 +36,7 @@ export const createSupabaseBrowserClient = () => {
 // Cliente admin (service role) para operações administrativas (singleton)
 export const createSupabaseAdminClient = () => {
   if (!adminClient) {
-    adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+    adminClient = createClient<Database>(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
@@ -53,7 +54,7 @@ export const createSupabaseServerClient = async (cookieStorePromise: ReturnType<
   const projectRef = supabaseUrl.match(/https?:\/\/([^.]+)\.supabase\.co/)?.[1];
   const cookiePrefix = projectRef ? `sb-${projectRef}-` : 'sb-';
   
-  return createServerClient(supabaseUrl, supabaseAnonKey, {
+  return createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
         // Filtrar apenas cookies do projeto atual

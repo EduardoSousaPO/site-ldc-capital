@@ -27,7 +27,7 @@ export async function POST(
       return NextResponse.json({ error: 'Checkup not found' }, { status: 404 });
     }
 
-    const checkupData = checkup as Checkup;
+    const checkupData = checkup as unknown as Checkup;
     const report = checkupData.report_json as DiagnosisReport | null;
     if (!report || !report.action_plan_7_days) {
       return NextResponse.json({ error: 'Relatório não encontrado' }, { status: 400 });

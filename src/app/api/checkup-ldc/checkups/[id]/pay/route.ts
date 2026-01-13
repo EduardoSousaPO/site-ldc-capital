@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseAdminClient } from '@/lib/supabase';
-import type { Analytics, Checkup } from '@/features/checkup-ldc/types';
+import type { Checkup } from '@/features/checkup-ldc/types';
 
 // Cupons válidos para teste (permitem avançar sem pagamento)
 const VALID_COUPONS = ['TESTE', 'FREE', 'DESCONTO100', 'DEV'];
@@ -29,7 +29,7 @@ export async function POST(
       return NextResponse.json({ error: 'Checkup not found' }, { status: 404 });
     }
 
-    const checkupData = checkup as Checkup;
+    const checkupData = checkup as unknown as Checkup;
     if (checkupData.status !== 'preview') {
       return NextResponse.json(
         { error: 'Checkup already paid or invalid status' },
@@ -68,42 +68,18 @@ export async function POST(
     // Verificar se pelo menos um método de acesso foi validado
     const acessoLiberado = cupomValido || codigoValido;
 
-    // Salvar lead na tabela Lead (se dados fornecidos)
+    // TODO: Implementar salvamento de lead quando tabela Lead for criada
+    // Por enquanto, apenas logamos os dados do lead
     if (nome && email) {
-      try {
-        const analytics = checkupData.analytics_json as Analytics | null;
-        // Estimar patrimônio baseado na análise (se disponível)
-        const patrimonioEstimado = analytics?.concentration_top5 
-          ? '1m-5m' // Estimativa baseada na análise
-          : '0-300k';
-
-        const scoreTotal = checkupData.score_total || null;
-        
-        const { error: leadError } = await supabase
-          .from('Lead')
-          .insert({
-            nome: nome.trim(),
-            email: email.trim().toLowerCase(),
-            telefone: telefone?.trim() || null,
-            patrimonio: patrimonioEstimado,
-            origem: 'checkup-ldc',
-            origemFormulario: 'Checkup-LDC',
-            status: acessoLiberado ? 'Qualificado (Código)' : 'Qualificado',
-            observacoes: acessoLiberado 
-              ? `Checkup ID: ${id}. Acesso via ${cupomValido ? `cupom: ${cupom}` : `código: ${codigo_acesso}`}. Score: ${scoreTotal || 'N/A'}`
-              : `Checkup ID: ${id}. Score: ${scoreTotal || 'N/A'}`,
-            ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null,
-            userAgent: request.headers.get('user-agent') || null,
-          } as never);
-
-        if (leadError) {
-          console.error('Error saving lead:', leadError);
-          // Não falhar o pagamento se houver erro ao salvar lead
-        }
-      } catch (error) {
-        console.error('Error processing lead:', error);
-        // Não falhar o pagamento se houver erro ao salvar lead
-      }
+      console.log('Lead data (tabela Lead não existe):', {
+        nome: nome.trim(),
+        email: email.trim().toLowerCase(),
+        telefone: telefone?.trim() || null,
+        checkupId: id,
+        acessoLiberado,
+        cupomValido,
+        codigoValido,
+      });
     }
 
     // Atualizar status do checkup para 'paid'
