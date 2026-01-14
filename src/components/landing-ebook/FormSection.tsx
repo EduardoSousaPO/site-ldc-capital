@@ -28,46 +28,42 @@ export default function FormSection() {
       
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center max-w-6xl mx-auto">
-          {/* Placeholder para Foto do Luciano */}
+          {/* Foto do Luciano */}
           <div className="relative flex justify-center lg:justify-end order-2 lg:order-1">
-            <div className="relative w-64 h-80 sm:w-72 sm:h-96 md:w-80 md:h-[28rem]">
-              {/* Moldura decorativa */}
-              <div className="absolute -left-3 -top-3 sm:-left-4 sm:-top-4 w-full h-full border-2 border-[#98ab44]/30 rounded-2xl" />
+            <div className="relative w-72 h-[22rem] sm:w-80 sm:h-[26rem] md:w-[22rem] md:h-[30rem]">
+              {/* Glow de fundo */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[#98ab44]/20 to-[#becc6a]/10 rounded-2xl blur-3xl scale-110" />
               
-              {/* Círculo decorativo atrás */}
-              <div className="absolute -left-8 top-1/4 w-32 h-32 sm:w-40 sm:h-40 bg-[#becc6a]/10 rounded-full blur-xl" />
+              {/* Moldura decorativa offset */}
+              <div className="absolute -left-3 -top-3 sm:-left-4 sm:-top-4 w-full h-full border-2 border-[#98ab44]/40 rounded-2xl" />
               
-              {/* Placeholder para imagem - substitua o src pela foto real */}
-              <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl bg-[#344645]/50 border-2 border-dashed border-[#98ab44]/40 flex items-center justify-center">
-                {/* 
-                  INSTRUÇÕES PARA ADICIONAR A FOTO:
-                  1. Coloque a foto na pasta: public/images/
-                  2. Substitua este div pelo componente Image abaixo:
-                  
-                  <Image
-                    src="/images/NOME_DA_FOTO.jpg"
-                    alt="Luciano Herzog - Especialista em Investimentos Internacionais"
-                    fill
-                    className="object-cover object-top"
-                  />
-                */}
-                <div className="text-center p-4">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#98ab44]/20 flex items-center justify-center">
-                    <svg className="w-8 h-8 text-[#98ab44]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                  <p className="text-[#98ab44]/70 text-sm font-sans">
-                    Foto do Luciano Herzog
-                  </p>
-                  <p className="text-white/40 text-xs mt-1 font-sans">
-                    (adicionar posteriormente)
-                  </p>
-                </div>
+              {/* Container da foto com efeitos */}
+              <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl shadow-black/40 group">
+                {/* Gradient overlay sutil */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#262d3d]/40 via-transparent to-transparent z-10" />
+                
+                {/* Borda interna luminosa */}
+                <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/10 z-20" />
+                
+                {/* Imagem */}
+                <Image
+                  src="/images/DSC_5671.JPG"
+                  alt="Luciano Herzog - Especialista em Investimentos Internacionais"
+                  fill
+                  className="object-cover object-[center_20%]"
+                  priority
+                />
               </div>
               
-              {/* Elemento decorativo */}
-              <div className="absolute -right-4 -bottom-4 w-20 h-20 sm:w-24 sm:h-24 bg-[#98ab44]/20 rounded-full blur-2xl" />
+              {/* Badge de credibilidade */}
+              <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-30 bg-[#262d3d]/95 backdrop-blur-sm px-4 py-2 rounded-full border border-[#98ab44]/30 shadow-lg">
+                <p className="text-[#98ab44] text-xs sm:text-sm font-semibold whitespace-nowrap">
+                  Luciano Herzog
+                </p>
+              </div>
+              
+              {/* Elemento decorativo canto */}
+              <div className="absolute -right-6 -bottom-6 w-24 h-24 sm:w-32 sm:h-32 bg-[#98ab44]/15 rounded-full blur-2xl" />
             </div>
           </div>
           
