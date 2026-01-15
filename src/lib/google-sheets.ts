@@ -27,7 +27,7 @@ export async function addToGoogleSheets(data: {
   origem: string;
   mensagem?: string;
   titulo?: string;
-  origemFormulario: 'Home' | 'Fale Conosco' | 'Materiais';
+  origemFormulario: 'Home' | 'Fale Conosco' | 'Materiais' | 'Page - ebook invest internacionais';
 }) {
   try {
     const auth = await getGoogleSheetsAuth();

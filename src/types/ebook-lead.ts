@@ -53,8 +53,10 @@ export type LeadStatus =
   | 'converted';          // Virou cliente
 
 export const VALORES_INVESTIMENTO = [
-  { value: 'R$200 a R$500 mil', label: 'R$ 200 a R$ 500 mil' },
-  { value: 'R$500 mil a R$1 milhão', label: 'R$ 500 mil a R$ 1 milhão' },
-  { value: 'Entre R$1 milhão e R$5 milhões', label: 'Entre R$ 1 milhão e R$ 5 milhões' },
-  { value: 'Acima de R$5 milhões', label: 'Acima de R$ 5 milhões' },
+  { value: 'R$0 a R$300 mil', label: 'R$ 0 a R$ 300 mil' },
+  { value: 'R$300 mil a R$1 milhão', label: 'R$ 300 mil a R$ 1 milhão' },
+  { value: 'R$1 milhão a R$5 milhões', label: 'R$ 1 milhão a R$ 5 milhões' },
+  { value: 'R$5 milhões a R$10 milhões', label: 'R$ 5 milhões a R$ 10 milhões' },
+  { value: 'R$10 milhões a R$30 milhões', label: 'R$ 10 milhões a R$ 30 milhões' },
+  { value: 'Acima de R$30 milhões', label: 'Acima de R$ 30 milhões' },
 ] as const;
