@@ -16,7 +16,7 @@ const leadSchema = z.object({
  * Gera URL do WhatsApp com mensagem pré-preenchida
  */
 function generateWhatsAppURL(data: LeadFormData): string {
-  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_LDC || '5551926340233';
+  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_LDC || '5551926340242';
   
   // Mensagem sem emojis para evitar problemas de encoding
   const message = `Oi, quero o meu ebook!
