@@ -130,7 +130,7 @@ export async function submitEbookLead(
           telefone: validatedFields.data.telefone,
           patrimonio: patrimonio,
           origem: utmSource || 'ebook landing page',
-          origemFormulario: 'Page - ebook invest internacionais' as 'Page - ebook invest internacionais',
+          origemFormulario: 'Page - ebook invest internacionais' as const,
         };
         
         console.log('📝 Dados para Google Sheets:', sheetsData);
