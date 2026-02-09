@@ -1152,3 +1152,508 @@ export function formatPercentage(value: number, decimals: number = 2): string {
   return `${value.toFixed(decimals)}%`;
 }
 
+// ============================================================================
+// V2 — CÁLCULOS ADICIONAIS (Wealth Planning v2)
+// Novas funções para stress tests, SWR, impacto e cenários auto-gerados
+// As funções existentes acima NÃO foram alteradas.
+// ============================================================================
+
+import type {
+  AutoScenario,
+  AutoScenariosResult,
+  StressTestConfig,
+  StressTestResult,
+  ImpactAnalysisInput,
+  ImpactAnalysisResult,
+  QuickInputs,
+} from "@/types/wealth-planning-v2";
+
+/**
+ * Calcula patrimônio-alvo usando SWR (Safe Withdrawal Rate)
+ * patrimonio_alvo = renda_anual_necessaria / swr
+ */
+export function calculateTargetCapitalSWR(
+  annualIncomeNeeded: number,
+  swrRate: number
+): number {
+  if (swrRate <= 0 || !isFinite(swrRate)) return annualIncomeNeeded / 0.04; // fallback 4%
+  return annualIncomeNeeded / swrRate;
+}
+
+/**
+ * Calcula patrimônio-alvo com método escolhido (perpetuidade ou SWR)
+ */
+export function calculateTargetCapital(
+  annualIncomeNeeded: number,
+  realRate: number,
+  method: 'perpetuity' | 'swr',
+  swrRate: number = 0.04
+): number {
+  if (method === 'swr') {
+    return calculateTargetCapitalSWR(annualIncomeNeeded, swrRate);
+  }
+  // Perpetuidade
+  return calculateMaintenanceCapital(annualIncomeNeeded, realRate);
+}
+
+/**
+ * Calcula juro real líquido a partir de retorno nominal, desconto de impostos e inflação
+ * juro_real = (1 + retorno_nominal * (1 - desconto_impostos)) / (1 + inflação) - 1
+ */
+export function calculateNetRealRate(
+  nominalReturnPct: number,
+  taxDiscountPct: number,
+  inflationPct: number
+): number {
+  const nominalDecimal = nominalReturnPct / 100;
+  const taxDiscount = taxDiscountPct / 100;
+  const inflationDecimal = inflationPct / 100;
+  const netNominal = nominalDecimal * (1 - taxDiscount);
+  const realRate = (1 + netNominal) / (1 + inflationDecimal) - 1;
+  return isFinite(realRate) ? realRate : 0;
+}
+
+/**
+ * Gera 3 cenários automaticamente a partir dos inputs do modo reunião
+ */
+export function generateAutoScenarios(inputs: QuickInputs): AutoScenariosResult {
+  const {
+    age,
+    retirementAge,
+    lifeExpectancy,
+    monthlyExpense,
+    desiredMonthlyIncome,
+    currentPortfolio,
+    monthlyContribution,
+    expectedRetirementRevenues,
+    nominalReturn,
+    inflation,
+    taxDiscount,
+    calculationMethod,
+    swrRate,
+  } = inputs;
+
+  const yearsToRetirement = Math.max(0, retirementAge - age);
+  const desiredIncome = desiredMonthlyIncome || monthlyExpense;
+  const annualIncomeNeeded = (desiredIncome - expectedRetirementRevenues) * 12;
+
+  // Definir premissas para cada cenário
+  const scenarioConfigs: Array<{ type: 'conservative' | 'base' | 'optimistic'; label: string; returnAdj: number; inflationAdj: number }> = [
+    { type: 'conservative', label: 'Conservador', returnAdj: -2, inflationAdj: +1 },
+    { type: 'base', label: 'Base', returnAdj: 0, inflationAdj: 0 },
+    { type: 'optimistic', label: 'Otimista', returnAdj: +2, inflationAdj: -1 },
+  ];
+
+  const buildScenario = (config: typeof scenarioConfigs[0]): AutoScenario => {
+    const adjReturn = Math.max(0, nominalReturn + config.returnAdj);
+    const adjInflation = Math.max(0, inflation + config.inflationAdj);
+    const realRate = calculateNetRealRate(adjReturn, taxDiscount, adjInflation);
+    const nominalForProjection = adjReturn / 100;
+
+    // Patrimônio-alvo
+    const targetCapital = calculateTargetCapital(
+      Math.max(0, annualIncomeNeeded),
+      realRate,
+      calculationMethod,
+      swrRate / 100
+    );
+
+    // Projeção de patrimônio na IF
+    const projectedCapital = calculateFutureValueMonthly(
+      nominalForProjection,
+      yearsToRetirement,
+      monthlyContribution,
+      currentPortfolio
+    );
+
+    const gap = targetCapital - projectedCapital;
+    const reachesGoal = gap <= 0;
+
+    // Aporte mensal necessário
+    const requiredMonthly = gap > 0
+      ? calculateRequiredMonthlyContribution(targetCapital, currentPortfolio, yearsToRetirement, nominalForProjection)
+      : 0;
+
+    // Taxa necessária
+    const annualSavings = monthlyContribution * 12;
+    const requiredRate = calculateRequiredRate(
+      yearsToRetirement,
+      -annualSavings,
+      -currentPortfolio,
+      targetCapital
+    );
+
+    // Projeções ano a ano
+    const yearlyProjections: Array<{ age: number; capital: number }> = [];
+    let capital = currentPortfolio;
+    const monthlyRate = convertAnnualToMonthlyRate(nominalForProjection);
+    const monthlyWithdrawal = Math.max(0, annualIncomeNeeded) / 12;
+
+    for (let currentAge = age; currentAge <= lifeExpectancy; currentAge++) {
+      if (currentAge <= retirementAge) {
+        for (let m = 0; m < 12; m++) {
+          capital = (capital + monthlyContribution) * (1 + monthlyRate);
+          if (!isFinite(capital) || capital > 1e15) { capital = Math.min(capital, 1e15); break; }
+        }
+      } else {
+        for (let m = 0; m < 12; m++) {
+          capital = capital * (1 + monthlyRate) - monthlyWithdrawal;
+          if (!isFinite(capital) || capital < 0) { capital = 0; break; }
+        }
+      }
+      yearlyProjections.push({ age: currentAge, capital: Math.max(0, Math.min(capital, 1e15)) });
+    }
+
+    // Calcular em quantos anos atinge o objetivo (se não atinge com premissas atuais)
+    let yearsToGoal: number | null = null;
+    if (reachesGoal && yearsToRetirement > 0) {
+      yearsToGoal = yearsToRetirement;
+    } else if (!reachesGoal && requiredMonthly > 0) {
+      // Buscar quantos anos seriam necessários com aporte atual
+      let testCapital = currentPortfolio;
+      for (let y = 1; y <= 100; y++) {
+        testCapital = calculateFutureValueMonthly(nominalForProjection, 1, monthlyContribution, testCapital);
+        if (testCapital >= targetCapital) {
+          yearsToGoal = y;
+          break;
+        }
+      }
+    }
+
+    return {
+      type: config.type,
+      label: config.label,
+      nominalReturn: adjReturn,
+      inflation: adjInflation,
+      realRate: realRate * 100,
+      targetCapital,
+      projectedCapital,
+      gap: Math.max(0, gap),
+      requiredMonthlyContribution: requiredMonthly,
+      requiredRate: requiredRate ? requiredRate * 100 : null,
+      reachesGoal,
+      yearsToGoal,
+      yearlyProjections,
+    };
+  };
+
+  return {
+    conservative: buildScenario(scenarioConfigs[0]),
+    base: buildScenario(scenarioConfigs[1]),
+    optimistic: buildScenario(scenarioConfigs[2]),
+  };
+}
+
+/**
+ * Aplica stress tests e retorna resultados
+ */
+export function runStressTests(
+  inputs: QuickInputs,
+  baseScenario: AutoScenario,
+  tests: StressTestConfig[]
+): StressTestResult[] {
+  return tests.map((test) => {
+    const { type, label, description, params } = test;
+    let stressedCapital = baseScenario.projectedCapital;
+    let stressedSurvivalAge = inputs.lifeExpectancy;
+    let impactDescription = '';
+    let severity: StressTestResult['severity'] = 'low';
+
+    const annualIncomeNeeded = ((inputs.desiredMonthlyIncome || inputs.monthlyExpense) - inputs.expectedRetirementRevenues) * 12;
+    const realRate = calculateNetRealRate(inputs.nominalReturn, inputs.taxDiscount, inputs.inflation);
+
+    switch (type) {
+      case 'market_crash': {
+        const crash = params.crashPercent || 0.30;
+        stressedCapital = baseScenario.projectedCapital * (1 - crash);
+        // Simular duração com capital reduzido
+        let cap = stressedCapital;
+        let survivalAge = inputs.retirementAge;
+        while (cap > 0 && survivalAge < 120) {
+          cap = cap * (1 + realRate) - annualIncomeNeeded;
+          if (cap <= 0) break;
+          survivalAge++;
+        }
+        stressedSurvivalAge = survivalAge;
+        const yearsLost = inputs.lifeExpectancy - survivalAge;
+        impactDescription = yearsLost > 0
+          ? `Patrimônio se esgota ${yearsLost} anos antes do esperado (aos ${survivalAge} anos)`
+          : `Patrimônio ainda dura até os ${survivalAge} anos`;
+        severity = yearsLost > 10 ? 'critical' : yearsLost > 5 ? 'high' : yearsLost > 0 ? 'medium' : 'low';
+        break;
+      }
+      case 'high_inflation': {
+        const boost = params.inflationBoost || 0.04;
+        const duration = params.inflationDuration || 5;
+        // Juro real menor nos primeiros N anos
+        const stressedRealRate = calculateNetRealRate(inputs.nominalReturn, inputs.taxDiscount, inputs.inflation + boost * 100);
+        let cap = baseScenario.projectedCapital;
+        let survivalAge = inputs.retirementAge;
+        while (cap > 0 && survivalAge < 120) {
+          const rate = (survivalAge - inputs.retirementAge) < duration ? stressedRealRate : realRate;
+          cap = cap * (1 + rate) - annualIncomeNeeded;
+          if (cap <= 0) break;
+          survivalAge++;
+        }
+        stressedSurvivalAge = survivalAge;
+        stressedCapital = baseScenario.projectedCapital; // capital inicial não muda
+        const yearsLost = inputs.lifeExpectancy - survivalAge;
+        impactDescription = yearsLost > 0
+          ? `Com inflação alta por ${duration} anos, patrimônio se esgota ${yearsLost} anos antes`
+          : `Inflação alta impacta mas patrimônio ainda dura até os ${survivalAge} anos`;
+        severity = yearsLost > 10 ? 'critical' : yearsLost > 5 ? 'high' : yearsLost > 0 ? 'medium' : 'low';
+        break;
+      }
+      case 'longevity': {
+        const extra = params.longevityExtra || 10;
+        const newLifeExpectancy = inputs.lifeExpectancy + extra;
+        let cap = baseScenario.projectedCapital;
+        let survivalAge = inputs.retirementAge;
+        while (cap > 0 && survivalAge < newLifeExpectancy + 10) {
+          cap = cap * (1 + realRate) - annualIncomeNeeded;
+          if (cap <= 0) break;
+          survivalAge++;
+        }
+        stressedSurvivalAge = survivalAge;
+        const coversExtra = survivalAge >= newLifeExpectancy;
+        impactDescription = coversExtra
+          ? `Patrimônio cobre até os ${survivalAge} anos (${extra} anos a mais)`
+          : `Se viver ${extra} anos a mais, patrimônio se esgota aos ${survivalAge} anos`;
+        severity = coversExtra ? 'low' : survivalAge < newLifeExpectancy - 5 ? 'high' : 'medium';
+        break;
+      }
+      case 'low_returns': {
+        const reduction = params.returnReduction || 0.20;
+        const reducedReturn = inputs.nominalReturn * (1 - reduction);
+        const reducedNominal = reducedReturn / 100;
+        const yearsToRetirement = Math.max(0, inputs.retirementAge - inputs.age);
+        stressedCapital = calculateFutureValueMonthly(
+          reducedNominal,
+          yearsToRetirement,
+          inputs.monthlyContribution,
+          inputs.currentPortfolio
+        );
+        let cap = stressedCapital;
+        const reducedRealRate = calculateNetRealRate(reducedReturn, inputs.taxDiscount, inputs.inflation);
+        let survivalAge = inputs.retirementAge;
+        while (cap > 0 && survivalAge < 120) {
+          cap = cap * (1 + reducedRealRate) - annualIncomeNeeded;
+          if (cap <= 0) break;
+          survivalAge++;
+        }
+        stressedSurvivalAge = survivalAge;
+        const capitalDiff = baseScenario.projectedCapital - stressedCapital;
+        impactDescription = `Com retorno ${(reduction * 100).toFixed(0)}% menor, patrimônio na IF cai ${formatCurrency(capitalDiff)}`;
+        severity = stressedCapital < baseScenario.targetCapital * 0.5 ? 'critical' : stressedCapital < baseScenario.targetCapital * 0.75 ? 'high' : 'medium';
+        break;
+      }
+    }
+
+    return {
+      type,
+      label,
+      description,
+      originalCapitalAtRetirement: baseScenario.projectedCapital,
+      stressedCapitalAtRetirement: Math.max(0, stressedCapital),
+      originalSurvivalAge: inputs.lifeExpectancy,
+      stressedSurvivalAge,
+      impactDescription,
+      severity,
+    };
+  });
+}
+
+/**
+ * Calcula impacto de uma decisão (aumentar aporte, adiar IF, reduzir renda)
+ */
+export function calculateImpact(
+  inputs: QuickInputs,
+  baseScenario: AutoScenario,
+  analysis: ImpactAnalysisInput
+): ImpactAnalysisResult {
+  const nominalForProjection = inputs.nominalReturn / 100;
+  const yearsToRetirement = Math.max(0, inputs.retirementAge - inputs.age);
+  const realRate = calculateNetRealRate(inputs.nominalReturn, inputs.taxDiscount, inputs.inflation);
+  const annualIncomeNeeded = ((inputs.desiredMonthlyIncome || inputs.monthlyExpense) - inputs.expectedRetirementRevenues) * 12;
+
+  switch (analysis.type) {
+    case 'increase_contribution': {
+      const extraMonthly = analysis.value;
+      const newMonthly = inputs.monthlyContribution + extraMonthly;
+      // Buscar quantos anos a menos para atingir o objetivo
+      let yearsNeeded = yearsToRetirement;
+      for (let y = 1; y <= yearsToRetirement; y++) {
+        const projected = calculateFutureValueMonthly(nominalForProjection, y, newMonthly, inputs.currentPortfolio);
+        if (projected >= baseScenario.targetCapital) {
+          yearsNeeded = y;
+          break;
+        }
+      }
+      const yearsAdvanced = yearsToRetirement - yearsNeeded;
+      return {
+        type: 'increase_contribution',
+        label: `Aumentar aporte em +${formatCurrency(extraMonthly)}/mês`,
+        originalValue: inputs.monthlyContribution,
+        newValue: newMonthly,
+        impact: yearsAdvanced > 0
+          ? `Antecipa a IF em ${yearsAdvanced} ano${yearsAdvanced > 1 ? 's' : ''} (IF aos ${inputs.retirementAge - yearsAdvanced} anos)`
+          : `Com o aporte extra, atinge a meta mais rapidamente`,
+        yearsAdvanced: Math.max(0, yearsAdvanced),
+      };
+    }
+    case 'delay_retirement': {
+      const extraYears = analysis.value;
+      const newRetirementAge = inputs.retirementAge + extraYears;
+      const newYearsToRetirement = newRetirementAge - inputs.age;
+      const newRequiredMonthly = calculateRequiredMonthlyContribution(
+        baseScenario.targetCapital,
+        inputs.currentPortfolio,
+        newYearsToRetirement,
+        nominalForProjection
+      );
+      const saved = inputs.monthlyContribution > 0
+        ? baseScenario.requiredMonthlyContribution - newRequiredMonthly
+        : baseScenario.requiredMonthlyContribution - newRequiredMonthly;
+      return {
+        type: 'delay_retirement',
+        label: `Adiar IF em +${extraYears} ano${extraYears > 1 ? 's' : ''}`,
+        originalValue: inputs.retirementAge,
+        newValue: newRetirementAge,
+        impact: `Reduz aporte necessário em ${formatCurrency(Math.max(0, saved))}/mês`,
+        contributionSaved: Math.max(0, saved),
+      };
+    }
+    case 'reduce_income': {
+      const reductionMonthly = analysis.value;
+      const newIncome = Math.max(0, (inputs.desiredMonthlyIncome || inputs.monthlyExpense) - reductionMonthly);
+      const newAnnualIncomeNeeded = (newIncome - inputs.expectedRetirementRevenues) * 12;
+      const newTargetCapital = calculateTargetCapital(
+        Math.max(0, newAnnualIncomeNeeded),
+        realRate,
+        inputs.calculationMethod,
+        inputs.swrRate / 100
+      );
+      const capitalReduced = baseScenario.targetCapital - newTargetCapital;
+      return {
+        type: 'reduce_income',
+        label: `Reduzir renda na IF em -${formatCurrency(reductionMonthly)}/mês`,
+        originalValue: inputs.desiredMonthlyIncome || inputs.monthlyExpense,
+        newValue: newIncome,
+        impact: `Reduz patrimônio-alvo em ${formatCurrency(Math.max(0, capitalReduced))}`,
+        capitalReduced: Math.max(0, capitalReduced),
+      };
+    }
+  }
+}
+
+/**
+ * Gera plano de ação automático com base nos resultados
+ */
+export function generateActionPlan(
+  inputs: QuickInputs,
+  baseScenario: AutoScenario,
+  stressTests: StressTestResult[]
+): import("@/types/wealth-planning-v2").ActionItem[] {
+  const actions: import("@/types/wealth-planning-v2").ActionItem[] = [];
+  let id = 1;
+
+  // 1. Aporte necessário (ou manter aporte se já atinge a meta)
+  if (!baseScenario.reachesGoal && baseScenario.requiredMonthlyContribution > 0) {
+    actions.push({
+      id: `action-${id++}`,
+      category: 'investment',
+      priority: 'high',
+      title: `Definir aporte mensal de ${formatCurrency(baseScenario.requiredMonthlyContribution)}`,
+      description: `Para atingir a meta no cenário Base, é necessário investir ${formatCurrency(baseScenario.requiredMonthlyContribution)}/mês`,
+      impact: `Garante patrimônio de ${formatCurrency(baseScenario.targetCapital)} na IF`,
+      completed: false,
+    });
+  } else if (baseScenario.reachesGoal && inputs.monthlyContribution > 0) {
+    actions.push({
+      id: `action-${id++}`,
+      category: 'investment',
+      priority: 'medium',
+      title: `Manter disciplina de aporte de ${formatCurrency(inputs.monthlyContribution)}/mês`,
+      description: 'Você está no caminho certo. Manter o aporte atual garante folga para imprevistos.',
+      impact: `Meta atingida com sobra de ${formatCurrency(baseScenario.projectedCapital - baseScenario.targetCapital)}`,
+      completed: false,
+    });
+  }
+
+  // 2. Perfil de risco vs retorno necessário
+  if (baseScenario.requiredRate && baseScenario.requiredRate > 12) {
+    actions.push({
+      id: `action-${id++}`,
+      category: 'investment',
+      priority: 'high',
+      title: 'Revisar estratégia de investimentos',
+      description: `A rentabilidade necessária (${baseScenario.requiredRate.toFixed(1)}% a.a.) é alta. Considere diversificar a carteira ou ajustar expectativas.`,
+      impact: 'Alinhar risco e retorno ao perfil',
+      completed: false,
+    });
+  }
+
+  // 2b. Diversificação (sempre relevante)
+  actions.push({
+    id: `action-${id++}`,
+    category: 'investment',
+    priority: 'medium',
+    title: 'Revisar diversificação da carteira',
+    description: 'Garantir que a carteira esteja diversificada por classes de ativos, geografias e prazos',
+    impact: 'Reduzir risco e melhorar relação risco-retorno',
+    completed: false,
+  });
+
+  // 3. Reserva de emergência
+  const emergencyReserve = inputs.monthlyExpense * 6;
+  actions.push({
+    id: `action-${id++}`,
+    category: 'general',
+    priority: 'medium',
+    title: `Manter reserva de emergência de ${formatCurrency(emergencyReserve)}`,
+    description: `Equivalente a 6 meses de despesas (${formatCurrency(inputs.monthlyExpense)}/mês)`,
+    impact: 'Proteção contra imprevistos',
+    completed: false,
+  });
+
+  // 4. Stress tests com severidade alta
+  const criticalTests = stressTests.filter(t => t.severity === 'critical' || t.severity === 'high');
+  if (criticalTests.length > 0) {
+    actions.push({
+      id: `action-${id++}`,
+      category: 'investment',
+      priority: 'high',
+      title: 'Preparar-se para cenários adversos',
+      description: `${criticalTests.length} stress test(s) mostram vulnerabilidade: ${criticalTests.map(t => t.label).join(', ')}`,
+      impact: 'Resiliência do plano financeiro',
+      completed: false,
+    });
+  }
+
+  // 5. Dependentes → seguro
+  if (inputs.hasDependents) {
+    actions.push({
+      id: `action-${id++}`,
+      category: 'protection',
+      priority: 'high',
+      title: 'Avaliar seguro de vida',
+      description: 'Com dependentes, é importante ter cobertura adequada para proteger a família',
+      impact: 'Proteção familiar',
+      completed: false,
+    });
+  }
+
+  // 6. Agendar revisão
+  actions.push({
+    id: `action-${id++}`,
+    category: 'general',
+    priority: 'low',
+    title: 'Agendar revisão em 6 meses',
+    description: 'Revisar o plano periodicamente para ajustar premissas e acompanhar progresso',
+    impact: 'Manter plano atualizado',
+    completed: false,
+  });
+
+  return actions;
+}
+

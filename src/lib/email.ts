@@ -5,6 +5,18 @@ import { Resend } from 'resend';
 const useResend = !!process.env.RESEND_API_KEY;
 const resend = useResend ? new Resend(process.env.RESEND_API_KEY) : null;
 
+/** Email onde as mensagens do formulário de contato devem chegar (obrigatório) */
+export const CONTATO_EMAIL = process.env.CONTATO_EMAIL || 'contato@ldccapital.com.br';
+
+/** Remetente Resend: RESEND_FROM_EMAIL ou "EBOOK_FROM_NAME <EBOOK_FROM_EMAIL>" (compatível com o outro projeto) */
+function getResendFrom(): string {
+  if (process.env.RESEND_FROM_EMAIL) return process.env.RESEND_FROM_EMAIL;
+  const email = process.env.EBOOK_FROM_EMAIL;
+  const name = process.env.EBOOK_FROM_NAME || 'LDC Capital';
+  if (email) return `${name} <${email}>`;
+  return 'LDC Capital <onboarding@resend.dev>';
+}
+
 // Configuração do transporter de email (Gmail/SMTP)
 export function createEmailTransporter() {
   return nodemailer.createTransport({
@@ -25,13 +37,13 @@ async function sendEmail(options: {
   html: string;
   from?: string;
 }): Promise<{ success: boolean; messageId?: string; error?: string }> {
-  const fromEmail = options.from || `LDC Capital <${process.env.SMTP_USER || 'contato@ldccapital.com.br'}>`;
+  const fromEmail = options.from || `LDC Capital <${process.env.SMTP_USER || CONTATO_EMAIL}>`;
   
   // Se Resend estiver configurado, usar Resend
   if (useResend && resend) {
     try {
       const { data, error } = await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || 'LDC Capital <onboarding@resend.dev>',
+        from: getResendFrom(),
         to: options.to,
         subject: options.subject,
         html: options.html,
@@ -156,7 +168,7 @@ export async function sendNewLeadEmail(data: {
     : `🎯 Novo Lead - ${data.nome} (${data.origemFormulario})`;
 
   return sendEmail({
-    to: 'contato@ldccapital.com.br',
+    to: CONTATO_EMAIL,
     subject,
     html: htmlContent,
   });
@@ -209,7 +221,7 @@ export async function sendConfirmationEmail(data: {
       <div style="text-align: center; padding: 20px; background: #262d3d; border-radius: 10px; color: white;">
         <p style="margin: 0 0 10px 0; font-weight: bold;">LDC Capital</p>
         <p style="margin: 0; font-size: 14px; opacity: 0.8;">
-          📧 contato@ldccapital.com.br | 📱 (51) 99820-0000
+          📧 ${CONTATO_EMAIL} | 📱 (51) 99820-0000
         </p>
         <p style="margin: 10px 0 0 0; font-size: 12px; opacity: 0.7;">
           Raízes no Interior. Olhos no Horizonte.
