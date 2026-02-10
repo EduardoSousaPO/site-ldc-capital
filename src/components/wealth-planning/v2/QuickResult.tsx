@@ -68,10 +68,10 @@ export function QuickResult({ scenarios, className }: QuickResultProps) {
       <div className={cn("space-y-6", className)}>
         {/* Título */}
         <div className="text-center">
-          <h2 className="text-2xl md:text-3xl font-bold text-[#262d3d] font-sans">
+          <h2 className="text-2xl md:text-3xl font-bold text-[#262d3d] font-serif tracking-tight">
             Resultado em 30 Segundos
           </h2>
-          <p className="text-sm text-[#577171] font-sans mt-1">
+          <p className="text-sm text-gray-600 font-sans mt-1">
             3 cenários para sua Independência Financeira
           </p>
         </div>

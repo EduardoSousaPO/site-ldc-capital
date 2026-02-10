@@ -2,9 +2,9 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, ArrowRight, Download, RotateCcw } from "lucide-react";
+import { ArrowLeft, ArrowRight, Download, RotateCcw, CheckCircle2, TrendingUp } from "lucide-react";
 import { FieldWithTooltip } from "@/components/wealth-planning/FieldWithTooltip";
 import { RangeInput } from "@/components/wealth-planning/v2/RangeInput";
 import { QuickResult } from "@/components/wealth-planning/v2/QuickResult";
@@ -38,10 +38,10 @@ import { cn } from "@/lib/utils";
 // ============================================================================
 
 const STEPS = [
-  { id: "profile", title: "Perfil & Objetivo", short: "Perfil", icon: "👤" },
-  { id: "financial", title: "Vida Financeira", short: "Financeiro", icon: "💰" },
-  { id: "assumptions", title: "Premissas", short: "Premissas", icon: "📊" },
-  { id: "results", title: "Resultado", short: "Resultado", icon: "🎯" },
+  { id: "profile", title: "Perfil & Objetivo", short: "Perfil" },
+  { id: "financial", title: "Vida Financeira", short: "Financeiro" },
+  { id: "assumptions", title: "Premissas", short: "Premissas" },
+  { id: "results", title: "Resultado", short: "Resultado" },
 ];
 
 // ============================================================================
@@ -109,7 +109,6 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
   const handleExpenseChange = (value: number, isRange: boolean) => {
     updateInput("monthlyExpense", value);
     updateInput("monthlyExpenseIsRange", isRange);
-    // Auto-sync: renda desejada na IF = despesa atual (se não foi editada)
     if (inputs.desiredMonthlyIncome === inputs.monthlyExpense || inputs.desiredMonthlyIncome === 0) {
       updateInput("desiredMonthlyIncome", value);
     }
@@ -125,19 +124,17 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
       case 0:
         return (
           <div className="space-y-6">
-            {/* Nome */}
             <div>
               <FieldWithTooltip label="Nome do cliente" tooltip="Nome para o relatório e identificação" required />
               <Input
                 value={inputs.name}
                 onChange={(e) => updateInput("name", e.target.value)}
-                className="mt-2 font-sans"
+                className="mt-2 font-sans border-gray-300 focus:border-[#98ab44] focus:ring-[#98ab44]"
                 placeholder="Nome completo"
                 autoFocus
               />
             </div>
 
-            {/* Idade, IF, Expectativa — em grid */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <FieldWithTooltip label="Idade atual" tooltip="Idade atual em anos completos" required />
@@ -146,7 +143,7 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
                   value={inputs.age || ""}
                   onChange={(e) => updateInput("age", Number(e.target.value))}
                   min={18} max={100}
-                  className="mt-2 font-sans"
+                  className="mt-2 font-sans border-gray-300 focus:border-[#98ab44] focus:ring-[#98ab44]"
                 />
               </div>
               <div>
@@ -156,7 +153,7 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
                   value={inputs.retirementAge || ""}
                   onChange={(e) => updateInput("retirementAge", Number(e.target.value))}
                   min={inputs.age + 1} max={100}
-                  className="mt-2 font-sans"
+                  className="mt-2 font-sans border-gray-300 focus:border-[#98ab44] focus:ring-[#98ab44]"
                 />
               </div>
               <div>
@@ -166,12 +163,11 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
                   value={inputs.lifeExpectancy || ""}
                   onChange={(e) => updateInput("lifeExpectancy", Number(e.target.value))}
                   min={inputs.retirementAge + 1} max={120}
-                  className="mt-2 font-sans"
+                  className="mt-2 font-sans border-gray-300 focus:border-[#98ab44] focus:ring-[#98ab44]"
                 />
               </div>
             </div>
 
-            {/* Perfil de risco */}
             <div>
               <FieldWithTooltip label="Perfil de risco" tooltip="Define limites de retorno esperado. Conservador = menor risco e retorno." required />
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
@@ -181,10 +177,10 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
                     type="button"
                     onClick={() => updateInput("suitability", p)}
                     className={cn(
-                      "px-3 py-2.5 rounded-lg border-2 text-sm font-sans font-medium transition-all",
+                      "px-3 py-2.5 rounded-lg border-2 text-sm font-sans font-medium transition-all duration-300",
                       inputs.suitability === p
-                        ? "border-[#98ab44] bg-[#98ab44]/10 text-[#262d3d]"
-                        : "border-[#e3e3e3] text-[#577171] hover:border-[#98ab44]/50"
+                        ? "border-[#98ab44] bg-[#98ab44]/10 text-[#262d3d] shadow-sm"
+                        : "border-gray-200 text-[#577171] hover:border-[#98ab44]/50 hover:shadow-sm"
                     )}
                   >
                     {p}
@@ -193,41 +189,36 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
               </div>
             </div>
 
-            {/* Dependentes */}
             <div>
               <FieldWithTooltip label="Tem dependentes?" tooltip="Filhos, cônjuge ou outros que dependam financeiramente de você" required />
               <div className="flex gap-3 mt-2">
-                <button
-                  type="button"
-                  onClick={() => updateInput("hasDependents", true)}
-                  className={cn(
-                    "px-4 py-2.5 rounded-lg border-2 text-sm font-sans font-medium transition-all flex-1",
-                    inputs.hasDependents
-                      ? "border-[#98ab44] bg-[#98ab44]/10 text-[#262d3d]"
-                      : "border-[#e3e3e3] text-[#577171] hover:border-[#98ab44]/50"
-                  )}
-                >
-                  Sim
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { updateInput("hasDependents", false); updateInput("dependents", []); }}
-                  className={cn(
-                    "px-4 py-2.5 rounded-lg border-2 text-sm font-sans font-medium transition-all flex-1",
-                    !inputs.hasDependents
-                      ? "border-[#98ab44] bg-[#98ab44]/10 text-[#262d3d]"
-                      : "border-[#e3e3e3] text-[#577171] hover:border-[#98ab44]/50"
-                  )}
-                >
-                  Não
-                </button>
+                {[
+                  { value: true, label: "Sim" },
+                  { value: false, label: "Não" },
+                ].map(({ value, label }) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => {
+                      updateInput("hasDependents", value);
+                      if (!value) updateInput("dependents", []);
+                    }}
+                    className={cn(
+                      "px-4 py-2.5 rounded-lg border-2 text-sm font-sans font-medium transition-all duration-300 flex-1",
+                      inputs.hasDependents === value
+                        ? "border-[#98ab44] bg-[#98ab44]/10 text-[#262d3d] shadow-sm"
+                        : "border-gray-200 text-[#577171] hover:border-[#98ab44]/50"
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Lista de dependentes (condicional) */}
             {inputs.hasDependents && (
-              <div className="bg-[#98ab44]/5 border border-[#98ab44]/20 rounded-lg p-4 space-y-3">
-                <p className="text-sm text-[#577171] font-sans">Informe os dependentes:</p>
+              <div className="bg-gradient-to-r from-[#98ab44]/5 to-transparent border border-[#98ab44]/20 rounded-lg p-4 space-y-3">
+                <p className="text-sm text-[#577171] font-sans font-medium">Informe os dependentes:</p>
                 {inputs.dependents.map((dep, idx) => (
                   <div key={idx} className="flex gap-2 items-center">
                     <Input
@@ -238,7 +229,7 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
                         updateInput("dependents", updated);
                       }}
                       placeholder="Nome"
-                      className="font-sans flex-1"
+                      className="font-sans flex-1 border-gray-300 focus:border-[#98ab44] focus:ring-[#98ab44]"
                     />
                     <Input
                       type="number"
@@ -249,7 +240,7 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
                         updateInput("dependents", updated);
                       }}
                       placeholder="Idade"
-                      className="font-sans w-20"
+                      className="font-sans w-20 border-gray-300 focus:border-[#98ab44] focus:ring-[#98ab44]"
                     />
                     <button
                       type="button"
@@ -257,7 +248,7 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
                         const updated = inputs.dependents.filter((_, i) => i !== idx);
                         updateInput("dependents", updated);
                       }}
-                      className="text-red-400 hover:text-red-600 text-sm font-sans"
+                      className="text-red-400 hover:text-red-600 text-sm font-sans transition-colors"
                     >
                       ✕
                     </button>
@@ -266,7 +257,7 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
                 <button
                   type="button"
                   onClick={() => updateInput("dependents", [...inputs.dependents, { name: "", age: 0 }])}
-                  className="text-sm text-[#98ab44] hover:text-[#98ab44]/80 font-sans font-medium"
+                  className="text-sm text-[#98ab44] hover:text-[#becc6a] font-sans font-medium transition-colors"
                 >
                   + Adicionar dependente
                 </button>
@@ -297,7 +288,7 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
                   type="number"
                   value={inputs.desiredMonthlyIncome || ""}
                   onChange={(e) => updateInput("desiredMonthlyIncome", Number(e.target.value))}
-                  className="pl-10 font-sans"
+                  className="pl-10 font-sans border-gray-300 focus:border-[#98ab44] focus:ring-[#98ab44]"
                   placeholder="0"
                 />
               </div>
@@ -331,21 +322,20 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
                   type="number"
                   value={inputs.expectedRetirementRevenues || ""}
                   onChange={(e) => updateInput("expectedRetirementRevenues", Number(e.target.value))}
-                  className="pl-10 font-sans"
+                  className="pl-10 font-sans border-gray-300 focus:border-[#98ab44] focus:ring-[#98ab44]"
                   placeholder="0"
                 />
               </div>
             </div>
 
-            {/* Toggles condicionais */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <FieldWithTooltip label="Tem metas grandes?" tooltip="Educação dos filhos, imóvel, viagem grande" />
                 <div className="flex gap-2 mt-2">
                   {[true, false].map((v) => (
                     <button key={String(v)} type="button" onClick={() => updateInput("hasProjects", v)}
-                      className={cn("px-3 py-2 rounded-lg border-2 text-sm font-sans font-medium transition-all flex-1",
-                        inputs.hasProjects === v ? "border-[#98ab44] bg-[#98ab44]/10 text-[#262d3d]" : "border-[#e3e3e3] text-[#577171] hover:border-[#98ab44]/50"
+                      className={cn("px-3 py-2 rounded-lg border-2 text-sm font-sans font-medium transition-all duration-300 flex-1",
+                        inputs.hasProjects === v ? "border-[#98ab44] bg-[#98ab44]/10 text-[#262d3d] shadow-sm" : "border-gray-200 text-[#577171] hover:border-[#98ab44]/50"
                       )}>
                       {v ? "Sim" : "Não"}
                     </button>
@@ -357,8 +347,8 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
                 <div className="flex gap-2 mt-2">
                   {[true, false].map((v) => (
                     <button key={String(v)} type="button" onClick={() => updateInput("hasDebts", v)}
-                      className={cn("px-3 py-2 rounded-lg border-2 text-sm font-sans font-medium transition-all flex-1",
-                        inputs.hasDebts === v ? "border-[#98ab44] bg-[#98ab44]/10 text-[#262d3d]" : "border-[#e3e3e3] text-[#577171] hover:border-[#98ab44]/50"
+                      className={cn("px-3 py-2 rounded-lg border-2 text-sm font-sans font-medium transition-all duration-300 flex-1",
+                        inputs.hasDebts === v ? "border-[#98ab44] bg-[#98ab44]/10 text-[#262d3d] shadow-sm" : "border-gray-200 text-[#577171] hover:border-[#98ab44]/50"
                       )}>
                       {v ? "Sim" : "Não"}
                     </button>
@@ -382,7 +372,7 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
                     value={inputs.nominalReturn || ""}
                     onChange={(e) => updateInput("nominalReturn", Number(e.target.value))}
                     step={0.5} min={0} max={30}
-                    className="pr-8 font-sans"
+                    className="pr-8 font-sans border-gray-300 focus:border-[#98ab44] focus:ring-[#98ab44]"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#577171]">%</span>
                 </div>
@@ -395,7 +385,7 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
                     value={inputs.inflation || ""}
                     onChange={(e) => updateInput("inflation", Number(e.target.value))}
                     step={0.5} min={0} max={15}
-                    className="pr-8 font-sans"
+                    className="pr-8 font-sans border-gray-300 focus:border-[#98ab44] focus:ring-[#98ab44]"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#577171]">%</span>
                 </div>
@@ -408,14 +398,13 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
                     value={inputs.taxDiscount || ""}
                     onChange={(e) => updateInput("taxDiscount", Number(e.target.value))}
                     step={1} min={0} max={30}
-                    className="pr-8 font-sans"
+                    className="pr-8 font-sans border-gray-300 focus:border-[#98ab44] focus:ring-[#98ab44]"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#577171]">%</span>
                 </div>
               </div>
             </div>
 
-            {/* Método de cálculo */}
             <div>
               <FieldWithTooltip label="Método de cálculo" tooltip="Perpetuidade = não consumir capital. SWR = taxa segura de retirada (default 4%)" />
               <div className="grid grid-cols-2 gap-3 mt-2">
@@ -428,20 +417,19 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
                     type="button"
                     onClick={() => updateInput("calculationMethod", m.value)}
                     className={cn(
-                      "p-3 rounded-lg border-2 text-left transition-all",
+                      "p-4 rounded-lg border-2 text-left transition-all duration-300",
                       inputs.calculationMethod === m.value
-                        ? "border-[#98ab44] bg-[#98ab44]/10"
-                        : "border-[#e3e3e3] hover:border-[#98ab44]/50"
+                        ? "border-[#98ab44] bg-[#98ab44]/10 shadow-sm"
+                        : "border-gray-200 hover:border-[#98ab44]/50 hover:shadow-sm"
                     )}
                   >
                     <p className="font-semibold text-sm text-[#262d3d] font-sans">{m.label}</p>
-                    <p className="text-xs text-[#577171] font-sans mt-0.5">{m.desc}</p>
+                    <p className="text-xs text-[#577171] font-sans mt-1">{m.desc}</p>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* SWR Rate (condicional) */}
             {inputs.calculationMethod === "swr" && (
               <div>
                 <FieldWithTooltip label="Taxa SWR" tooltip="% do patrimônio que pode sacar por ano. Padrão: 4%" />
@@ -451,7 +439,7 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
                     value={inputs.swrRate || ""}
                     onChange={(e) => updateInput("swrRate", Number(e.target.value))}
                     step={0.5} min={2} max={6}
-                    className="pr-8 font-sans"
+                    className="pr-8 font-sans border-gray-300 focus:border-[#98ab44] focus:ring-[#98ab44]"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#577171]">%</span>
                 </div>
@@ -459,7 +447,7 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
             )}
 
             {/* Preview dos 3 cenários */}
-            <div className="bg-[#262d3d]/5 rounded-xl p-4">
+            <div className="bg-[#e3e3e3]/20 border border-[#e3e3e3] rounded-lg p-4">
               <p className="text-xs text-[#577171] font-sans font-semibold uppercase tracking-wide mb-3">
                 Cenários que serão calculados
               </p>
@@ -469,7 +457,7 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
                   { label: "Base", ret: inputs.nominalReturn, inf: inputs.inflation },
                   { label: "Otimista", ret: inputs.nominalReturn + 2, inf: Math.max(0, inputs.inflation - 1) },
                 ].map((s) => (
-                  <div key={s.label} className="bg-white rounded-lg p-3 border border-[#e3e3e3]">
+                  <div key={s.label} className="bg-white rounded-lg p-3 border border-[#e3e3e3] hover:shadow-sm transition-shadow">
                     <p className="font-semibold text-xs text-[#262d3d] font-sans">{s.label}</p>
                     <p className="text-[10px] text-[#577171] font-sans mt-1">Retorno: {s.ret.toFixed(1)}%</p>
                     <p className="text-[10px] text-[#577171] font-sans">Inflação: {s.inf.toFixed(1)}%</p>
@@ -484,25 +472,12 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
       case 3:
         return (
           <div className="space-y-8">
-            {/* Quick Result — 3 cards */}
             <QuickResult scenarios={scenarios} />
-
-            {/* Gráfico de projeção */}
             <ProjectionChart scenarios={scenarios} inputs={inputs} />
-
-            {/* Análise de impacto */}
             <ImpactAnalysis inputs={inputs} baseScenario={scenarios.base} />
-
-            {/* Stress Tests */}
             <StressTestPanel results={stressTests} />
-
-            {/* Plano de Ação */}
             <ActionPlan actions={actionPlan} />
-
-            {/* Sucessão (condicional) */}
-            {showSuccession && (
-              <SuccessionChecklist />
-            )}
+            {showSuccession && <SuccessionChecklist />}
 
             {/* Export/Import + PDF */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
@@ -514,7 +489,7 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
               {onExportPDF && (
                 <Button
                   onClick={() => onExportPDF(inputs, scenarios)}
-                  className="bg-[#262d3d] hover:bg-[#262d3d]/90 text-white font-sans px-8 py-3 text-base"
+                  className="bg-[#262d3d] hover:bg-[#262d3d]/90 text-white font-sans px-8 py-3 text-base shadow-md hover:shadow-lg transition-all"
                 >
                   <Download className="mr-2 h-5 w-5" />
                   Exportar PDF
@@ -535,90 +510,114 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
 
   return (
     <div className={cn("max-w-4xl mx-auto", className)}>
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-[#262d3d] font-serif">
-          Simulador de Independência Financeira
+      {/* Page Header */}
+      <div className="text-center mb-8">
+        <div className="mx-auto mb-4 w-16 h-16 bg-[#98ab44] rounded-full flex items-center justify-center shadow-md">
+          <TrendingUp className="h-8 w-8 text-white" />
+        </div>
+        <h1 className="text-3xl font-bold text-[#262d3d] font-serif tracking-tight">
+          Wealth Planning
         </h1>
-        <p className="text-sm text-[#577171] font-sans mt-1">
-          Modo Reunião — resultados em 30 segundos
+        <p className="text-sm text-gray-600 font-sans mt-2">
+          Simulador de Independência Financeira — Modo Reunião
         </p>
       </div>
 
-      {/* Progress Steps */}
+      {/* Progress Steps — v1 style */}
       <div className="mb-8">
-        <div className="flex items-center justify-between gap-2">
+        {/* Progress bar */}
+        <div className="flex gap-1 mb-4">
+          {STEPS.map((_, idx) => {
+            const isCompleted = idx < currentStep;
+            const isCurrent = idx === currentStep;
+            return (
+              <div key={idx} className="flex-1 relative">
+                <div className={cn(
+                  "h-2 rounded-full transition-all duration-300",
+                  isCompleted ? "bg-[#98ab44]" : isCurrent ? "bg-[#98ab44]" : "bg-gray-200"
+                )} />
+                {isCurrent && (
+                  <div className="absolute inset-0 h-2 rounded-full bg-[#98ab44] animate-pulse opacity-30" />
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Step circles */}
+        <div className="flex items-start justify-between">
           {STEPS.map((step, idx) => {
             const isCurrent = idx === currentStep;
             const isCompleted = idx < currentStep;
+            const isVisited = idx <= currentStep;
             const isAccessible = idx <= currentStep + 1;
 
             return (
               <div
                 key={step.id}
                 className={cn(
-                  "flex-1 flex flex-col items-center",
-                  isAccessible ? "cursor-pointer" : "cursor-not-allowed opacity-40"
+                  "flex flex-col items-center flex-1",
+                  isAccessible ? "cursor-pointer" : "cursor-not-allowed"
                 )}
                 onClick={() => isAccessible && goToStep(idx)}
                 role="button"
                 tabIndex={isAccessible ? 0 : -1}
                 onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && isAccessible) { e.preventDefault(); goToStep(idx); } }}
               >
-                {/* Bar */}
-                <div className="w-full mb-2">
-                  <div
-                    className={cn(
-                      "h-1.5 rounded-full transition-all duration-300",
-                      isCompleted ? "bg-[#98ab44]" : isCurrent ? "bg-[#98ab44]" : "bg-[#e3e3e3]"
-                    )}
-                  />
-                </div>
-                {/* Icon + Label */}
                 <div className={cn(
-                  "w-9 h-9 rounded-full flex items-center justify-center text-sm mb-1 transition-all",
-                  isCompleted ? "bg-[#98ab44] text-white" : isCurrent ? "bg-[#98ab44] text-white ring-2 ring-[#98ab44]/30" : "bg-gray-100 text-gray-400"
+                  "w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold font-sans transition-all duration-300",
+                  isCompleted
+                    ? "bg-[#98ab44] text-white shadow-md"
+                    : isCurrent
+                      ? "bg-[#98ab44] text-white scale-110 shadow-lg ring-2 ring-[#98ab44]/30"
+                      : isVisited
+                        ? "bg-[#98ab44]/30 text-[#98ab44] border-2 border-[#98ab44]/50"
+                        : "bg-gray-200 text-gray-500"
                 )}>
-                  {isCompleted ? "✓" : step.icon}
+                  {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : idx + 1}
                 </div>
                 <p className={cn(
-                  "text-xs font-sans",
-                  isCurrent ? "text-[#262d3d] font-semibold" : "text-[#577171]"
+                  "text-xs font-sans mt-2 text-center",
+                  isCurrent ? "text-[#262d3d] font-semibold" : isVisited ? "text-[#577171]" : "text-gray-400"
                 )}>
                   {step.short}
                 </p>
+                {isCurrent && (
+                  <span className="text-[10px] text-[#98ab44] font-sans font-semibold mt-0.5">
+                    Atual
+                  </span>
+                )}
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Step Content */}
-      <Card className="shadow-lg border-[#e3e3e3]">
-        <CardContent className="p-6 md:p-8">
-          {/* Step title */}
-          <div className="mb-6">
-            <h2 className="text-xl font-bold text-[#262d3d] font-sans">
-              {STEPS[currentStep].icon} {STEPS[currentStep].title}
+      {/* Step Content Card — v1 style */}
+      <Card className="shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-[#98ab44]/10 to-transparent border-b">
+          <div>
+            <h2 className="text-xl font-semibold text-[#262d3d] font-sans">
+              {STEPS[currentStep].title}
             </h2>
             <p className="text-sm text-[#577171] font-sans mt-1">
               Etapa {currentStep + 1} de {STEPS.length}
             </p>
           </div>
-
-          {/* Content */}
+        </CardHeader>
+        <CardContent className="p-6 md:p-8">
           <div className="min-h-[300px]">
             {renderStep()}
           </div>
 
-          {/* Navigation */}
-          <div className="flex justify-between items-center mt-8 pt-6 border-t border-[#e3e3e3]">
+          {/* Navigation — v1 style */}
+          <div className="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
             <Button
               type="button"
               variant="outline"
               onClick={currentStep === 3 ? () => setCurrentStep(0) : goPrev}
               disabled={currentStep === 0}
-              className="font-sans min-w-[120px]"
+              className="font-sans min-w-[140px]"
             >
               {currentStep === 3 ? (
                 <>
@@ -633,7 +632,7 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
               )}
             </Button>
 
-            <span className="text-sm text-[#577171] font-sans">
+            <span className="text-sm text-[#577171] font-sans font-medium">
               {currentStep + 1} / {STEPS.length}
             </span>
 
@@ -642,7 +641,7 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
                 type="button"
                 onClick={goNext}
                 disabled={!canGoNext}
-                className="bg-[#98ab44] hover:bg-[#98ab44]/90 text-white font-sans min-w-[120px]"
+                className="bg-[#98ab44] hover:bg-[#98ab44]/90 text-white font-sans min-w-[140px] shadow-md hover:shadow-lg transition-all"
               >
                 Próximo
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -650,7 +649,7 @@ export default function MeetingWizard({ onExportPDF, className }: MeetingWizardP
             )}
 
             {currentStep === STEPS.length - 1 && (
-              <div className="min-w-[120px]" /> // Spacer
+              <div className="min-w-[140px]" />
             )}
           </div>
         </CardContent>
