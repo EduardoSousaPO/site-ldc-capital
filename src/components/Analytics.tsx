@@ -76,6 +76,7 @@ export default function Analytics({ gaId, metaPixelId }: AnalyticsProps) {
             }}
           />
           <noscript>
+            {/* eslint-disable-next-line @next/next/no-img-element -- Pixel de rastreamento Meta; img obrigatório para noscript */}
             <img
               height="1"
               width="1"
