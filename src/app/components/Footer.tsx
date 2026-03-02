@@ -120,9 +120,15 @@ export default function Footer() {
               >
                 <Instagram className="h-10 w-10" />
               </a>
-              <div className="text-gray-500 cursor-not-allowed transition-all duration-300 transform hover:scale-110" title="LinkedIn - Em breve">
+              <a
+                href="https://www.linkedin.com/company/ldc-capital/posts/?feedView=all"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-300 hover:text-[#98ab44] transition-all duration-300 transform hover:scale-110"
+                title="LinkedIn - LDC Capital"
+              >
                 <Linkedin className="h-10 w-10" />
-              </div>
+              </a>
             </div>
             
             {/* Email de contato */}

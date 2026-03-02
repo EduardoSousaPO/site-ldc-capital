@@ -39,9 +39,15 @@ export default function LandingFooter() {
             >
               <Instagram className="h-6 w-6" />
             </a>
-            <span className="text-gray-600" title="LinkedIn - Em breve">
+            <a
+              href="https://www.linkedin.com/company/ldc-capital/posts/?feedView=all"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-[#98ab44] transition-colors"
+              title="LinkedIn - LDC Capital"
+            >
               <Linkedin className="h-6 w-6" />
-            </span>
+            </a>
           </div>
         </div>
 

@@ -89,9 +89,9 @@ export function getOrganizationSchema(): OrganizationSchema {
       email: "contato@ldccapital.com.br",
     },
     sameAs: [
-      // Adicione links para redes sociais quando disponíveis
-      // "https://www.linkedin.com/company/ldc-capital",
-      // "https://www.instagram.com/ldccapital",
+      "https://www.linkedin.com/company/ldc-capital",
+      "https://www.instagram.com/ldc.capital",
+      "https://www.youtube.com/@luciano.herzog",
     ],
   };
 }
