@@ -3,9 +3,10 @@
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { submitEbookLead } from '@/lib/ebook-leads/actions';
 import { VALORES_INVESTIMENTO, LeadFormState } from '@/types/ebook-lead';
+import { trackLead } from '@/lib/analytics';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -51,8 +52,14 @@ export default function LeadForm() {
   const [state, formAction] = useActionState(submitEbookLead, initialState);
   
   // Redirecionar para WhatsApp após sucesso
+  const leadTracked = useRef(false);
   useEffect(() => {
     if (state.success && state.whatsappUrl) {
+      // Disparar evento Lead do Meta Pixel (e GA) para rastrear conversão da campanha
+      if (!leadTracked.current) {
+        trackLead('ebook-investimentos-internacionais');
+        leadTracked.current = true;
+      }
       // Pequeno delay para UX
       const redirectTimer = setTimeout(() => {
         window.location.href = state.whatsappUrl!;
