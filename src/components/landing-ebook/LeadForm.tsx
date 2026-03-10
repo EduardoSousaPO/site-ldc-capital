@@ -60,10 +60,10 @@ export default function LeadForm() {
         trackLead('ebook-investimentos-internacionais');
         leadTracked.current = true;
       }
-      // Pequeno delay para UX
+      // Delay maior antes do redirect para o pixel ter tempo de enviar o Lead (evita perda em redes lentas)
       const redirectTimer = setTimeout(() => {
         window.location.href = state.whatsappUrl!;
-      }, 500);
+      }, 1500);
       
       // Fallback se WhatsApp não abrir após 3 segundos
       const fallbackTimer = setTimeout(() => {

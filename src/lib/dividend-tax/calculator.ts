@@ -1,0 +1,749 @@
+import { generateDividendTaxAlerts } from "@/lib/dividend-tax/alerts-engine";
+import { REDUTOR_TETO_BY_COMPANY_TYPE } from "@/lib/dividend-tax/constants";
+import { TAX_CONSTANTS } from "@/lib/dividend-tax/tax-constants";
+import type {
+  BusinessActivityType,
+  BusinessTaxRegime,
+  DividendBusinessContextInput,
+  DividendSourceInput,
+  DividendTaxSimulationInput,
+  DividendTaxSimulationResult,
+  IncomeCompositionResult,
+  IrpfmDeductionBreakdown,
+  RedutorCalculationBreakdown,
+  RegimeSimulationResult,
+  ScenarioComparisonResult,
+  ScenarioTaxBreakdown,
+  SourceCalculationResult,
+} from "@/lib/dividend-tax/types";
+
+interface SourceRules {
+  applyIrrf: boolean;
+  includeInIrpfmBase: boolean;
+  excludedByLaw: boolean;
+}
+
+interface ScenarioIrpfmResult {
+  base: number;
+  rate: number;
+  gross: number;
+  deductions: number;
+  due: number;
+}
+
+interface CorporateTaxEstimate {
+  irpj: number;
+  csll: number;
+  pis: number;
+  cofins: number;
+  simplesDAS: number;
+  total: number;
+  lucroAntesTributos: number;
+  lucroPosTributos: number;
+}
+
+function getSourceRules(sourceType: SourceCalculationResult["sourceType"]): SourceRules {
+  if (sourceType === "fii_fiagro" || sourceType === "titulos_isentos") {
+    return {
+      applyIrrf: false,
+      includeInIrpfmBase: false,
+      excludedByLaw: true,
+    };
+  }
+
+  return {
+    applyIrrf: true,
+    includeInIrpfmBase: true,
+    excludedByLaw: false,
+  };
+}
+
+function calculateIrpfmRate(baseAnnualIncome: number): number {
+  if (baseAnnualIncome <= TAX_CONSTANTS.IRPFM_LIMIAR_INFERIOR) {
+    return 0;
+  }
+
+  if (baseAnnualIncome >= TAX_CONSTANTS.IRPFM_LIMIAR_SUPERIOR) {
+    return TAX_CONSTANTS.IRPFM_ALIQUOTA_MAXIMA;
+  }
+
+  return (
+    (baseAnnualIncome - TAX_CONSTANTS.IRPFM_LIMIAR_INFERIOR) /
+    (TAX_CONSTANTS.IRPFM_LIMIAR_SUPERIOR - TAX_CONSTANTS.IRPFM_LIMIAR_INFERIOR)
+  ) * TAX_CONSTANTS.IRPFM_ALIQUOTA_MAXIMA;
+}
+
+function calculateIrpfProgressiveAnnual(annualTaxableIncome: number): number {
+  if (annualTaxableIncome <= 0) return 0;
+
+  const monthlyIncome = annualTaxableIncome / 12;
+  const faixa =
+    TAX_CONSTANTS.IRPF_FAIXAS.find((item) => monthlyIncome <= item.ate) ||
+    TAX_CONSTANTS.IRPF_FAIXAS[TAX_CONSTANTS.IRPF_FAIXAS.length - 1];
+  const monthlyTax = Math.max(0, monthlyIncome * faixa.aliquota - faixa.deducao);
+
+  return monthlyTax * 12;
+}
+
+function getLucroPresumidoIrpjPresumption(activity: BusinessActivityType): number {
+  const map = TAX_CONSTANTS.LP_PRESUNCAO;
+  return map[activity];
+}
+
+function getLucroPresumidoCsllPresumption(activity: BusinessActivityType): number {
+  if (activity === "servicos_geral" || activity === "servicos_regulamentado") {
+    return TAX_CONSTANTS.LP_PRESUNCAO_CSLL.servicos;
+  }
+  return TAX_CONSTANTS.LP_PRESUNCAO_CSLL.geral;
+}
+
+function estimateCorporateTaxes(
+  business: DividendBusinessContextInput,
+  regimeOverride?: BusinessTaxRegime,
+): CorporateTaxEstimate {
+  const regime = regimeOverride ?? business.regimeTributario;
+  const receita = Math.max(0, business.faturamentoAnual);
+  const lucroAntesTributos =
+    receita * Math.max(0, Math.min(1, business.margemLucroPercentual / 100));
+
+  if (regime === "simples") {
+    const aliquota = TAX_CONSTANTS.SIMPLES_ALIQUOTAS_ESTIMADAS[business.atividadePrincipal];
+    const simplesDAS = receita * aliquota;
+    const lucroPosTributos = Math.max(0, lucroAntesTributos - simplesDAS);
+
+    return {
+      irpj: 0,
+      csll: 0,
+      pis: 0,
+      cofins: 0,
+      simplesDAS,
+      total: simplesDAS,
+      lucroAntesTributos,
+      lucroPosTributos,
+    };
+  }
+
+  if (regime === "lucro_presumido") {
+    const irpjPresumido = receita * getLucroPresumidoIrpjPresumption(business.atividadePrincipal);
+    const irpjAdicionalBase = Math.max(
+      0,
+      irpjPresumido - TAX_CONSTANTS.IRPJ_ADICIONAL_LIMIAR_ANUAL,
+    );
+    const irpj =
+      irpjPresumido * TAX_CONSTANTS.IRPJ_BASE +
+      irpjAdicionalBase * TAX_CONSTANTS.IRPJ_ADICIONAL;
+
+    const csllBase = receita * getLucroPresumidoCsllPresumption(business.atividadePrincipal);
+    const csll = csllBase * TAX_CONSTANTS.CSLL_GERAL;
+
+    const pis = receita * TAX_CONSTANTS.PIS_CUMULATIVO;
+    const cofins = receita * TAX_CONSTANTS.COFINS_CUMULATIVO;
+    const total = irpj + csll + pis + cofins;
+    const lucroPosTributos = Math.max(0, lucroAntesTributos - total);
+
+    return {
+      irpj,
+      csll,
+      pis,
+      cofins,
+      simplesDAS: 0,
+      total,
+      lucroAntesTributos,
+      lucroPosTributos,
+    };
+  }
+
+  const irpjAdicionalBase = Math.max(
+    0,
+    lucroAntesTributos - TAX_CONSTANTS.IRPJ_ADICIONAL_LIMIAR_ANUAL,
+  );
+  const irpj =
+    lucroAntesTributos * TAX_CONSTANTS.IRPJ_BASE +
+    irpjAdicionalBase * TAX_CONSTANTS.IRPJ_ADICIONAL;
+  const csll = lucroAntesTributos * TAX_CONSTANTS.CSLL_GERAL;
+  const pis = receita * TAX_CONSTANTS.PIS_NAO_CUMULATIVO;
+  const cofins = receita * TAX_CONSTANTS.COFINS_NAO_CUMULATIVO;
+  const total = irpj + csll + pis + cofins;
+  const lucroPosTributos = Math.max(0, lucroAntesTributos - total);
+
+  return {
+    irpj,
+    csll,
+    pis,
+    cofins,
+    simplesDAS: 0,
+    total,
+    lucroAntesTributos,
+    lucroPosTributos,
+  };
+}
+
+function estimatePartnerTargetAnnualDividends(
+  input: DividendTaxSimulationInput,
+  totalAnnualDividendsFromSources: number,
+): number {
+  if (totalAnnualDividendsFromSources > 0) {
+    return totalAnnualDividendsFromSources;
+  }
+
+  const corporate = estimateCorporateTaxes(input.business);
+  const distributed = corporate.lucroPosTributos * (input.business.percentualDistribuicaoLucro / 100);
+  const partnerShare = distributed * (input.business.participacaoSocioPercentual / 100);
+
+  return Math.max(0, partnerShare);
+}
+
+function calculateScenarioIrpfm(
+  input: DividendTaxSimulationInput,
+  context: {
+    taxableAnnualIncome: number;
+    exclusiveAnnualIncome: number;
+    exemptAnnualIncome: number;
+    dividendsAnnual: number;
+    exclusionsAnnual: number;
+    irrfCreditAnnual: number;
+  },
+): ScenarioIrpfmResult {
+  if (input.residency === "pj") {
+    return {
+      base: 0,
+      rate: 0,
+      gross: 0,
+      deductions: 0,
+      due: 0,
+    };
+  }
+
+  const base = Math.max(
+    0,
+    context.taxableAnnualIncome +
+      context.exclusiveAnnualIncome +
+      context.exemptAnnualIncome +
+      context.dividendsAnnual -
+      context.exclusionsAnnual,
+  );
+
+  const rate = calculateIrpfmRate(base);
+  const gross = base * rate;
+  const progressiveCredit =
+    input.deductions.irpfProgressivePaid > 0
+      ? input.deductions.irpfProgressivePaid
+      : calculateIrpfProgressiveAnnual(context.taxableAnnualIncome);
+
+  const deductions =
+    progressiveCredit +
+    context.irrfCreditAnnual +
+    input.deductions.additionalIrrfCredits +
+    input.deductions.offshorePaid +
+    input.deductions.definitivePaid +
+    input.deductions.manualOtherDeductions;
+
+  return {
+    base,
+    rate,
+    gross,
+    deductions,
+    due: Math.max(0, gross - deductions),
+  };
+}
+
+function calculateSourceBreakdown(
+  input: DividendTaxSimulationInput,
+): SourceCalculationResult[] {
+  return input.sources.map((source) => {
+    const rules = getSourceRules(source.sourceType);
+    const annualGrossDividends = source.monthlyAmount * source.monthsReceived;
+
+    let monthlyIrrf = 0;
+    if (rules.applyIrrf) {
+      if (input.residency === "nao_residente") {
+        monthlyIrrf = source.monthlyAmount * TAX_CONSTANTS.IRRF_ALIQUOTA;
+      } else if (
+        input.residency === "residente" &&
+        source.monthlyAmount > TAX_CONSTANTS.IRRF_LIMIAR_MENSAL
+      ) {
+        monthlyIrrf = source.monthlyAmount * TAX_CONSTANTS.IRRF_ALIQUOTA;
+      }
+    }
+
+    return {
+      id: source.id,
+      name: source.name,
+      sourceType: source.sourceType,
+      monthlyAmount: source.monthlyAmount,
+      monthsReceived: source.monthsReceived,
+      annualGrossDividends,
+      annualExcludedByLaw: rules.excludedByLaw ? annualGrossDividends : 0,
+      annualIncludedInIrpfmBase: rules.includeInIrpfmBase ? annualGrossDividends : 0,
+      monthlyIrrf,
+      annualIrrf: monthlyIrrf * source.monthsReceived,
+    };
+  });
+}
+
+function calculateIncomeComposition(
+  input: DividendTaxSimulationInput,
+  sourceBreakdown: SourceCalculationResult[],
+): IncomeCompositionResult {
+  const annualIncomes = input.annualIncomes;
+  const totalAnnualDividends = sourceBreakdown.reduce(
+    (acc, source) => acc + source.annualGrossDividends,
+    0,
+  );
+  const automaticExclusions = sourceBreakdown.reduce(
+    (acc, source) => acc + source.annualExcludedByLaw,
+    0,
+  );
+
+  const rendaGlobalBruta =
+    annualIncomes.otherTaxableAnnualIncome +
+    annualIncomes.otherExclusiveAnnualIncome +
+    annualIncomes.otherExemptAnnualIncome +
+    totalAnnualDividends;
+  const exclusoesTotais = automaticExclusions + annualIncomes.excludedFromIrpfmAnnual;
+
+  return {
+    rendimentosTributaveis: annualIncomes.otherTaxableAnnualIncome,
+    rendimentosExclusivos: annualIncomes.otherExclusiveAnnualIncome,
+    rendimentosIsentos: annualIncomes.otherExemptAnnualIncome,
+    dividendosTotais: totalAnnualDividends,
+    exclusoesAutomaticas: automaticExclusions,
+    exclusoesManuais: annualIncomes.excludedFromIrpfmAnnual,
+    exclusoesTotais,
+    rendaGlobalBruta,
+    baseIrpfmAnual: Math.max(0, rendaGlobalBruta - exclusoesTotais),
+  };
+}
+
+function calculateRedutor(
+  input: DividendTaxSimulationInput,
+  irpfmRate: number,
+  irpfmAfterDeductions: number,
+): {
+  redutorTotal: number;
+  breakdown: RedutorCalculationBreakdown[];
+  warnings: string[];
+} {
+  const warnings: string[] = [];
+
+  if (!input.enableRedutor || input.redutorCompanies.length === 0) {
+    return {
+      redutorTotal: 0,
+      breakdown: [],
+      warnings,
+    };
+  }
+
+  let redutorTotal = 0;
+  const breakdown = input.redutorCompanies.map((company) => {
+    const tetoAplicavel = REDUTOR_TETO_BY_COMPANY_TYPE[company.companyType];
+    let aliquotaEfetivaPj = 0;
+
+    if (company.lucroContabil > 0) {
+      aliquotaEfetivaPj = company.irpjCsllPaid / company.lucroContabil;
+    } else if (company.dividendsPaidToBeneficiary > 0) {
+      warnings.push(
+        `Empresa ${company.name}: lucro contabil zerado. Redutor pode estar subestimado.`,
+      );
+    }
+
+    const somaAliquotas = aliquotaEfetivaPj + irpfmRate;
+    const excedenteAliquota = Math.max(0, somaAliquotas - tetoAplicavel);
+    const creditoRedutor = company.dividendsPaidToBeneficiary * excedenteAliquota;
+    redutorTotal += creditoRedutor;
+
+    return {
+      companyName: company.name,
+      companyType: company.companyType,
+      tetoAplicavel,
+      aliquotaEfetivaPj,
+      aliquotaEfetivaIrpfmDividendos: irpfmRate,
+      somaAliquotas,
+      excedenteAliquota,
+      creditoRedutor,
+    };
+  });
+
+  return {
+    redutorTotal: Math.min(redutorTotal, irpfmAfterDeductions),
+    breakdown,
+    warnings,
+  };
+}
+
+function createScenarioBreakdown(base?: Partial<ScenarioTaxBreakdown>): ScenarioTaxBreakdown {
+  return {
+    irpj: 0,
+    csll: 0,
+    pis: 0,
+    cofins: 0,
+    simplesDAS: 0,
+    inssPatronal: 0,
+    inssSocio: 0,
+    irrfDividendos: 0,
+    irpfm: 0,
+    irrfJcp: 0,
+    beneficioFiscalJcp: 0,
+    custoHolding: 0,
+    ...base,
+  };
+}
+
+function createScenarioComparisons(
+  input: DividendTaxSimulationInput,
+  totalAnnualDividends: number,
+  irpfmDueCurrent: number,
+): ScenarioComparisonResult[] {
+  const corporate = estimateCorporateTaxes(input.business);
+  const targetIncomeAnnual = estimatePartnerTargetAnnualDividends(input, totalAnnualDividends);
+  const monthlyTarget = targetIncomeAnnual / 12;
+
+  const irrfStatusQuo =
+    input.residency === "nao_residente"
+      ? targetIncomeAnnual * TAX_CONSTANTS.IRRF_ALIQUOTA
+      : input.residency === "residente" && monthlyTarget > TAX_CONSTANTS.IRRF_LIMIAR_MENSAL
+        ? targetIncomeAnnual * TAX_CONSTANTS.IRRF_ALIQUOTA
+        : 0;
+
+  const breakdownA = createScenarioBreakdown({
+    irpj: corporate.irpj,
+    csll: corporate.csll,
+    pis: corporate.pis,
+    cofins: corporate.cofins,
+    simplesDAS: corporate.simplesDAS,
+    irrfDividendos: irrfStatusQuo,
+    irpfm: irpfmDueCurrent,
+  });
+
+  const totalTaxA = corporate.total + irrfStatusQuo + irpfmDueCurrent;
+  const netToPartnerA = Math.max(0, targetIncomeAnnual - irrfStatusQuo - irpfmDueCurrent);
+  const baseRateDenominatorA = Math.max(1, targetIncomeAnnual + corporate.total);
+
+  const proLaboreAnnual = Math.min(60_000, targetIncomeAnnual);
+  const remainingAfterProLabore = Math.max(0, targetIncomeAnnual - proLaboreAnnual);
+  const dividendsNoIrrfAnnual = Math.min(
+    remainingAfterProLabore,
+    TAX_CONSTANTS.IRRF_LIMIAR_MENSAL * 12,
+  );
+  const jcpAnnual = Math.max(0, remainingAfterProLabore - dividendsNoIrrfAnnual);
+  const inssPatronal = proLaboreAnnual * TAX_CONSTANTS.INSS_PATRONAL;
+  const inssSocio =
+    Math.min(
+      (proLaboreAnnual / 12) * TAX_CONSTANTS.INSS_EMPREGADO_ALIQUOTA,
+      TAX_CONSTANTS.INSS_TETO_2026,
+    ) * 12;
+
+  const irrfDividendosB =
+    input.residency === "nao_residente"
+      ? dividendsNoIrrfAnnual * TAX_CONSTANTS.IRRF_ALIQUOTA
+      : 0;
+  const irrfJcp = jcpAnnual * TAX_CONSTANTS.JCP_IRRF;
+  const beneficioFiscalJcp = jcpAnnual * TAX_CONSTANTS.REDUTOR_TETO_GERAL;
+
+  const irpfmB = calculateScenarioIrpfm(input, {
+    taxableAnnualIncome:
+      input.annualIncomes.otherTaxableAnnualIncome +
+      Math.max(0, proLaboreAnnual - 60_000),
+    exclusiveAnnualIncome: input.annualIncomes.otherExclusiveAnnualIncome + jcpAnnual,
+    exemptAnnualIncome: input.annualIncomes.otherExemptAnnualIncome,
+    dividendsAnnual: dividendsNoIrrfAnnual,
+    exclusionsAnnual: input.annualIncomes.excludedFromIrpfmAnnual,
+    irrfCreditAnnual: irrfDividendosB,
+  });
+
+  const corporateTaxB = Math.max(0, corporate.total - beneficioFiscalJcp) + inssPatronal;
+  const personalTaxB = inssSocio + irrfDividendosB + irrfJcp + irpfmB.due;
+  const totalTaxB = corporateTaxB + personalTaxB;
+  const netToPartnerB = Math.max(0, targetIncomeAnnual - personalTaxB);
+
+  const breakdownB = createScenarioBreakdown({
+    irpj: corporate.irpj,
+    csll: corporate.csll,
+    pis: corporate.pis,
+    cofins: corporate.cofins,
+    simplesDAS: corporate.simplesDAS,
+    inssPatronal,
+    inssSocio,
+    irrfDividendos: irrfDividendosB,
+    irpfm: irpfmB.due,
+    irrfJcp,
+    beneficioFiscalJcp,
+  });
+
+  const holdingDistributionAnnual = Math.min(
+    targetIncomeAnnual,
+    TAX_CONSTANTS.IRRF_LIMIAR_MENSAL * 12,
+  );
+  const deferredAnnual = Math.max(0, targetIncomeAnnual - holdingDistributionAnnual);
+  const irrfDividendosC =
+    input.residency === "nao_residente"
+      ? holdingDistributionAnnual * TAX_CONSTANTS.IRRF_ALIQUOTA
+      : 0;
+  const irpfmC = calculateScenarioIrpfm(input, {
+    taxableAnnualIncome: input.annualIncomes.otherTaxableAnnualIncome,
+    exclusiveAnnualIncome: input.annualIncomes.otherExclusiveAnnualIncome,
+    exemptAnnualIncome: input.annualIncomes.otherExemptAnnualIncome,
+    dividendsAnnual: holdingDistributionAnnual,
+    exclusionsAnnual: input.annualIncomes.excludedFromIrpfmAnnual,
+    irrfCreditAnnual: irrfDividendosC,
+  });
+  const holdingCostAnnual = TAX_CONSTANTS.HOLDING_CUSTO_MENSAL_ESTIMADO * 12;
+  const totalTaxC = corporate.total + irrfDividendosC + irpfmC.due + holdingCostAnnual;
+  const netToPartnerC = Math.max(0, targetIncomeAnnual - irrfDividendosC - irpfmC.due);
+  const deferredTaxAnnual = Math.max(
+    0,
+    irrfStatusQuo + irpfmDueCurrent - (irrfDividendosC + irpfmC.due),
+  );
+
+  const breakdownC = createScenarioBreakdown({
+    irpj: corporate.irpj,
+    csll: corporate.csll,
+    pis: corporate.pis,
+    cofins: corporate.cofins,
+    simplesDAS: corporate.simplesDAS,
+    irrfDividendos: irrfDividendosC,
+    irpfm: irpfmC.due,
+    custoHolding: holdingCostAnnual,
+  });
+
+  const breakEvenMonthly = Math.round(
+    TAX_CONSTANTS.HOLDING_CUSTO_MENSAL_ESTIMADO /
+      TAX_CONSTANTS.HOLDING_BREAK_EVEN_IRRF_ALIQUOTA,
+  );
+
+  const scenarios: ScenarioComparisonResult[] = [
+    {
+      code: "A_STATUS_QUO",
+      title: "Cenario A - Status Quo",
+      description: "Remuneracao integral via dividendos.",
+      totalTax: totalTaxA,
+      totalTaxRate: (totalTaxA / baseRateDenominatorA) * 100,
+      netToPartner: netToPartnerA,
+      annualSavingsVsStatusQuo: 0,
+      deferredTaxAnnual: 0,
+      breakEvenMonthlyDividends: breakEvenMonthly,
+      isBest: false,
+      taxBreakdown: breakdownA,
+    },
+    {
+      code: "B_MIX_OTIMIZADO",
+      title: "Cenario B - Mix Otimizado",
+      description: "Pro-labore + dividendos limitados + JCP.",
+      totalTax: totalTaxB,
+      totalTaxRate: (totalTaxB / Math.max(1, targetIncomeAnnual + corporateTaxB)) * 100,
+      netToPartner: netToPartnerB,
+      annualSavingsVsStatusQuo: totalTaxA - totalTaxB,
+      deferredTaxAnnual: Math.max(0, irrfStatusQuo - irrfDividendosB),
+      breakEvenMonthlyDividends: breakEvenMonthly,
+      isBest: false,
+      taxBreakdown: breakdownB,
+    },
+    {
+      code: "C_HOLDING",
+      title: "Cenario C - Via Holding",
+      description: "Diferimento via distribuicao controlada pela holding.",
+      totalTax: totalTaxC,
+      totalTaxRate: (totalTaxC / Math.max(1, targetIncomeAnnual + corporate.total)) * 100,
+      netToPartner: netToPartnerC,
+      annualSavingsVsStatusQuo: totalTaxA - totalTaxC,
+      deferredTaxAnnual,
+      breakEvenMonthlyDividends: breakEvenMonthly,
+      isBest: false,
+      taxBreakdown: breakdownC,
+    },
+  ];
+
+  const bestScenario = scenarios.reduce((best, current) =>
+    current.totalTax < best.totalTax ? current : best,
+  );
+
+  return scenarios.map((scenario) => ({
+    ...scenario,
+    isBest: scenario.code === bestScenario.code,
+  }));
+}
+
+function createRegimeSimulation(
+  input: DividendTaxSimulationInput,
+  totalAnnualDividends: number,
+): RegimeSimulationResult[] {
+  const regimes: BusinessTaxRegime[] = ["simples", "lucro_presumido", "lucro_real"];
+
+  const results = regimes.map((regime) => {
+    const corporate = estimateCorporateTaxes(input.business, regime);
+    const targetIncomeAnnual = estimatePartnerTargetAnnualDividends(input, totalAnnualDividends);
+    const monthlyTarget = targetIncomeAnnual / 12;
+    const irrf =
+      input.residency === "nao_residente"
+        ? targetIncomeAnnual * TAX_CONSTANTS.IRRF_ALIQUOTA
+        : input.residency === "residente" && monthlyTarget > TAX_CONSTANTS.IRRF_LIMIAR_MENSAL
+          ? targetIncomeAnnual * TAX_CONSTANTS.IRRF_ALIQUOTA
+          : 0;
+
+    const irpfm = calculateScenarioIrpfm(input, {
+      taxableAnnualIncome: input.annualIncomes.otherTaxableAnnualIncome,
+      exclusiveAnnualIncome: input.annualIncomes.otherExclusiveAnnualIncome,
+      exemptAnnualIncome: input.annualIncomes.otherExemptAnnualIncome,
+      dividendsAnnual: targetIncomeAnnual,
+      exclusionsAnnual: input.annualIncomes.excludedFromIrpfmAnnual,
+      irrfCreditAnnual: irrf,
+    });
+
+    const personalTax = irrf + irpfm.due;
+    const totalTax = corporate.total + personalTax;
+
+    return {
+      regime,
+      totalTax,
+      totalTaxRate: (totalTax / Math.max(1, targetIncomeAnnual + corporate.total)) * 100,
+      corporateTax: corporate.total,
+      personalTax,
+      estimatedNetToPartner: Math.max(0, targetIncomeAnnual - personalTax),
+      breakdown: createScenarioBreakdown({
+        irpj: corporate.irpj,
+        csll: corporate.csll,
+        pis: corporate.pis,
+        cofins: corporate.cofins,
+        simplesDAS: corporate.simplesDAS,
+        irrfDividendos: irrf,
+        irpfm: irpfm.due,
+      }),
+      isBest: false,
+    } satisfies RegimeSimulationResult;
+  });
+
+  const best = results.reduce((bestResult, current) =>
+    current.totalTax < bestResult.totalTax ? current : bestResult,
+  );
+  return results.map((result) => ({ ...result, isBest: result.regime === best.regime }));
+}
+
+export function calculateDividendTax(
+  input: DividendTaxSimulationInput,
+): DividendTaxSimulationResult {
+  const sourceBreakdown = calculateSourceBreakdown(input);
+  const totalAnnualDividends = sourceBreakdown.reduce(
+    (acc, source) => acc + source.annualGrossDividends,
+    0,
+  );
+  const irrfAnnualTotal = sourceBreakdown.reduce((acc, source) => acc + source.annualIrrf, 0);
+  const irrfMonthlyTotal = sourceBreakdown.reduce((acc, source) => acc + source.monthlyIrrf, 0);
+
+  const incomeComposition = calculateIncomeComposition(input, sourceBreakdown);
+  const irpfmBaseAnnual = incomeComposition.baseIrpfmAnual;
+  const irpfmRate = input.residency === "pj" ? 0 : calculateIrpfmRate(irpfmBaseAnnual);
+  const irpfmGross = irpfmBaseAnnual * irpfmRate;
+
+  const progressiveCredit =
+    input.deductions.irpfProgressivePaid > 0
+      ? input.deductions.irpfProgressivePaid
+      : calculateIrpfProgressiveAnnual(input.annualIncomes.otherTaxableAnnualIncome);
+
+  const irrfDividendosCredit = input.deductions.includeCalculatedIrrfCredit
+    ? irrfAnnualTotal
+    : 0;
+  const deductionsWithoutRedutor =
+    progressiveCredit +
+    irrfDividendosCredit +
+    input.deductions.additionalIrrfCredits +
+    input.deductions.offshorePaid +
+    input.deductions.definitivePaid +
+    input.deductions.manualOtherDeductions;
+
+  const irpfmAfterDeductions = Math.max(0, irpfmGross - deductionsWithoutRedutor);
+  const redutorResult = calculateRedutor(input, irpfmRate, irpfmAfterDeductions);
+  const irpfmDue = Math.max(0, irpfmAfterDeductions - redutorResult.redutorTotal);
+
+  const deductionsTotal = deductionsWithoutRedutor + redutorResult.redutorTotal;
+  const totalTaxDue = irrfAnnualTotal + irpfmDue;
+  const netAnnualDividends = Math.max(0, totalAnnualDividends - totalTaxDue);
+  const impactPercentage =
+    totalAnnualDividends > 0 ? (totalTaxDue / totalAnnualDividends) * 100 : 0;
+
+  const deductionsBreakdown: IrpfmDeductionBreakdown = {
+    irpfProgressivo: progressiveCredit,
+    irrfDividendos: irrfDividendosCredit,
+    outrosCreditosIrrf: input.deductions.additionalIrrfCredits,
+    offshore: input.deductions.offshorePaid,
+    tributacaoDefinitiva: input.deductions.definitivePaid,
+    outrasDeducoes: input.deductions.manualOtherDeductions,
+    redutorTotal: redutorResult.redutorTotal,
+    deducoesSemRedutor: deductionsWithoutRedutor,
+    deducoesTotais: deductionsTotal,
+  };
+
+  const formulaAliquota =
+    irpfmBaseAnnual <= TAX_CONSTANTS.IRPFM_LIMIAR_INFERIOR
+      ? "Renda anual ate R$ 600.000 -> aliquota 0%"
+      : irpfmBaseAnnual >= TAX_CONSTANTS.IRPFM_LIMIAR_SUPERIOR
+        ? "Renda anual >= R$ 1.200.000 -> aliquota teto 10%"
+        : "Aliquota = ((Renda - 600.000) / 600.000) x 10%";
+
+  const scenarios = createScenarioComparisons(input, totalAnnualDividends, irpfmDue);
+  const regimeSimulation = createRegimeSimulation(input, totalAnnualDividends);
+
+  const assumptions: string[] = [
+    "Simulacao educacional baseada na Lei 15.270/2025 e parametros informados.",
+    "No cenario B foi assumido pro-labore de R$ 5.000/mes com limite de dividendos em R$ 50.000/mes.",
+    "No cenario C foi assumido diferimento via holding com custo mensal estimado de R$ 1.500.",
+    "Resultados nao substituem parecer juridico/contabil individual.",
+  ];
+
+  const warnings: string[] = [];
+  if (input.enableRedutor && input.redutorCompanies.length === 0) {
+    warnings.push("Redutor ativado sem empresas informadas. Nenhum credito redutor aplicado.");
+  }
+  warnings.push(...redutorResult.warnings);
+
+  const partialResult: DividendTaxSimulationResult = {
+    totalAnnualDividends,
+    irrfAnnualTotal,
+    irrfMonthlyTotal,
+    irpfmBaseAnnual,
+    irpfmRate,
+    irpfmGross,
+    deductionsTotal,
+    irpfmAfterDeductions,
+    redutorTotal: redutorResult.redutorTotal,
+    irpfmDue,
+    totalTaxDue,
+    netAnnualDividends,
+    impactPercentage,
+    incomeComposition,
+    irpfmSteps: {
+      sujeitoIrpfm: irpfmBaseAnnual > TAX_CONSTANTS.IRPFM_LIMIAR_INFERIOR,
+      rendaTotalAnual: irpfmBaseAnnual,
+      aliquotaAplicavel: irpfmRate,
+      aliquotaAplicavelPercentual: irpfmRate * 100,
+      formulaAliquota,
+      irpfmBruto: irpfmGross,
+      deducoes: deductionsBreakdown,
+      irpfmDevido: irpfmDue,
+    },
+    sourceBreakdown,
+    redutorBreakdown: redutorResult.breakdown,
+    scenarios,
+    regimeSimulation,
+    alerts: [],
+    warnings,
+    assumptions,
+  };
+
+  const alerts = generateDividendTaxAlerts(input, partialResult);
+  return {
+    ...partialResult,
+    alerts,
+  };
+}
+
+export function formatCurrency(value: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+  }).format(value);
+}
+
+export function formatPercent(value: number): string {
+  return `${value.toFixed(2)}%`;
+}

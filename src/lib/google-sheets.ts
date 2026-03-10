@@ -27,7 +27,12 @@ export async function addToGoogleSheets(data: {
   origem: string;
   mensagem?: string;
   titulo?: string;
-  origemFormulario: 'Home' | 'Fale Conosco' | 'Materiais' | 'Page - ebook invest internacionais';
+  origemFormulario:
+    | 'Home'
+    | 'Fale Conosco'
+    | 'Materiais'
+    | 'Page - ebook invest internacionais'
+    | 'Calculadora IR Dividendos 2026';
 }) {
   try {
     const auth = await getGoogleSheetsAuth();

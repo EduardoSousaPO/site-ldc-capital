@@ -95,7 +95,12 @@ export async function sendNewLeadEmail(data: {
   origem: string;
   mensagem?: string;
   titulo?: string;
-  origemFormulario: 'Home' | 'Fale Conosco' | 'Materiais';
+  origemFormulario:
+    | 'Home'
+    | 'Fale Conosco'
+    | 'Materiais'
+    | 'Page - ebook invest internacionais'
+    | 'Calculadora IR Dividendos 2026';
 }) {
   // Template do email para a equipe
   const htmlContent = `
@@ -178,7 +183,12 @@ export async function sendNewLeadEmail(data: {
 export async function sendConfirmationEmail(data: {
   nome: string;
   email: string;
-  origemFormulario: 'Home' | 'Fale Conosco' | 'Materiais';
+  origemFormulario:
+    | 'Home'
+    | 'Fale Conosco'
+    | 'Materiais'
+    | 'Page - ebook invest internacionais'
+    | 'Calculadora IR Dividendos 2026';
 }) {
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -238,6 +248,4 @@ export async function sendConfirmationEmail(data: {
     html: htmlContent,
   });
 }
-
-
 

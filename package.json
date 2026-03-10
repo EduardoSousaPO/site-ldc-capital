@@ -11,7 +11,8 @@
     "setup-sheets": "tsx scripts/setup-google-sheets.ts",
     "test:wealth-planning": "tsx scripts/test-wealth-planning.ts",
     "test:wealth-planning:fixed": "tsx scripts/test-wealth-planning-fixed.ts",
-    "test:wealth-planning:calculations": "tsx scripts/test-wealth-planning-calculations.ts"
+    "test:wealth-planning:calculations": "tsx scripts/test-wealth-planning-calculations.ts",
+    "test:dividend-tax": "tsx scripts/test-dividend-tax-calculations.ts"
   },
   "dependencies": {
     "@fontsource/public-sans": "^5.2.6",
