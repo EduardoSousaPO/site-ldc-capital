@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Como usar a Calculadora de Tributação de Dividendos | LDC Capital</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ldc-primary: #262d3d;
+      --ldc-accent: #98ab44;
+      --ldc-accent-light: #becc6a;
+      --ldc-gray: #e3e3e3;
+      --ldc-neutral-dark: #344645;
+      --ldc-neutral: #577171;
+      --ldc-white: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--ldc-primary);
+      background: var(--ldc-white);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3 {
+      font-family: 'Playfair Display', Georgia, serif;
+      letter-spacing: -0.02em;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, var(--ldc-primary) 0%, var(--ldc-neutral-dark) 100%);
+      color: white;
+      padding: 2rem 1.5rem 3rem;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .header p {
+      font-size: 1rem;
+      opacity: 0.9;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    .logo {
+      font-weight: 700;
+      color: var(--ldc-accent-light);
+      font-size: 0.9rem;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+
+    /* Main content */
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    .intro {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .intro p {
+      color: var(--ldc-neutral);
+      font-size: 1.05rem;
+    }
+
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--ldc-accent);
+      color: white;
+      padding: 0.875rem 1.75rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: background 0.2s, transform 0.15s;
+      margin-bottom: 2.5rem;
+    }
+
+    .cta-button:hover {
+      background: var(--ldc-accent-light);
+      color: var(--ldc-primary);
+      transform: translateY(-2px);
+    }
+
+    .cta-button::after {
+      content: "→";
+    }
+
+    /* Steps */
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .step {
+      display: flex;
+      gap: 1.25rem;
+      align-items: flex-start;
+      padding: 1.5rem;
+      background: var(--ldc-white);
+      border: 1px solid var(--ldc-gray);
+      border-radius: 12px;
+      transition: box-shadow 0.2s, border-color 0.2s;
+    }
+
+    .step:hover {
+      border-color: rgba(152, 171, 68, 0.4);
+      box-shadow: 0 4px 20px rgba(38, 45, 61, 0.06);
+    }
+
+    .step-number {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      background: var(--ldc-accent);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.125rem;
+      font-family: 'DM Sans', sans-serif;
+    }
+
+    .step-content h3 {
+      font-size: 1.2rem;
+      color: var(--ldc-primary);
+      margin-bottom: 0.35rem;
+    }
+
+    .step-content p {
+      color: var(--ldc-neutral);
+      font-size: 0.95rem;
+    }
+
+    .step-detail {
+      margin-top: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: rgba(152, 171, 68, 0.08);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: var(--ldc-neutral-dark);
+    }
+
+    .step-detail strong {
+      color: var(--ldc-primary);
+    }
+
+    /* Mode toggle note */
+    .mode-note {
+      background: linear-gradient(135deg, rgba(152, 171, 68, 0.12) 0%, rgba(190, 204, 106, 0.08) 100%);
+      border: 1px solid rgba(152, 171, 68, 0.3);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin: 2rem 0;
+    }
+
+    .mode-note p {
+      color: var(--ldc-neutral-dark);
+      font-size: 0.95rem;
+    }
+
+    .mode-note strong {
+      color: var(--ldc-primary);
+    }
+
+    /* Result section */
+    .result-step .step-number {
+      background: var(--ldc-primary);
+    }
+
+    /* Footer CTA */
+    .footer-cta {
+      text-align: center;
+      margin-top: 2.5rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--ldc-gray);
+    }
+
+    .footer-cta p {
+      color: var(--ldc-neutral);
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+    }
+
+    /* Footer brand */
+    .brand-footer {
+      text-align: center;
+      padding: 2rem 1.5rem;
+      background: var(--ldc-primary);
+      color: white;
+      font-size: 0.85rem;
+    }
+
+    .brand-footer a {
+      color: var(--ldc-accent-light);
+      text-decoration: none;
+    }
+
+    .brand-footer a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 480px) {
+      .step {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+
+      .step-content {
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="logo">LDC CAPITAL</div>
+    <h1>Como usar a Calculadora de Tributação de Dividendos</h1>
+    <p>Guia rapido em 5 passos para simular o impacto da Lei 15.270/2025 nos seus dividendos</p>
+  </header>
+
+  <main class="container">
+    <div class="intro">
+      <p>Simule IRRF, IRPFM, compare cenários e receba um relatório detalhado em PDF. Tudo em poucos minutos.</p>
+      <a href="https://www.ldccapital.com.br/calculadora-tributacao-dividendos-2026" class="cta-button" target="_blank" rel="noopener">
+        Acessar a calculadora
+      </a>
+    </div>
+
+    <section class="steps">
+      <article class="step">
+        <span class="step-number">1</span>
+        <div class="step-content">
+          <h3>Preencha os dados principais</h3>
+          <p>Informe retirada mensal, regime da empresa, atividade principal e se existem outras rendas. O fluxo agora e unico e guiado.</p>
+          <div class="step-detail">
+            <strong>Dica:</strong> Comece pelos campos essenciais e refine so se quiser maior precisao.
+          </div>
+        </div>
+      </article>
+
+      <article class="step">
+        <span class="step-number">2</span>
+        <div class="step-content">
+          <h3>Adicione empresas e outras fontes (se houver)</h3>
+          <p>Caso receba de mais de uma empresa, use o botao para adicionar novas fontes pagadoras e complete os valores mensais.</p>
+          <div class="step-detail">
+            <strong>Para cada fonte:</strong> nome da empresa e valor mensal de retirada.
+          </div>
+        </div>
+      </article>
+
+      <article class="step">
+        <span class="step-number">3</span>
+        <div class="step-content">
+          <h3>Refine os dados (opcional)</h3>
+          <p>Abra a secao \"Refinar dados da empresa\" para ajustar faturamento, margem, folha, socios e participacao com mais detalhe tecnico.</p>
+          <div class="step-detail">
+            <strong>Opcional:</strong> sem essa etapa a calculadora usa defaults inteligentes.
+          </div>
+        </div>
+      </article>
+
+      <article class="step">
+        <span class="step-number">4</span>
+        <div class="step-content">
+          <h3>Clique em \"Ver meu impacto tributario\"</h3>
+          <p>A ferramenta calcula IRRF mensal, IRPFM anual, mostra antes/depois, estrategias para pagar menos e comparativo entre cenarios A, B e C.</p>
+          <div class="step-detail">
+            <strong>Resultado:</strong> imposto total estimado, valor liquido anual e impacto percentual.
+          </div>
+        </div>
+      </article>
+
+      <article class="step result-step">
+        <span class="step-number">5</span>
+        <div class="step-content">
+          <h3>Baixe o relatorio em PDF</h3>
+          <p>Preencha nome, e-mail e telefone para receber o relatorio detalhado. O documento inclui calculo passo a passo, cenarios e alertas.</p>
+          <div class="step-detail">
+            <strong>Lead magnet:</strong> Seus dados são enviados para análise da equipe LDC Capital.
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <div class="mode-note">
+      <p><strong>Fluxo unico com revelacao progressiva:</strong> os campos essenciais aparecem primeiro. As opcoes tecnicas ficam disponiveis em \"Refinar dados da empresa\" para quem quiser aprofundar a simulacao.</p>
+    </div>
+
+    <div class="footer-cta">
+      <p>Pronto para simular? Acesse a calculadora e preencha em poucos minutos.</p>
+      <a href="https://www.ldccapital.com.br/calculadora-tributacao-dividendos-2026" class="cta-button" target="_blank" rel="noopener">
+        Ir para a calculadora
+      </a>
+    </div>
+  </main>
+
+  <footer class="brand-footer">
+    <p>© 2026 LDC Capital. Todos os direitos reservados.</p>
+    <p><a href="https://www.ldccapital.com.br">ldccapital.com.br</a></p>
+  </footer>
+</body>
+</html>
