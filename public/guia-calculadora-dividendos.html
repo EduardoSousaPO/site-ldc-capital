@@ -37,7 +37,6 @@
       letter-spacing: -0.02em;
     }
 
-    /* Header */
     .header {
       background: linear-gradient(135deg, var(--ldc-primary) 0%, var(--ldc-neutral-dark) 100%);
       color: white;
@@ -66,9 +65,8 @@
       margin-bottom: 1rem;
     }
 
-    /* Main content */
     .container {
-      max-width: 720px;
+      max-width: 800px;
       margin: 0 auto;
       padding: 2rem 1.5rem 4rem;
     }
@@ -108,18 +106,73 @@
       content: "→";
     }
 
-    /* Steps */
+    /* Índice */
+    .toc {
+      background: rgba(152, 171, 68, 0.08);
+      border: 1px solid rgba(152, 171, 68, 0.25);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .toc h2 {
+      font-size: 1rem;
+      color: var(--ldc-primary);
+      margin-bottom: 0.75rem;
+    }
+
+    .toc ol {
+      list-style: none;
+      counter-reset: toc;
+    }
+
+    .toc li {
+      counter-increment: toc;
+      padding: 0.35rem 0;
+      font-size: 0.95rem;
+    }
+
+    .toc li::before {
+      content: counter(toc) ". ";
+      font-weight: 600;
+      color: var(--ldc-accent);
+    }
+
+    .toc a {
+      color: var(--ldc-neutral-dark);
+      text-decoration: none;
+    }
+
+    .toc a:hover {
+      color: var(--ldc-primary);
+      text-decoration: underline;
+    }
+
+    /* Seções */
+    .section {
+      margin-bottom: 2.5rem;
+    }
+
+    .section h2 {
+      font-size: 1.35rem;
+      color: var(--ldc-primary);
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--ldc-accent);
+    }
+
+    /* Passos */
     .steps {
       display: flex;
       flex-direction: column;
-      gap: 1.5rem;
+      gap: 1.25rem;
     }
 
     .step {
       display: flex;
       gap: 1.25rem;
       align-items: flex-start;
-      padding: 1.5rem;
+      padding: 1.25rem;
       background: var(--ldc-white);
       border: 1px solid var(--ldc-gray);
       border-radius: 12px;
@@ -133,8 +186,8 @@
 
     .step-number {
       flex-shrink: 0;
-      width: 44px;
-      height: 44px;
+      width: 40px;
+      height: 40px;
       background: var(--ldc-accent);
       color: white;
       border-radius: 50%;
@@ -142,14 +195,14 @@
       align-items: center;
       justify-content: center;
       font-weight: 700;
-      font-size: 1.125rem;
+      font-size: 1rem;
       font-family: 'DM Sans', sans-serif;
     }
 
     .step-content h3 {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       color: var(--ldc-primary);
-      margin-bottom: 0.35rem;
+      margin-bottom: 0.3rem;
     }
 
     .step-content p {
@@ -158,8 +211,8 @@
     }
 
     .step-detail {
-      margin-top: 0.75rem;
-      padding: 0.75rem 1rem;
+      margin-top: 0.6rem;
+      padding: 0.6rem 1rem;
       background: rgba(152, 171, 68, 0.08);
       border-radius: 8px;
       font-size: 0.9rem;
@@ -170,30 +223,139 @@
       color: var(--ldc-primary);
     }
 
-    /* Mode toggle note */
-    .mode-note {
+    /* Exemplos */
+    .examples {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .example-card {
+      border: 1px solid var(--ldc-gray);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .example-card:hover {
+      border-color: rgba(152, 171, 68, 0.4);
+    }
+
+    .example-header {
+      background: var(--ldc-primary);
+      color: white;
+      padding: 0.75rem 1rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .example-body {
+      padding: 1rem;
+    }
+
+    .example-body p {
+      font-size: 0.9rem;
+      color: var(--ldc-neutral);
+      margin-bottom: 0.75rem;
+    }
+
+    .example-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    .example-table th,
+    .example-table td {
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--ldc-gray);
+    }
+
+    .example-table th {
+      background: rgba(152, 171, 68, 0.12);
+      color: var(--ldc-primary);
+      font-weight: 600;
+    }
+
+    .example-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .example-table .value {
+      font-weight: 600;
+      color: var(--ldc-neutral-dark);
+    }
+
+    .example-result {
+      margin-top: 0.75rem;
+      padding: 0.6rem 1rem;
+      background: rgba(152, 171, 68, 0.12);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: var(--ldc-neutral-dark);
+    }
+
+    /* Tabela de preenchimento */
+    .fill-guide {
+      margin-top: 1rem;
+      border: 1px solid var(--ldc-gray);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .fill-guide table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    .fill-guide th,
+    .fill-guide td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--ldc-gray);
+    }
+
+    .fill-guide th {
+      background: var(--ldc-primary);
+      color: white;
+      font-weight: 600;
+    }
+
+    .fill-guide tr:last-child td {
+      border-bottom: none;
+    }
+
+    .fill-guide .field-name {
+      font-weight: 500;
+      color: var(--ldc-primary);
+    }
+
+    .fill-guide .field-desc {
+      color: var(--ldc-neutral);
+      font-size: 0.85rem;
+    }
+
+    /* Notas */
+    .note {
       background: linear-gradient(135deg, rgba(152, 171, 68, 0.12) 0%, rgba(190, 204, 106, 0.08) 100%);
       border: 1px solid rgba(152, 171, 68, 0.3);
       border-radius: 12px;
       padding: 1.25rem 1.5rem;
-      margin: 2rem 0;
+      margin: 1.5rem 0;
     }
 
-    .mode-note p {
+    .note p {
       color: var(--ldc-neutral-dark);
       font-size: 0.95rem;
     }
 
-    .mode-note strong {
+    .note strong {
       color: var(--ldc-primary);
     }
 
-    /* Result section */
-    .result-step .step-number {
-      background: var(--ldc-primary);
-    }
-
-    /* Footer CTA */
+    /* Footer */
     .footer-cta {
       text-align: center;
       margin-top: 2.5rem;
@@ -207,7 +369,6 @@
       font-size: 0.95rem;
     }
 
-    /* Footer brand */
     .brand-footer {
       text-align: center;
       padding: 2rem 1.5rem;
@@ -225,7 +386,7 @@
       text-decoration: underline;
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 600px) {
       .step {
         flex-direction: column;
         align-items: center;
@@ -235,6 +396,14 @@
       .step-content {
         text-align: center;
       }
+
+      .example-table {
+        font-size: 0.8rem;
+      }
+
+      .fill-guide {
+        font-size: 0.85rem;
+      }
     }
   </style>
 </head>
@@ -242,76 +411,288 @@
   <header class="header">
     <div class="logo">LDC CAPITAL</div>
     <h1>Como usar a Calculadora de Tributação de Dividendos</h1>
-    <p>Guia rapido em 5 passos para simular o impacto da Lei 15.270/2025 nos seus dividendos</p>
+    <p>Guia completo com passo a passo e exemplos práticos de preenchimento</p>
   </header>
 
   <main class="container">
     <div class="intro">
-      <p>Simule IRRF, IRPFM, compare cenários e receba um relatório detalhado em PDF. Tudo em poucos minutos.</p>
+      <p>Simule IRRF, IRPFM, compare cenários A/B/C e receba um relatório em PDF. Lei 15.270/2025 em vigor desde janeiro de 2026.</p>
       <a href="https://www.ldccapital.com.br/calculadora-tributacao-dividendos-2026" class="cta-button" target="_blank" rel="noopener">
         Acessar a calculadora
       </a>
     </div>
 
-    <section class="steps">
-      <article class="step">
-        <span class="step-number">1</span>
-        <div class="step-content">
-          <h3>Preencha os dados principais</h3>
-          <p>Informe retirada mensal, regime da empresa, atividade principal e se existem outras rendas. O fluxo agora e unico e guiado.</p>
-          <div class="step-detail">
-            <strong>Dica:</strong> Comece pelos campos essenciais e refine so se quiser maior precisao.
-          </div>
-        </div>
-      </article>
+    <nav class="toc">
+      <h2>Neste guia</h2>
+      <ol>
+        <li><a href="#passo-a-passo">Passo a passo</a></li>
+        <li><a href="#campos">O que preencher em cada campo</a></li>
+        <li><a href="#exemplos">Exemplos práticos</a></li>
+      </ol>
+    </nav>
 
-      <article class="step">
-        <span class="step-number">2</span>
-        <div class="step-content">
-          <h3>Adicione empresas e outras fontes (se houver)</h3>
-          <p>Caso receba de mais de uma empresa, use o botao para adicionar novas fontes pagadoras e complete os valores mensais.</p>
-          <div class="step-detail">
-            <strong>Para cada fonte:</strong> nome da empresa e valor mensal de retirada.
+    <section id="passo-a-passo" class="section">
+      <h2>Passo a passo</h2>
+      <div class="steps">
+        <article class="step">
+          <span class="step-number">1</span>
+          <div class="step-content">
+            <h3>Informe sua retirada mensal</h3>
+            <p>Digite quanto você retira da empresa por mês (dividendos, pró-labore e outras retiradas recorrentes).</p>
+            <div class="step-detail">
+              <strong>Exemplo:</strong> Se retira R$ 80.000/mês, digite 80000.
+            </div>
           </div>
-        </div>
-      </article>
+        </article>
 
-      <article class="step">
-        <span class="step-number">3</span>
-        <div class="step-content">
-          <h3>Refine os dados (opcional)</h3>
-          <p>Abra a secao \"Refinar dados da empresa\" para ajustar faturamento, margem, folha, socios e participacao com mais detalhe tecnico.</p>
-          <div class="step-detail">
-            <strong>Opcional:</strong> sem essa etapa a calculadora usa defaults inteligentes.
+        <article class="step">
+          <span class="step-number">2</span>
+          <div class="step-content">
+            <h3>Escolha o regime tributário</h3>
+            <p>Selecione Simples Nacional, Lucro Presumido ou Lucro Real. Se não souber, marque "Não sei" — a calculadora assume Lucro Presumido e exibe um alerta.</p>
           </div>
-        </div>
-      </article>
+        </article>
 
-      <article class="step">
-        <span class="step-number">4</span>
-        <div class="step-content">
-          <h3>Clique em \"Ver meu impacto tributario\"</h3>
-          <p>A ferramenta calcula IRRF mensal, IRPFM anual, mostra antes/depois, estrategias para pagar menos e comparativo entre cenarios A, B e C.</p>
-          <div class="step-detail">
-            <strong>Resultado:</strong> imposto total estimado, valor liquido anual e impacto percentual.
+        <article class="step">
+          <span class="step-number">3</span>
+          <div class="step-content">
+            <h3>Selecione a atividade principal</h3>
+            <p>Comércio, Indústria, Serviços em geral, Profissão regulamentada, Transporte de carga ou de passageiros.</p>
           </div>
-        </div>
-      </article>
+        </article>
 
-      <article class="step result-step">
-        <span class="step-number">5</span>
-        <div class="step-content">
-          <h3>Baixe o relatorio em PDF</h3>
-          <p>Preencha nome, e-mail e telefone para receber o relatorio detalhado. O documento inclui calculo passo a passo, cenarios e alertas.</p>
-          <div class="step-detail">
-            <strong>Lead magnet:</strong> Seus dados são enviados para análise da equipe LDC Capital.
+        <article class="step">
+          <span class="step-number">4</span>
+          <div class="step-content">
+            <h3>Outras rendas e múltiplas empresas</h3>
+            <p>Se tiver salário CLT, aluguéis ou FIIs, marque "Sim" e preencha os valores mensais. Se receber de mais de uma empresa, marque "Sim" e adicione cada uma com nome e retirada mensal.</p>
+            <div class="step-detail">
+              <strong>Múltiplas empresas:</strong> Clique em "Adicionar empresa" e informe nome + valor mensal de cada fonte.
+            </div>
           </div>
-        </div>
-      </article>
+        </article>
+
+        <article class="step">
+          <span class="step-number">5</span>
+          <div class="step-content">
+            <h3>Refinar dados (opcional)</h3>
+            <p>Clique em "Refinar dados da empresa" para ajustar faturamento anual, folha de pagamento, margem de lucro, número de sócios, sua participação e % de distribuição de lucro. Sem isso, a calculadora usa estimativas automáticas.</p>
+          </div>
+        </article>
+
+        <article class="step">
+          <span class="step-number">6</span>
+          <div class="step-content">
+            <h3>Clique em "Ver meu impacto tributário"</h3>
+            <p>A ferramenta calcula IRRF mensal, IRPFM anual, mostra antes/depois, estratégias para pagar menos e o comparativo entre cenários A (Status Quo), B (Mix Otimizado) e C (Via Holding).</p>
+          </div>
+        </article>
+
+        <article class="step">
+          <span class="step-number">7</span>
+          <div class="step-content">
+            <h3>Baixe o relatório em PDF</h3>
+            <p>Preencha nome, e-mail e telefone para receber o relatório detalhado. O documento inclui cálculo passo a passo, cenários e alertas estratégicos.</p>
+          </div>
+        </article>
+      </div>
     </section>
 
-    <div class="mode-note">
-      <p><strong>Fluxo unico com revelacao progressiva:</strong> os campos essenciais aparecem primeiro. As opcoes tecnicas ficam disponiveis em \"Refinar dados da empresa\" para quem quiser aprofundar a simulacao.</p>
+    <section id="campos" class="section">
+      <h2>O que preencher em cada campo</h2>
+      <div class="fill-guide">
+        <table>
+          <thead>
+            <tr>
+              <th>Campo</th>
+              <th>O que informar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="field-name">Retirada mensal</td>
+              <td class="field-desc">Soma de dividendos + pró-labore + outras retiradas recorrentes da empresa no mês. Ex: R$ 50.000.</td>
+            </tr>
+            <tr>
+              <td class="field-name">Regime tributário</td>
+              <td class="field-desc">Simples Nacional, Lucro Presumido ou Lucro Real. Use "Não sei" se tiver dúvida.</td>
+            </tr>
+            <tr>
+              <td class="field-name">Atividade principal</td>
+              <td class="field-desc">Comércio, Indústria, Serviços, Profissão regulamentada ou Transporte.</td>
+            </tr>
+            <tr>
+              <td class="field-name">Outras rendas</td>
+              <td class="field-desc">Salário CLT, aluguéis e FIIs em valores mensais. Só aparece se marcar "Sim".</td>
+            </tr>
+            <tr>
+              <td class="field-name">Múltiplas empresas</td>
+              <td class="field-desc">Nome da empresa e retirada mensal de cada fonte pagadora. Só aparece se marcar "Sim".</td>
+            </tr>
+            <tr>
+              <td class="field-name">Refinar dados</td>
+              <td class="field-desc">Faturamento anual, folha, margem de lucro (%), nº de sócios, sua participação (%) e % de distribuição de lucro.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="exemplos" class="section">
+      <h2>Exemplos práticos de preenchimento</h2>
+      <p style="color: var(--ldc-neutral); margin-bottom: 1rem; font-size: 0.95rem;">
+        Use estes exemplos como referência para simular diferentes situações.
+      </p>
+
+      <div class="examples">
+        <div class="example-card">
+          <div class="example-header">Exemplo A — Residente com retirada alta (efeito degrau)</div>
+          <div class="example-body">
+            <p>Sócio que retira R$ 80.000/mês de uma empresa. Acima de R$ 50.000/mês por fonte, incide IRRF de 10% sobre o total.</p>
+            <table class="example-table">
+              <tr>
+                <th>Campo</th>
+                <th>Valor</th>
+              </tr>
+              <tr>
+                <td>Retirada mensal</td>
+                <td class="value">R$ 80.000</td>
+              </tr>
+              <tr>
+                <td>Regime</td>
+                <td class="value">Lucro Presumido</td>
+              </tr>
+              <tr>
+                <td>Atividade</td>
+                <td class="value">Serviços em geral</td>
+              </tr>
+              <tr>
+                <td>Outras rendas</td>
+                <td class="value">Sim — Salário CLT R$ 10.000/mês</td>
+              </tr>
+            </table>
+            <div class="example-result">
+              <strong>Resultado esperado:</strong> IRRF mensal R$ 8.000, base IRPFM acima de R$ 600 mil, alerta de efeito degrau.
+            </div>
+          </div>
+        </div>
+
+        <div class="example-card">
+          <div class="example-header">Exemplo B — Múltiplas fontes abaixo do limiar</div>
+          <div class="example-body">
+            <p>Sócio com duas empresas, cada uma pagando R$ 45.000/mês. Abaixo de R$ 50.000 por fonte, não há IRRF mensal.</p>
+            <table class="example-table">
+              <tr>
+                <th>Campo</th>
+                <th>Valor</th>
+              </tr>
+              <tr>
+                <td>Múltiplas empresas</td>
+                <td class="value">Sim</td>
+              </tr>
+              <tr>
+                <td>Empresa 1</td>
+                <td class="value">R$ 45.000/mês</td>
+              </tr>
+              <tr>
+                <td>Empresa 2</td>
+                <td class="value">R$ 45.000/mês</td>
+              </tr>
+              <tr>
+                <td>Regime</td>
+                <td class="value">Lucro Presumido</td>
+              </tr>
+            </table>
+            <div class="example-result">
+              <strong>Resultado esperado:</strong> IRRF mensal por fonte = R$ 0. Possível alerta de diluição eficiente.
+            </div>
+          </div>
+        </div>
+
+        <div class="example-card">
+          <div class="example-header">Exemplo C — Retirada moderada com outras rendas</div>
+          <div class="example-body">
+            <p>Sócio que retira R$ 40.000/mês e tem salário CLT e aluguéis.</p>
+            <table class="example-table">
+              <tr>
+                <th>Campo</th>
+                <th>Valor</th>
+              </tr>
+              <tr>
+                <td>Retirada mensal</td>
+                <td class="value">R$ 40.000</td>
+              </tr>
+              <tr>
+                <td>Outras rendas</td>
+                <td class="value">Sim</td>
+              </tr>
+              <tr>
+                <td>Salário CLT</td>
+                <td class="value">R$ 15.000/mês</td>
+              </tr>
+              <tr>
+                <td>Aluguéis</td>
+                <td class="value">R$ 5.000/mês</td>
+              </tr>
+              <tr>
+                <td>Regime</td>
+                <td class="value">Lucro Real</td>
+              </tr>
+            </table>
+            <div class="example-result">
+              <strong>Resultado esperado:</strong> IRRF = R$ 0 (abaixo do limiar). Base IRPFM considera todas as rendas tributáveis.
+            </div>
+          </div>
+        </div>
+
+        <div class="example-card">
+          <div class="example-header">Exemplo D — Refinando dados da empresa</div>
+          <div class="example-body">
+            <p>Para maior precisão, use "Refinar dados da empresa" e informe valores reais.</p>
+            <table class="example-table">
+              <tr>
+                <th>Campo</th>
+                <th>Valor</th>
+              </tr>
+              <tr>
+                <td>Retirada mensal</td>
+                <td class="value">R$ 100.000</td>
+              </tr>
+              <tr>
+                <td>Faturamento anual</td>
+                <td class="value">R$ 3.000.000</td>
+              </tr>
+              <tr>
+                <td>Folha anual</td>
+                <td class="value">R$ 400.000</td>
+              </tr>
+              <tr>
+                <td>Margem de lucro</td>
+                <td class="value">35%</td>
+              </tr>
+              <tr>
+                <td>Nº de sócios</td>
+                <td class="value">2</td>
+              </tr>
+              <tr>
+                <td>Sua participação</td>
+                <td class="value">50%</td>
+              </tr>
+              <tr>
+                <td>Distribuição de lucro</td>
+                <td class="value">80%</td>
+              </tr>
+            </table>
+            <div class="example-result">
+              <strong>Resultado esperado:</strong> Comparativo mais preciso entre cenários A, B e C, com simulação por regime.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="note">
+      <p><strong>Fluxo guiado:</strong> Os campos essenciais aparecem primeiro. As opções técnicas ficam em "Refinar dados da empresa" para quem quiser aprofundar. A calculadora usa estimativas automáticas quando os dados não são informados.</p>
     </div>
 
     <div class="footer-cta">
