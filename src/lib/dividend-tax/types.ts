@@ -66,6 +66,17 @@ export interface DividendBusinessContextInput {
   percentualDistribuicaoLucro: number;
   jaPagaJcp: boolean;
   temHolding: boolean;
+  clubeInvestimento: DividendInvestmentClubInput;
+}
+
+export interface DividendInvestmentClubInput {
+  enabled: boolean;
+  portfolioValue: number;
+  annualDeferredDistributions: number;
+  participantsCount: number;
+  stockAllocationPercent: number;
+  brokerageFeePercent: number;
+  annualGrowthPercent: number;
 }
 
 export interface DividendTaxSimulationInput {
@@ -150,9 +161,14 @@ export interface ScenarioTaxBreakdown {
   irrfJcp: number;
   beneficioFiscalJcp: number;
   custoHolding: number;
+  custoClube: number;
 }
 
-export type ScenarioCode = "A_STATUS_QUO" | "B_MIX_OTIMIZADO" | "C_HOLDING";
+export type ScenarioCode =
+  | "A_STATUS_QUO"
+  | "B_MIX_OTIMIZADO"
+  | "C_HOLDING"
+  | "D_CLUBE";
 
 export interface ScenarioComparisonResult {
   code: ScenarioCode;
@@ -166,6 +182,40 @@ export interface ScenarioComparisonResult {
   breakEvenMonthlyDividends: number;
   isBest: boolean;
   taxBreakdown: ScenarioTaxBreakdown;
+}
+
+export interface ClubTaxProjectionYear {
+  year: number;
+  projectedPortfolioValue: number;
+  directTaxAnnual: number;
+  directTaxCumulative: number;
+  clubFeeAnnual: number;
+  clubFeeCumulative: number;
+  deferredTaxAnnual: number;
+  deferredTaxCumulative: number;
+  netTaxBenefitCumulative: number;
+  averageTaxEfficiencyPercent: number;
+}
+
+export interface ClubTaxProjectionSummary {
+  horizonYears: 5 | 10;
+  projectedPortfolioValue: number;
+  directTaxCumulative: number;
+  clubFeeCumulative: number;
+  deferredTaxCumulative: number;
+  netTaxBenefitCumulative: number;
+  averageTaxEfficiencyPercent: number;
+}
+
+export interface ClubTaxProjectionResult {
+  portfolioValue: number;
+  annualDeferredDistributions: number;
+  brokerageFeePercent: number;
+  annualGrowthPercent: number;
+  annualDirectTaxWithoutDeferment: number;
+  years: ClubTaxProjectionYear[];
+  summary5Years: ClubTaxProjectionSummary;
+  summary10Years: ClubTaxProjectionSummary;
 }
 
 export interface RegimeSimulationResult {
@@ -209,6 +259,7 @@ export interface DividendTaxSimulationResult {
   sourceBreakdown: SourceCalculationResult[];
   redutorBreakdown: RedutorCalculationBreakdown[];
   scenarios: ScenarioComparisonResult[];
+  clubProjection: ClubTaxProjectionResult | null;
   regimeSimulation: RegimeSimulationResult[];
   alerts: DividendTaxAlert[];
   warnings: string[];

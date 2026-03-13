@@ -4,7 +4,9 @@ import { TAX_CONSTANTS } from "@/lib/dividend-tax/tax-constants";
 import type {
   BusinessActivityType,
   BusinessTaxRegime,
+  ClubTaxProjectionResult,
   DividendBusinessContextInput,
+  DividendInvestmentClubInput,
   DividendSourceInput,
   DividendTaxSimulationInput,
   DividendTaxSimulationResult,
@@ -385,7 +387,103 @@ function createScenarioBreakdown(base?: Partial<ScenarioTaxBreakdown>): Scenario
     irrfJcp: 0,
     beneficioFiscalJcp: 0,
     custoHolding: 0,
+    custoClube: 0,
     ...base,
+  };
+}
+
+function calculateClubAnnualCost(clube: DividendInvestmentClubInput): number {
+  return Math.max(0, clube.portfolioValue) * Math.max(0, clube.brokerageFeePercent / 100);
+}
+
+function createClubProjection(
+  clube: DividendInvestmentClubInput,
+  annualDirectTaxWithoutDeferment: number,
+): ClubTaxProjectionResult | null {
+  if (
+    !clube.enabled ||
+    annualDirectTaxWithoutDeferment <= 0 ||
+    clube.portfolioValue < TAX_CONSTANTS.CLUBE_VALOR_MINIMO ||
+    clube.annualDeferredDistributions <= 0
+  ) {
+    return null;
+  }
+
+  const growthRate = Math.max(0, clube.annualGrowthPercent / 100);
+  const feeRate = Math.max(0, clube.brokerageFeePercent / 100);
+  let projectedPortfolioValue = clube.portfolioValue;
+  let directTaxAnnual = annualDirectTaxWithoutDeferment;
+  const years = Array.from({ length: 10 }, (_, index) => {
+    const year = index + 1;
+    const clubFeeAnnual = projectedPortfolioValue * feeRate;
+
+    return {
+      year,
+      projectedPortfolioValue,
+      directTaxAnnual,
+      clubFeeAnnual,
+    };
+  });
+
+  let directTaxCumulative = 0;
+  let clubFeeCumulative = 0;
+  let deferredTaxCumulative = 0;
+
+  const detailedYears = years.map((item) => {
+    directTaxCumulative += item.directTaxAnnual;
+    clubFeeCumulative += item.clubFeeAnnual;
+    deferredTaxCumulative += item.directTaxAnnual;
+    const netTaxBenefitCumulative = deferredTaxCumulative - clubFeeCumulative;
+    const averageTaxEfficiencyPercent =
+      directTaxCumulative > 0 ? (netTaxBenefitCumulative / directTaxCumulative) * 100 : 0;
+
+    const row = {
+      year: item.year,
+      projectedPortfolioValue: item.projectedPortfolioValue,
+      directTaxAnnual: item.directTaxAnnual,
+      directTaxCumulative,
+      clubFeeAnnual: item.clubFeeAnnual,
+      clubFeeCumulative,
+      deferredTaxAnnual: item.directTaxAnnual,
+      deferredTaxCumulative,
+      netTaxBenefitCumulative,
+      averageTaxEfficiencyPercent,
+    };
+
+    projectedPortfolioValue *= 1 + growthRate;
+    directTaxAnnual *= 1 + growthRate;
+
+    return row;
+  });
+
+  const summary5YearsSource = detailedYears[4];
+  const summary10YearsSource = detailedYears[9];
+
+  return {
+    portfolioValue: clube.portfolioValue,
+    annualDeferredDistributions: clube.annualDeferredDistributions,
+    brokerageFeePercent: clube.brokerageFeePercent,
+    annualGrowthPercent: clube.annualGrowthPercent,
+    annualDirectTaxWithoutDeferment,
+    years: detailedYears,
+    summary5Years: {
+      horizonYears: 5,
+      projectedPortfolioValue: summary5YearsSource.projectedPortfolioValue,
+      directTaxCumulative: summary5YearsSource.directTaxCumulative,
+      clubFeeCumulative: summary5YearsSource.clubFeeCumulative,
+      deferredTaxCumulative: summary5YearsSource.deferredTaxCumulative,
+      netTaxBenefitCumulative: summary5YearsSource.netTaxBenefitCumulative,
+      averageTaxEfficiencyPercent: summary5YearsSource.averageTaxEfficiencyPercent,
+    },
+    summary10Years: {
+      horizonYears: 10,
+      projectedPortfolioValue: summary10YearsSource.projectedPortfolioValue,
+      directTaxCumulative: summary10YearsSource.directTaxCumulative,
+      clubFeeCumulative: summary10YearsSource.clubFeeCumulative,
+      deferredTaxCumulative: summary10YearsSource.deferredTaxCumulative,
+      netTaxBenefitCumulative: summary10YearsSource.netTaxBenefitCumulative,
+      averageTaxEfficiencyPercent: summary10YearsSource.averageTaxEfficiencyPercent,
+    },
   };
 }
 
@@ -553,6 +651,68 @@ function createScenarioComparisons(
     },
   ];
 
+  const clube = input.business.clubeInvestimento;
+  if (
+    clube.enabled &&
+    clube.portfolioValue >= TAX_CONSTANTS.CLUBE_VALOR_MINIMO &&
+    clube.annualDeferredDistributions > 0
+  ) {
+    const clubAnnualEligibleAmount = Math.min(targetIncomeAnnual, clube.annualDeferredDistributions);
+    const personalAnnualWithClub = Math.max(0, targetIncomeAnnual - clubAnnualEligibleAmount);
+    const monthlyWithClub = personalAnnualWithClub / 12;
+    const irrfDividendosD =
+      input.residency === "nao_residente"
+        ? personalAnnualWithClub * TAX_CONSTANTS.IRRF_ALIQUOTA
+        : input.residency === "residente" && monthlyWithClub > TAX_CONSTANTS.IRRF_LIMIAR_MENSAL
+          ? personalAnnualWithClub * TAX_CONSTANTS.IRRF_ALIQUOTA
+          : 0;
+
+    const irpfmD = calculateScenarioIrpfm(input, {
+      taxableAnnualIncome: input.annualIncomes.otherTaxableAnnualIncome,
+      exclusiveAnnualIncome: input.annualIncomes.otherExclusiveAnnualIncome,
+      exemptAnnualIncome: input.annualIncomes.otherExemptAnnualIncome,
+      dividendsAnnual: personalAnnualWithClub,
+      exclusionsAnnual: input.annualIncomes.excludedFromIrpfmAnnual,
+      irrfCreditAnnual: irrfDividendosD,
+    });
+
+    const clubCostAnnual = calculateClubAnnualCost(clube);
+    const totalTaxD = corporate.total + irrfDividendosD + irpfmD.due + clubCostAnnual;
+    const netToPartnerD = Math.max(0, targetIncomeAnnual - irrfDividendosD - irpfmD.due);
+    const deferredTaxClubAnnual = Math.max(
+      0,
+      irrfStatusQuo + irpfmDueCurrent - (irrfDividendosD + irpfmD.due),
+    );
+    const clubBreakEvenMonthly = Math.round(
+      (clubCostAnnual / 12) / TAX_CONSTANTS.HOLDING_BREAK_EVEN_IRRF_ALIQUOTA,
+    );
+
+    const breakdownD = createScenarioBreakdown({
+      irpj: corporate.irpj,
+      csll: corporate.csll,
+      pis: corporate.pis,
+      cofins: corporate.cofins,
+      simplesDAS: corporate.simplesDAS,
+      irrfDividendos: irrfDividendosD,
+      irpfm: irpfmD.due,
+      custoClube: clubCostAnnual,
+    });
+
+    scenarios.push({
+      code: "D_CLUBE",
+      title: "Cenario D - Clube de Investimento",
+      description: "Parcela da carteira migrada para clube com reinvestimento e diferimento.",
+      totalTax: totalTaxD,
+      totalTaxRate: (totalTaxD / Math.max(1, targetIncomeAnnual + corporate.total)) * 100,
+      netToPartner: netToPartnerD,
+      annualSavingsVsStatusQuo: totalTaxA - totalTaxD,
+      deferredTaxAnnual: deferredTaxClubAnnual,
+      breakEvenMonthlyDividends: clubBreakEvenMonthly,
+      isBest: false,
+      taxBreakdown: breakdownD,
+    });
+  }
+
   const bestScenario = scenarios.reduce((best, current) =>
     current.totalTax < best.totalTax ? current : best,
   );
@@ -680,6 +840,10 @@ export function calculateDividendTax(
         : "Aliquota = ((Renda - 600.000) / 600.000) x 10%";
 
   const scenarios = createScenarioComparisons(input, totalAnnualDividends, irpfmDue);
+  const clubScenario = scenarios.find((scenario) => scenario.code === "D_CLUBE");
+  const clubProjection = clubScenario
+    ? createClubProjection(input.business.clubeInvestimento, clubScenario.deferredTaxAnnual)
+    : null;
   const regimeSimulation = createRegimeSimulation(input, totalAnnualDividends);
 
   const assumptions: string[] = [
@@ -689,9 +853,53 @@ export function calculateDividendTax(
     "Resultados nao substituem parecer juridico/contabil individual.",
   ];
 
+  if (input.business.clubeInvestimento.enabled) {
+    assumptions.splice(
+      assumptions.length - 1,
+      0,
+      `No cenario D foi assumido clube com patrimonio inicial de ${formatCurrency(input.business.clubeInvestimento.portfolioValue)}, taxa anual de ${formatPercent(input.business.clubeInvestimento.brokerageFeePercent)} e diferimento sobre ${formatCurrency(input.business.clubeInvestimento.annualDeferredDistributions)} por ano.`,
+    );
+    if (
+      input.business.clubeInvestimento.stockAllocationPercent <
+      TAX_CONSTANTS.CLUBE_ACOES_MIN_PERCENTUAL
+    ) {
+      assumptions.splice(
+        assumptions.length - 1,
+        0,
+        "Como a carteira informada do clube ficou abaixo de 67% em acoes, a tributacao de referencia pode migrar para regra de fundos e deve ser validada com contador/tributarista.",
+      );
+    }
+  }
+
   const warnings: string[] = [];
   if (input.enableRedutor && input.redutorCompanies.length === 0) {
     warnings.push("Redutor ativado sem empresas informadas. Nenhum credito redutor aplicado.");
+  }
+  if (
+    input.business.clubeInvestimento.enabled &&
+    input.business.clubeInvestimento.participantsCount < TAX_CONSTANTS.CLUBE_MIN_COTISTAS
+  ) {
+    warnings.push(
+      "Clube de investimento exige ao menos 3 cotistas. Ajuste a premissa antes de usar o cenario D em decisao real.",
+    );
+  }
+  if (
+    input.business.clubeInvestimento.enabled &&
+    input.business.clubeInvestimento.portfolioValue < TAX_CONSTANTS.CLUBE_VALOR_MINIMO
+  ) {
+    warnings.push(
+      `Nesta calculadora, o cenario D so e liberado a partir de ${formatCurrency(TAX_CONSTANTS.CLUBE_VALOR_MINIMO)} em bolsa.`,
+    );
+  }
+  if (
+    input.business.clubeInvestimento.enabled &&
+    (input.business.clubeInvestimento.brokerageFeePercent < TAX_CONSTANTS.CLUBE_TAXA_MIN_PERCENTUAL ||
+      input.business.clubeInvestimento.brokerageFeePercent >
+        TAX_CONSTANTS.CLUBE_TAXA_MAX_PERCENTUAL)
+  ) {
+    warnings.push(
+      `A taxa anual do clube deve ficar entre ${formatPercent(TAX_CONSTANTS.CLUBE_TAXA_MIN_PERCENTUAL)} e ${formatPercent(TAX_CONSTANTS.CLUBE_TAXA_MAX_PERCENTUAL)} nesta simulacao.`,
+    );
   }
   warnings.push(...redutorResult.warnings);
 
@@ -723,6 +931,7 @@ export function calculateDividendTax(
     sourceBreakdown,
     redutorBreakdown: redutorResult.breakdown,
     scenarios,
+    clubProjection,
     regimeSimulation,
     alerts: [],
     warnings,

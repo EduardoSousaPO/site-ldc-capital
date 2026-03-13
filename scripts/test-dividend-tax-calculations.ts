@@ -49,6 +49,15 @@ function createBaseInput(): DividendTaxSimulationInput {
       percentualDistribuicaoLucro: 100,
       jaPagaJcp: false,
       temHolding: false,
+      clubeInvestimento: {
+        enabled: false,
+        portfolioValue: 0,
+        annualDeferredDistributions: 0,
+        participantsCount: 3,
+        stockAllocationPercent: 67,
+        brokerageFeePercent: 0.75,
+        annualGrowthPercent: 8,
+      },
     },
   };
 }
@@ -190,6 +199,45 @@ function testScenariosAreComparable() {
   console.log("PASS: Comparativo de cenarios A/B/C");
 }
 
+function testInvestmentClubScenario() {
+  const base = createBaseInput();
+  const result = calculateDividendTax({
+    ...base,
+    sources: [{ ...base.sources[0], monthlyAmount: 120_000 }],
+    annualIncomes: {
+      ...base.annualIncomes,
+      otherTaxableAnnualIncome: 120_000,
+    },
+    business: {
+      ...base.business,
+      clubeInvestimento: {
+        enabled: true,
+        portfolioValue: 1_500_000,
+        annualDeferredDistributions: 600_000,
+        participantsCount: 3,
+        stockAllocationPercent: 80,
+        brokerageFeePercent: 0.75,
+        annualGrowthPercent: 8,
+      },
+    },
+  });
+
+  const scenarioD = result.scenarios.find((item) => item.code === "D_CLUBE");
+  assert.equal(result.scenarios.length, 4);
+  assert.ok(scenarioD, "Expected investment club scenario to be returned");
+  assert.ok(result.clubProjection, "Expected club projection to be returned");
+  assert.ok(
+    (scenarioD?.deferredTaxAnnual || 0) > 0,
+    "Expected club scenario to create deferred tax potential",
+  );
+  assert.ok(
+    (result.clubProjection?.summary10Years.netTaxBenefitCumulative || 0) >
+      (result.clubProjection?.summary5Years.netTaxBenefitCumulative || 0),
+    "Expected 10-year net benefit to exceed 5-year net benefit",
+  );
+  console.log("PASS: Cenario opcional de clube de investimento");
+}
+
 function testAlertsEngineCoverage() {
   const base = createBaseInput();
   const result = calculateDividendTax({
@@ -233,6 +281,7 @@ function runDividendTaxTests() {
   testIrpfmRateBands();
   testRedutorCappingAndZeroDue();
   testScenariosAreComparable();
+  testInvestmentClubScenario();
   testAlertsEngineCoverage();
   console.log("\nAll dividend-tax tests passed.");
 }

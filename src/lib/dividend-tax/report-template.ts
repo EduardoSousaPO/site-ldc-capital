@@ -6,6 +6,7 @@ import type {
   ScenarioTaxBreakdown,
 } from "@/lib/dividend-tax/types";
 import { formatCurrency, formatPercent } from "@/lib/dividend-tax/calculator";
+import { getSourceTypeLabel } from "@/lib/dividend-tax/constants";
 
 interface ReportMeta {
   leadName?: string;
@@ -35,12 +36,19 @@ const SCENARIO_META: Record<
     idealFor: "Quem aceita diferir retiradas para ganhar eficiencia.",
     badge: "Maior diferimento",
   },
+  D_CLUBE: {
+    title: "Cenario D",
+    subtitle: "Clube de investimento",
+    idealFor: "Quem consegue reinvestir parte da carteira com estrutura compartilhada.",
+    badge: "Carteira estruturada",
+  },
 };
 
 const SCENARIO_ORDER: ScenarioCode[] = [
   "A_STATUS_QUO",
   "B_MIX_OTIMIZADO",
   "C_HOLDING",
+  "D_CLUBE",
 ];
 
 const BREAKDOWN_ROWS: Array<{ key: keyof ScenarioTaxBreakdown; label: string }> = [
@@ -56,6 +64,7 @@ const BREAKDOWN_ROWS: Array<{ key: keyof ScenarioTaxBreakdown; label: string }> 
   { key: "irpfm", label: "IRPFM" },
   { key: "beneficioFiscalJcp", label: "Beneficio fiscal JCP" },
   { key: "custoHolding", label: "Custo holding" },
+  { key: "custoClube", label: "Custo clube" },
 ];
 
 function escapeHtml(value: string): string {
@@ -115,7 +124,7 @@ export function generateDividendTaxReportHtml(
       (source) => `
       <tr>
         <td>${escapeHtml(source.name)}</td>
-        <td>${escapeHtml(source.sourceType)}</td>
+        <td>${escapeHtml(getSourceTypeLabel(source.sourceType))}</td>
         <td class="right">${formatCurrency(source.monthlyAmount)}</td>
         <td class="right">${source.monthsReceived}</td>
         <td class="right">${formatCurrency(source.annualGrossDividends)}</td>
@@ -291,6 +300,75 @@ export function generateDividendTaxReportHtml(
   const assumptions = result.assumptions
     .map((assumption) => `<li>${escapeHtml(assumption)}</li>`)
     .join("");
+  const clubProjectionRows = result.clubProjection
+    ? result.clubProjection.years
+        .map(
+          (year) => `
+      <tr>
+        <td>${year.year}</td>
+        <td class="right">${formatCurrency(year.projectedPortfolioValue)}</td>
+        <td class="right">${formatCurrency(year.directTaxCumulative)}</td>
+        <td class="right">${formatCurrency(year.clubFeeCumulative)}</td>
+        <td class="right">${formatCurrency(year.netTaxBenefitCumulative)}</td>
+        <td class="right">${formatPercent(year.averageTaxEfficiencyPercent)}</td>
+      </tr>
+    `,
+        )
+        .join("")
+    : "";
+  const clubProjectionSection = result.clubProjection
+    ? `
+    <section class="section">
+      <h2>4. Dashboard de diferimento (clube vs compra direta PF)</h2>
+      <div class="split">
+        <div class="box">
+          <p><strong>Patrimonio no clube:</strong> ${formatCurrency(result.clubProjection.portfolioValue)}</p>
+          <p><strong>Taxa anual da corretora:</strong> ${formatPercent(result.clubProjection.brokerageFeePercent)}</p>
+          <p><strong>Crescimento anual assumido:</strong> ${formatPercent(result.clubProjection.annualGrowthPercent)}</p>
+          <p><strong>Proventos anuais sem diferimento:</strong> ${formatCurrency(result.clubProjection.annualDeferredDistributions)}</p>
+        </div>
+        <div class="box">
+          <p><strong>5 anos - beneficio liquido:</strong> ${formatCurrency(result.clubProjection.summary5Years.netTaxBenefitCumulative)}</p>
+          <p class="sub">Eficiencia media: ${formatPercent(result.clubProjection.summary5Years.averageTaxEfficiencyPercent)}</p>
+          <p style="margin-top:6px;"><strong>10 anos - beneficio liquido:</strong> ${formatCurrency(result.clubProjection.summary10Years.netTaxBenefitCumulative)}</p>
+          <p class="sub">Eficiencia media: ${formatPercent(result.clubProjection.summary10Years.averageTaxEfficiencyPercent)}</p>
+        </div>
+      </div>
+      <div class="bar-chart" style="margin-top:8px;">
+        <div class="bar-row">
+          <div class="bar-label">Imposto acumulado sem diferimento (10 anos)</div>
+          <div class="bar-track"><div class="bar-fill" style="width:100%; background:#c94c4c;"></div></div>
+          <div class="bar-value">${formatCurrency(result.clubProjection.summary10Years.directTaxCumulative)}</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Custos acumulados do clube (10 anos)</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${widthPercent(result.clubProjection.summary10Years.clubFeeCumulative, result.clubProjection.summary10Years.directTaxCumulative)}%; background:#2b3550;"></div></div>
+          <div class="bar-value">${formatCurrency(result.clubProjection.summary10Years.clubFeeCumulative)}</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Beneficio liquido acumulado (10 anos)</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${widthPercent(result.clubProjection.summary10Years.netTaxBenefitCumulative, result.clubProjection.summary10Years.directTaxCumulative)}%; background:#8b9a46;"></div></div>
+          <div class="bar-value">${formatCurrency(result.clubProjection.summary10Years.netTaxBenefitCumulative)}</div>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Ano</th>
+            <th class="right">Patrimonio projetado</th>
+            <th class="right">Imposto PF acum.</th>
+            <th class="right">Custos clube acum.</th>
+            <th class="right">Beneficio liquido acum.</th>
+            <th class="right">Eficiencia media</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${clubProjectionRows}
+        </tbody>
+      </table>
+    </section>
+    `
+    : "";
 
   return `
 <!DOCTYPE html>
@@ -751,7 +829,7 @@ export function generateDividendTaxReportHtml(
       <div class="journey-step">
         <p class="n">Etapa 3</p>
         <p class="t">Estrategias</p>
-        <p class="d">Comparativo A/B/C e recomendacao.</p>
+        <p class="d">Comparativo A/B/C/D e recomendacao.</p>
       </div>
       <div class="journey-step">
         <p class="n">Etapa 4</p>
@@ -824,7 +902,7 @@ export function generateDividendTaxReportHtml(
     <div class="page-break"></div>
 
     <section class="section">
-      <h2>3. Cenarios estrategicos (A, B e C)</h2>
+      <h2>3. Cenarios estrategicos</h2>
       <div class="scenario-grid">
         ${scenarioCards}
       </div>
@@ -859,10 +937,12 @@ export function generateDividendTaxReportHtml(
       </table>
     </section>
 
+    ${clubProjectionSection}
+
     <div class="page-break"></div>
 
     <section class="section">
-      <h2>4. Simulador de regime tributario</h2>
+      <h2>5. Simulador de regime tributario</h2>
       <div class="split">
         <div class="bar-chart">
           ${regimeBars}
@@ -895,7 +975,7 @@ export function generateDividendTaxReportHtml(
     </section>
 
     <section class="section">
-      <h2>5. Calculo IRPFM passo a passo</h2>
+      <h2>6. Calculo IRPFM passo a passo</h2>
       <div class="steps-grid">
         <div class="step-card">
           <p class="k">Base anual</p>
@@ -942,7 +1022,7 @@ export function generateDividendTaxReportHtml(
     </section>
 
     <section class="section">
-      <h2>6. Alertas e plano de acao</h2>
+      <h2>7. Alertas e plano de acao</h2>
       <ul class="alert-list">
         ${alertItems || `<li class="alert-item"><strong>Sem alertas relevantes para os dados informados.</strong></li>`}
       </ul>

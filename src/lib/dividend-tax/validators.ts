@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TAX_CONSTANTS } from "@/lib/dividend-tax/tax-constants";
 
 export const dividendSourceSchema = z.object({
   id: z.string().min(1),
@@ -57,6 +58,46 @@ export const dividendBusinessContextSchema = z.object({
   percentualDistribuicaoLucro: z.number().min(0).max(100),
   jaPagaJcp: z.boolean(),
   temHolding: z.boolean(),
+  clubeInvestimento: z
+    .object({
+    enabled: z.boolean(),
+    portfolioValue: z.number().min(0),
+    annualDeferredDistributions: z.number().min(0),
+    participantsCount: z.number().int().min(1).max(50),
+    stockAllocationPercent: z.number().min(0).max(100),
+    brokerageFeePercent: z.number().min(0).max(100),
+    annualGrowthPercent: z.number().min(0).max(100),
+  })
+    .superRefine((clube, ctx) => {
+      if (!clube.enabled) return;
+
+      if (clube.portfolioValue < TAX_CONSTANTS.CLUBE_VALOR_MINIMO) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Patrimonio minimo do clube: R$ ${TAX_CONSTANTS.CLUBE_VALOR_MINIMO.toLocaleString("pt-BR")}.`,
+          path: ["portfolioValue"],
+        });
+      }
+
+      if (
+        clube.brokerageFeePercent < TAX_CONSTANTS.CLUBE_TAXA_MIN_PERCENTUAL ||
+        clube.brokerageFeePercent > TAX_CONSTANTS.CLUBE_TAXA_MAX_PERCENTUAL
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Taxa anual deve ficar entre ${TAX_CONSTANTS.CLUBE_TAXA_MIN_PERCENTUAL}% e ${TAX_CONSTANTS.CLUBE_TAXA_MAX_PERCENTUAL}%.`,
+          path: ["brokerageFeePercent"],
+        });
+      }
+
+      if (clube.participantsCount < TAX_CONSTANTS.CLUBE_MIN_COTISTAS) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Numero minimo de cotistas: ${TAX_CONSTANTS.CLUBE_MIN_COTISTAS}.`,
+          path: ["participantsCount"],
+        });
+      }
+    }),
 });
 
 export const dividendTaxSimulationInputSchema = z.object({

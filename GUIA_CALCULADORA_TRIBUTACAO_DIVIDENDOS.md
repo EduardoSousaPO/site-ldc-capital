@@ -39,7 +39,9 @@ Observacao:
 
 - Composicao da renda global (grafico);
 - Passo a passo do IRPFM;
-- Comparativo de cenarios A/B/C (cards + grafico);
+- Comparativo de cenarios A/B/C/D (cards + grafico);
+- Dashboard de diferimento do clube vs compra direta na PF;
+- Tabela anual de eficiencia tributaria em 5 e 10 anos;
 - Simulador de regime (Simples vs LP vs LR);
 - Alertas contextuais inteligentes.
 
@@ -61,6 +63,23 @@ Observacao:
 - Efeito degrau: ao ultrapassar `R$ 50.000`, o IRRF incide sobre o valor total da fonte no mes;
 - Nao residente: IRRF de 10% em qualquer valor (sem limiar);
 - Fontes isentas/excluidas (ex.: FII/Fiagro e titulos isentos) nao sofrem IRRF na simulacao.
+
+### 3.1.1 Ativos que entram na tributacao de 10% (IRRF e IRPFM)
+
+- **Empresas brasileiras** (S/A, LTDA) — dividendos de acoes;
+- **Fonte no exterior** — dividendos de empresas estrangeiras;
+- **Outras fontes tributaveis** — dividendos de outras origens sujeitas à lei.
+
+### 3.1.2 Ativos que NAO entram (isentos/excluidos)
+
+- **FIIs** — desde que cotas negociadas em bolsa e fundo com pelo menos 100 cotistas;
+- **Fiagros**;
+- **FI-Infra**;
+- **LCI, LCA, CRI, CRA**;
+- **Debentures de infraestrutura**;
+- **Caderneta de poupanca**.
+
+Na calculadora, ao adicionar fontes, use o tipo "FII/Fiagro" ou "LCI/LCA/CRI/CRA/Poupanca/FI-Infra" para que esses valores sejam excluidos da base do IRRF e do IRPFM.
 
 ## 3.2 IRPFM anual
 
@@ -124,6 +143,25 @@ Para cada empresa informada no bloco de redutor:
 - adiciona custo anual estimado da holding;
 - apresenta diferimento estimado e break-even mensal.
 
+## 4.4 Cenario D - Clube de Investimento
+
+- uso voltado para carteira de bolsa que pode permanecer investida, nao para caixa pessoal imediato;
+- patrimonio minimo considerado: `R$ 1.000.000`;
+- taxa anual parametrizada entre `0,75%` e `1,5%` sobre o patrimonio do clube;
+- compara o custo da estrutura com o diferimento fiscal da compra direta na PF;
+- exige premissas explicitas de:
+  - patrimonio alocado ao clube;
+  - proventos anuais que seriam tributados na PF sem diferimento;
+  - numero de cotistas;
+  - percentual da carteira em acoes brasileiras;
+  - taxa anual da corretora;
+  - crescimento anual da carteira;
+- gera painel comparativo com:
+  - imposto acumulado sem diferimento;
+  - custo acumulado do clube;
+  - beneficio liquido acumulado;
+  - eficiencia tributaria media em 5 e 10 anos.
+
 Saidas por cenario:
 
 - carga tributaria total em R$ e %;
@@ -169,7 +207,8 @@ Regras principais cobertas:
 - diluicao por multiplas fontes;
 - nao residente;
 - incerteza juridica no Simples;
-- oportunidade de holding.
+- oportunidade de holding;
+- oportunidade de avaliar clube de investimento em contexto patrimonial.
 
 ---
 
@@ -189,6 +228,9 @@ Conteudo do relatorio:
 - calculo do IRPFM passo a passo;
 - composicao da renda global;
 - comparativo de cenarios;
+- premissas do cenario de clube de investimento (quando ativado);
+- dashboard de diferimento do clube (5 e 10 anos);
+- tabela anual de eficiencia tributaria no cenario de clube;
 - alertas e premissas;
 - disclaimer juridico-contabil.
 

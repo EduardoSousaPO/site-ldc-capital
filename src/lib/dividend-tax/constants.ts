@@ -22,6 +22,10 @@ export const SOURCE_TYPE_OPTIONS = [
   { value: "titulos_isentos", label: "LCI/LCA/CRI/CRA/Poupanca/FI-Infra" },
 ] as const;
 
+export function getSourceTypeLabel(sourceType: string): string {
+  return SOURCE_TYPE_OPTIONS.find((o) => o.value === sourceType)?.label ?? sourceType;
+}
+
 export const RESIDENCY_OPTIONS = [
   { value: "residente", label: "Pessoa fisica residente" },
   { value: "nao_residente", label: "Pessoa fisica nao residente" },

@@ -38,6 +38,13 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -47,7 +54,9 @@ import { trackLead } from "@/lib/analytics";
 import type {
   BusinessActivityType,
   BusinessTaxRegime,
+  ClubTaxProjectionResult,
   DividendSourceInput,
+  DividendSourceType,
   DividendTaxAlert,
   DividendTaxSimulationInput,
   DividendTaxSimulationResult,
@@ -56,6 +65,7 @@ import type {
   ScenarioTaxBreakdown,
 } from "@/lib/dividend-tax/types";
 import { TAX_CONSTANTS } from "@/lib/dividend-tax/tax-constants";
+import { SOURCE_TYPE_OPTIONS, getSourceTypeLabel } from "@/lib/dividend-tax/constants";
 import IncomeCompositionChart from "@/components/dividend-tax/IncomeCompositionChart";
 import RegimeComparisonChart from "@/components/dividend-tax/RegimeComparisonChart";
 import {
@@ -63,6 +73,9 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  Legend,
+  Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip as RechartsTooltip,
   XAxis,
@@ -82,6 +95,7 @@ interface AdditionalCompany {
   id: string;
   nome: string;
   valorMensal: number;
+  sourceType: DividendSourceType;
 }
 
 interface LeadFormState {
@@ -111,6 +125,13 @@ interface UserInputSimplificado {
   distribuicaoLucro: number;
   jaTemJCP: boolean;
   jaTemHolding: boolean;
+  simularClubeInvestimento: boolean;
+  patrimonioClube: number | null;
+  proventosAnuaisClube: number | null;
+  cotistasClube: number;
+  percentualAcoesClube: number;
+  taxaClubePercentual: number;
+  crescimentoAnualClube: number;
 }
 
 interface HumanAlert {
@@ -226,6 +247,13 @@ const SCENARIO_CONFIG: Record<
     badge: "Maior economia com diferimento",
     baseClass: "border-[#577171]/40",
   },
+  D_CLUBE: {
+    title: "Cenario D",
+    subtitle: "Clube de investimento",
+    idealFor: "Quem consegue reinvestir parte da carteira com estrutura compartilhada.",
+    badge: "Diferimento na carteira",
+    baseClass: "border-[#2b3550]/40",
+  },
 };
 
 const BREAKDOWN_ROWS: Array<{ key: keyof ScenarioTaxBreakdown; label: string }> = [
@@ -240,6 +268,7 @@ const BREAKDOWN_ROWS: Array<{ key: keyof ScenarioTaxBreakdown; label: string }> 
   { key: "irrfJcp", label: "IRRF JCP" },
   { key: "irpfm", label: "IRPFM" },
   { key: "custoHolding", label: "Custo holding" },
+  { key: "custoClube", label: "Custo clube" },
 ];
 
 function formatCurrency(value: number) {
@@ -286,11 +315,25 @@ function resolveFaturamentoAnual(input: UserInputSimplificado) {
   return (input.retiradaMensal * 12) / Math.max(0.05, marginDecimal);
 }
 
+function resolveClubDeferredDistributions(input: UserInputSimplificado) {
+  if (!input.simularClubeInvestimento) return 0;
+  if ((input.proventosAnuaisClube ?? 0) > 0) return input.proventosAnuaisClube as number;
+  const patrimonioBase = input.patrimonioClube ?? TAX_CONSTANTS.CLUBE_VALOR_MINIMO;
+  return patrimonioBase * 0.06;
+}
+
+function resolveClubPortfolioValue(input: UserInputSimplificado) {
+  if (!input.simularClubeInvestimento) return 0;
+  if ((input.patrimonioClube ?? 0) > 0) return input.patrimonioClube as number;
+  return TAX_CONSTANTS.CLUBE_VALOR_MINIMO;
+}
+
 function createAdditionalCompany(index: number): AdditionalCompany {
   return {
     id: createId("empresa"),
     nome: `Empresa ${index}`,
     valorMensal: 0,
+    sourceType: "empresa_brasil",
   };
 }
 
@@ -512,6 +555,7 @@ function ScenarioOutcomeChart({
     A_STATUS_QUO: "#c94c4c",
     B_MIX_OTIMIZADO: "#8b9a46",
     C_HOLDING: "#577171",
+    D_CLUBE: "#2b3550",
   };
 
   return (
@@ -531,6 +575,60 @@ function ScenarioOutcomeChart({
           </Bar>
           <Bar dataKey="liquido" stackId="total" fill="#4caf50" radius={[0, 6, 6, 0]} />
         </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function ClubProjectionChart({
+  projection,
+}: {
+  projection: ClubTaxProjectionResult;
+}) {
+  const chartData = projection.years.map((year) => ({
+    ano: `Ano ${year.year}`,
+    impostoPf: Number(year.directTaxCumulative.toFixed(2)),
+    custoClube: Number(year.clubFeeCumulative.toFixed(2)),
+    diferimentoLiquido: Number(year.netTaxBenefitCumulative.toFixed(2)),
+  }));
+
+  return (
+    <div className="w-full h-[320px]">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={chartData} margin={{ top: 16, right: 24, left: 0, bottom: 8 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+          <XAxis dataKey="ano" stroke="#577171" style={{ fontSize: "12px" }} />
+          <YAxis tickFormatter={formatCurrencyCompact} stroke="#577171" style={{ fontSize: "12px" }} />
+          <RechartsTooltip
+            formatter={(value: number) => formatCurrency(value)}
+            contentStyle={{ borderRadius: 12, borderColor: "#d1d5db" }}
+          />
+          <Legend />
+          <Line
+            type="monotone"
+            dataKey="impostoPf"
+            name="Imposto PF sem diferimento"
+            stroke="#c94c4c"
+            strokeWidth={2.5}
+            dot={false}
+          />
+          <Line
+            type="monotone"
+            dataKey="custoClube"
+            name="Custos do clube"
+            stroke="#2b3550"
+            strokeWidth={2.5}
+            dot={false}
+          />
+          <Line
+            type="monotone"
+            dataKey="diferimentoLiquido"
+            name="Diferimento liquido"
+            stroke="#8b9a46"
+            strokeWidth={3}
+            dot={false}
+          />
+        </LineChart>
       </ResponsiveContainer>
     </div>
   );
@@ -570,10 +668,10 @@ function traduzirParaEngine(input: UserInputSimplificado): DividendTaxSimulation
       .forEach((empresa) => {
         fontes.push({
           id: empresa.id,
-          name: empresa.nome.trim() || "Empresa adicional",
+          name: empresa.nome.trim() || "Fonte adicional",
           monthlyAmount: empresa.valorMensal,
           monthsReceived: 12,
-          sourceType: "empresa_brasil",
+          sourceType: empresa.sourceType,
         });
       });
   }
@@ -608,6 +706,15 @@ function traduzirParaEngine(input: UserInputSimplificado): DividendTaxSimulation
       percentualDistribuicaoLucro: input.distribuicaoLucro || 100,
       jaPagaJcp: input.jaTemJCP,
       temHolding: input.jaTemHolding,
+      clubeInvestimento: {
+        enabled: input.simularClubeInvestimento,
+        portfolioValue: resolveClubPortfolioValue(input),
+        annualDeferredDistributions: resolveClubDeferredDistributions(input),
+        participantsCount: input.cotistasClube,
+        stockAllocationPercent: input.percentualAcoesClube,
+        brokerageFeePercent: input.taxaClubePercentual,
+        annualGrowthPercent: input.crescimentoAnualClube,
+      },
     },
   };
 }
@@ -633,6 +740,13 @@ export default function DividendTaxCalculator() {
     distribuicaoLucro: 100,
     jaTemJCP: false,
     jaTemHolding: false,
+    simularClubeInvestimento: false,
+    patrimonioClube: TAX_CONSTANTS.CLUBE_VALOR_MINIMO,
+    proventosAnuaisClube: TAX_CONSTANTS.CLUBE_VALOR_MINIMO * 0.06,
+    cotistasClube: TAX_CONSTANTS.CLUBE_MIN_COTISTAS,
+    percentualAcoesClube: TAX_CONSTANTS.CLUBE_ACOES_MIN_PERCENTUAL,
+    taxaClubePercentual: TAX_CONSTANTS.CLUBE_TAXA_PADRAO_PERCENTUAL,
+    crescimentoAnualClube: TAX_CONSTANTS.CLUBE_CRESCIMENTO_PADRAO_PERCENTUAL,
   });
 
   const [showRefine, setShowRefine] = useState(false);
@@ -671,6 +785,7 @@ export default function DividendTaxCalculator() {
       A_STATUS_QUO: result.scenarios.find((scenario) => scenario.code === "A_STATUS_QUO") || null,
       B_MIX_OTIMIZADO: result.scenarios.find((scenario) => scenario.code === "B_MIX_OTIMIZADO") || null,
       C_HOLDING: result.scenarios.find((scenario) => scenario.code === "C_HOLDING") || null,
+      D_CLUBE: result.scenarios.find((scenario) => scenario.code === "D_CLUBE") || null,
     };
   }, [result]);
 
@@ -872,6 +987,7 @@ export default function DividendTaxCalculator() {
   const scenarioA = scenariosByCode?.A_STATUS_QUO || null;
   const scenarioB = scenariosByCode?.B_MIX_OTIMIZADO || null;
   const scenarioC = scenariosByCode?.C_HOLDING || null;
+  const scenarioD = scenariosByCode?.D_CLUBE || null;
 
   const proLaboreMensal = Math.min(5_000, userInput.retiradaMensal);
   const dividendosSemProlabore = userInput.retiradaMensal;
@@ -899,6 +1015,16 @@ export default function DividendTaxCalculator() {
   const holdingDeferredAnnual = result
     ? Math.max(0, result.totalAnnualDividends - holdingDistributionAnnual)
     : 0;
+  const clubProjection = result?.clubProjection || null;
+  const clubConfig = lastCalculatedInput?.business.clubeInvestimento;
+  const clubEligibleAnnual = Math.max(0, clubConfig?.annualDeferredDistributions || 0);
+  const clubPortfolioValue = Math.max(0, clubConfig?.portfolioValue || 0);
+  const clubStockAllocationPercent = clubConfig?.stockAllocationPercent || 0;
+  const clubFeePercent = clubConfig?.brokerageFeePercent || TAX_CONSTANTS.CLUBE_TAXA_PADRAO_PERCENTUAL;
+  const clubGrowthPercent =
+    clubConfig?.annualGrowthPercent || TAX_CONSTANTS.CLUBE_CRESCIMENTO_PADRAO_PERCENTUAL;
+  const showClubStrategy = Boolean(scenarioD && clubConfig?.enabled);
+  const strategyCountText = showClubStrategy ? "quatro" : "tres";
 
   return (
     <TooltipProvider delayDuration={120}>
@@ -1172,7 +1298,7 @@ export default function DividendTaxCalculator() {
 
                 <div className="space-y-3">
                   <Label className="text-sm font-semibold text-[#262d3d]">
-                    Tem mais de uma empresa pagando dividendos?
+                    Tem mais de uma fonte de dividendos?
                   </Label>
                   <div className="inline-flex rounded-full border border-[#d1d5db] bg-white p-1">
                     <button
@@ -1211,10 +1337,13 @@ export default function DividendTaxCalculator() {
 
                   {userInput.multiplasEmpresas && (
                     <div className="space-y-3 rounded-xl border border-[#e5e7eb] bg-white p-4">
+                      <p className="text-xs text-[#577171] mb-2">
+                        Escolha o tipo de fonte: FII/Fiagro e LCI/LCA/CRI/CRA/Poupança/FI-Infra ficam fora da base IRRF e IRPFM.
+                      </p>
                       {userInput.empresasAdicionais.map((empresa, index) => (
-                        <div key={empresa.id} className="grid grid-cols-1 md:grid-cols-[1fr_220px_auto] gap-3 items-end">
+                        <div key={empresa.id} className="grid grid-cols-1 md:grid-cols-[1fr_200px_180px_auto] gap-3 items-end">
                           <div>
-                            <Label className="text-xs text-[#577171]">Nome da empresa</Label>
+                            <Label className="text-xs text-[#577171]">Nome da fonte</Label>
                             <Input
                               value={empresa.nome}
                               onChange={(event) =>
@@ -1225,8 +1354,33 @@ export default function DividendTaxCalculator() {
                                   ),
                                 }))
                               }
-                              placeholder={`Empresa ${index + 1}`}
+                              placeholder={empresa.sourceType === "empresa_brasil" ? `Empresa ${index + 1}` : "Ex: FII XYZ"}
                             />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-[#577171]">Tipo de fonte</Label>
+                            <Select
+                              value={empresa.sourceType}
+                              onValueChange={(value: DividendSourceType) =>
+                                setUserInput((prev) => ({
+                                  ...prev,
+                                  empresasAdicionais: prev.empresasAdicionais.map((item) =>
+                                    item.id === empresa.id ? { ...item, sourceType: value } : item,
+                                  ),
+                                }))
+                              }
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {SOURCE_TYPE_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                           <div>
                             <Label className="text-xs text-[#577171]">Retirada mensal</Label>
@@ -1285,7 +1439,7 @@ export default function DividendTaxCalculator() {
                         }
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        Adicionar empresa
+                        Adicionar fonte
                       </Button>
                     </div>
                   )}
@@ -1474,7 +1628,184 @@ export default function DividendTaxCalculator() {
                           Ja existe holding no grupo
                         </Label>
                       </div>
+
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="refine-clube"
+                          checked={userInput.simularClubeInvestimento}
+                          onCheckedChange={(checked) =>
+                            setUserInput((prev) => ({
+                              ...prev,
+                              simularClubeInvestimento: checked === true,
+                            }))
+                          }
+                        />
+                        <Label htmlFor="refine-clube" className="text-sm text-[#374151]">
+                          Simular clube de investimento
+                        </Label>
+                      </div>
                     </div>
+
+                    {userInput.simularClubeInvestimento && (
+                      <div className="rounded-xl border border-[#dce4c0] bg-[#f8faf5] p-4 space-y-4">
+                        <div>
+                          <p className="text-sm font-semibold text-[#262d3d]">
+                            Premissas do clube de investimento
+                          </p>
+                          <p className="text-xs text-[#577171] mt-1">
+                            Use este cenario para a parcela da carteira que pode ficar reinvestida em veiculo compartilhado.
+                            Regra-base: minimo de {TAX_CONSTANTS.CLUBE_MIN_COTISTAS} e maximo de {TAX_CONSTANTS.CLUBE_MAX_COTISTAS} cotistas.
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-xs text-[#577171]">
+                              Patrimonio alocado ao clube
+                            </Label>
+                            <NumericFormat
+                              customInput={Input}
+                              value={userInput.patrimonioClube || ""}
+                              thousandSeparator="."
+                              decimalSeparator=","
+                              decimalScale={2}
+                              fixedDecimalScale
+                              prefix="R$ "
+                              allowNegative={false}
+                              placeholder={formatCurrencyCompact(TAX_CONSTANTS.CLUBE_VALOR_MINIMO)}
+                              onValueChange={(values) =>
+                                setUserInput((prev) => ({
+                                  ...prev,
+                                  patrimonioClube: values.floatValue || null,
+                                }))
+                              }
+                            />
+                            <p className="text-xs text-[#6b7280] mt-1">
+                              Nesta ferramenta, o cenario D so entra a partir de {formatCurrencyCompact(TAX_CONSTANTS.CLUBE_VALOR_MINIMO)}.
+                            </p>
+                          </div>
+
+                          <div>
+                            <Label className="text-xs text-[#577171]">Proventos anuais sem diferimento</Label>
+                            <NumericFormat
+                              customInput={Input}
+                              value={userInput.proventosAnuaisClube || ""}
+                              thousandSeparator="."
+                              decimalSeparator=","
+                              decimalScale={2}
+                              fixedDecimalScale
+                              prefix="R$ "
+                              allowNegative={false}
+                              placeholder={formatCurrencyCompact(resolveClubDeferredDistributions(userInput))}
+                              onValueChange={(values) =>
+                                setUserInput((prev) => ({
+                                  ...prev,
+                                  proventosAnuaisClube: values.floatValue || null,
+                                }))
+                              }
+                            />
+                            <p className="text-xs text-[#6b7280] mt-1">
+                              Fluxo anual que voce pagaria imposto se comprasse as acoes direto na PF.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-xs text-[#577171]">Numero de cotistas</Label>
+                            <Input
+                              type="number"
+                              min={TAX_CONSTANTS.CLUBE_MIN_COTISTAS}
+                              max={TAX_CONSTANTS.CLUBE_MAX_COTISTAS}
+                              value={userInput.cotistasClube}
+                              onChange={(event) =>
+                                setUserInput((prev) => ({
+                                  ...prev,
+                                  cotistasClube: Math.max(
+                                    TAX_CONSTANTS.CLUBE_MIN_COTISTAS,
+                                    Math.min(
+                                      TAX_CONSTANTS.CLUBE_MAX_COTISTAS,
+                                      Number(event.target.value) || TAX_CONSTANTS.CLUBE_MIN_COTISTAS,
+                                    ),
+                                  ),
+                                }))
+                              }
+                            />
+                          </div>
+
+                          <div>
+                            <Label className="text-xs text-[#577171]">
+                              Carteira em acoes BR ({userInput.percentualAcoesClube}%)
+                            </Label>
+                            <input
+                              type="range"
+                              min={0}
+                              max={100}
+                              step={1}
+                              value={userInput.percentualAcoesClube}
+                              onChange={(event) =>
+                                setUserInput((prev) => ({
+                                  ...prev,
+                                  percentualAcoesClube: Number(event.target.value),
+                                }))
+                              }
+                              className="mt-2 w-full accent-[#8b9a46]"
+                            />
+                            <p className="text-xs text-[#6b7280] mt-1">
+                              Com {TAX_CONSTANTS.CLUBE_ACOES_MIN_PERCENTUAL}% ou mais em acoes, a referencia fiscal tende a ser a faixa de 15%.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-xs text-[#577171]">
+                              Taxa anual da corretora ({formatPercent(userInput.taxaClubePercentual)})
+                            </Label>
+                            <input
+                              type="range"
+                              min={TAX_CONSTANTS.CLUBE_TAXA_MIN_PERCENTUAL}
+                              max={TAX_CONSTANTS.CLUBE_TAXA_MAX_PERCENTUAL}
+                              step={0.05}
+                              value={userInput.taxaClubePercentual}
+                              onChange={(event) =>
+                                setUserInput((prev) => ({
+                                  ...prev,
+                                  taxaClubePercentual: Number(event.target.value),
+                                }))
+                              }
+                              className="mt-2 w-full accent-[#2b3550]"
+                            />
+                            <p className="text-xs text-[#6b7280] mt-1">
+                              Faixa parametrizada: {formatPercent(TAX_CONSTANTS.CLUBE_TAXA_MIN_PERCENTUAL)} a {formatPercent(TAX_CONSTANTS.CLUBE_TAXA_MAX_PERCENTUAL)}.
+                            </p>
+                          </div>
+
+                          <div>
+                            <Label className="text-xs text-[#577171]">
+                              Crescimento anual da carteira ({formatPercent(userInput.crescimentoAnualClube)})
+                            </Label>
+                            <input
+                              type="range"
+                              min={0}
+                              max={20}
+                              step={0.5}
+                              value={userInput.crescimentoAnualClube}
+                              onChange={(event) =>
+                                setUserInput((prev) => ({
+                                  ...prev,
+                                  crescimentoAnualClube: Number(event.target.value),
+                                }))
+                              }
+                              className="mt-2 w-full accent-[#8b9a46]"
+                            />
+                            <p className="text-xs text-[#6b7280] mt-1">
+                              Usado para projetar o diferimento e a eficiencia media em 5 e 10 anos.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1612,7 +1943,7 @@ export default function DividendTaxCalculator() {
               <div>
                 <h2 className="text-2xl md:text-3xl text-[#262d3d]">Como pagar menos imposto sobre dividendos</h2>
                 <p className="text-sm md:text-base text-[#577171] mt-2">
-                  Simulamos as tres estrategias de maior impacto para sua realidade.
+                  Simulamos as {strategyCountText} estrategias de maior impacto para sua realidade.
                 </p>
               </div>
               <Card className="border-[#dce4c0] bg-white">
@@ -1766,13 +2097,218 @@ export default function DividendTaxCalculator() {
                   </CardContent>
                 </Card>
               )}
+
+              {showClubStrategy && (
+                <Card className="border-[#dce4c0] bg-white">
+                  <CardHeader>
+                    <CardTitle className="text-xl text-[#262d3d] flex items-center gap-2">
+                      <Landmark className="h-5 w-5 text-[#2b3550]" />
+                      Estrategia 4: Clube de investimento
+                    </CardTitle>
+                    <CardDescription>
+                      Estrutura compartilhada para reinvestir parte da carteira com diferimento e governanca.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4 text-sm text-[#374151]">
+                    <p>
+                      O clube funciona melhor para a parcela da carteira que pode continuar investida. Nao substitui a
+                      holding operacional e exige administrador, entre {TAX_CONSTANTS.CLUBE_MIN_COTISTAS} e{" "}
+                      {TAX_CONSTANTS.CLUBE_MAX_COTISTAS} cotistas e regras proprias de composicao.
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="rounded-lg border border-[#e5e7eb] p-3">
+                        <p className="text-xs text-[#577171]">Patrimonio no clube</p>
+                        <p className="font-semibold text-[#262d3d] text-base">
+                          {formatCurrency(clubPortfolioValue)}
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-[#e5e7eb] p-3">
+                        <p className="text-xs text-[#577171]">Proventos anuais diferidos</p>
+                        <p className="font-semibold text-[#262d3d] text-base">
+                          {formatCurrency(clubEligibleAnnual)}/ano
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-[#e5e7eb] p-3">
+                        <p className="text-xs text-[#577171]">Taxa / crescimento</p>
+                        <p className="font-semibold text-[#262d3d] text-base">
+                          {formatPercent(clubFeePercent)} / {formatPercent(clubGrowthPercent)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-[#e5e7eb] p-4">
+                      <div className="flex flex-col md:flex-row md:items-center gap-3 text-sm">
+                        <div className="rounded-md bg-[#f3f4f6] px-3 py-2">Carteira PF atual</div>
+                        <ArrowRight className="h-4 w-4 text-[#2b3550]" />
+                        <div className="rounded-md bg-[#f3f4f6] px-3 py-2">Clube com reinvestimento</div>
+                        <ArrowRight className="h-4 w-4 text-[#2b3550]" />
+                        <div className="rounded-md bg-[#f3f4f6] px-3 py-2">Resgate futuro / distribuicao</div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-[#dce4c0] bg-[#f6f9ec] p-3 space-y-1">
+                      <p className="font-semibold text-[#262d3d]">
+                        Economia imediata estimada: {formatCurrency(Math.max(0, scenarioD?.annualSavingsVsStatusQuo || 0))}/ano
+                      </p>
+                      <p className="text-xs text-[#577171]">
+                        Custo anual estimado do clube: {formatCurrency(scenarioD?.taxBreakdown.custoClube || 0)} ({formatPercent(clubFeePercent)} sobre o patrimonio).
+                      </p>
+                      <p className="text-xs text-[#577171]">
+                        Tributacao potencialmente diferida: {formatCurrency(scenarioD?.deferredTaxAnnual || 0)}/ano.
+                      </p>
+                      <p className="text-xs text-[#577171]">
+                        {clubStockAllocationPercent >= TAX_CONSTANTS.CLUBE_ACOES_MIN_PERCENTUAL
+                          ? `Premissa atual: clube com ${TAX_CONSTANTS.CLUBE_ACOES_MIN_PERCENTUAL}%+ em acoes brasileiras.`
+                          : "Carteira abaixo de 67% em acoes: valide a regra de tributacao aplicavel com contador."}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </section>
+
+            {clubProjection && (
+              <section className="space-y-4">
+                <div>
+                  <h2 className="text-2xl md:text-3xl text-[#262d3d]">
+                    Dashboard de diferimento: clube vs acoes na PF
+                  </h2>
+                  <p className="text-sm md:text-base text-[#577171] mt-2">
+                    Comparativo com taxa anual de {formatPercent(clubProjection.brokerageFeePercent)} sobre{" "}
+                    {formatCurrency(clubProjection.portfolioValue)} e crescimento de{" "}
+                    {formatPercent(clubProjection.annualGrowthPercent)} ao ano.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  <Card className="border-[#dce4c0] bg-white">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg text-[#262d3d]">Horizonte de 5 anos</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="rounded-lg border border-[#e5e7eb] p-3">
+                        <p className="text-xs text-[#577171]">Imposto PF sem diferimento</p>
+                        <p className="font-semibold text-[#262d3d]">
+                          {formatCurrency(clubProjection.summary5Years.directTaxCumulative)}
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-[#e5e7eb] p-3">
+                        <p className="text-xs text-[#577171]">Custos acumulados do clube</p>
+                        <p className="font-semibold text-[#262d3d]">
+                          {formatCurrency(clubProjection.summary5Years.clubFeeCumulative)}
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-[#e5e7eb] p-3">
+                        <p className="text-xs text-[#577171]">Diferimento liquido</p>
+                        <p className="font-semibold text-[#2f6b38]">
+                          {formatCurrency(clubProjection.summary5Years.netTaxBenefitCumulative)}
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-[#e5e7eb] p-3">
+                        <p className="text-xs text-[#577171]">Eficiencia tributaria media</p>
+                        <p className="font-semibold text-[#2b3550]">
+                          {formatPercent(clubProjection.summary5Years.averageTaxEfficiencyPercent)}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-[#dce4c0] bg-white">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg text-[#262d3d]">Horizonte de 10 anos</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 gap-3 text-sm">
+                      <div className="rounded-lg border border-[#e5e7eb] p-3">
+                        <p className="text-xs text-[#577171]">Imposto PF sem diferimento</p>
+                        <p className="font-semibold text-[#262d3d]">
+                          {formatCurrency(clubProjection.summary10Years.directTaxCumulative)}
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-[#e5e7eb] p-3">
+                        <p className="text-xs text-[#577171]">Custos acumulados do clube</p>
+                        <p className="font-semibold text-[#262d3d]">
+                          {formatCurrency(clubProjection.summary10Years.clubFeeCumulative)}
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-[#e5e7eb] p-3">
+                        <p className="text-xs text-[#577171]">Diferimento liquido</p>
+                        <p className="font-semibold text-[#2f6b38]">
+                          {formatCurrency(clubProjection.summary10Years.netTaxBenefitCumulative)}
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-[#e5e7eb] p-3">
+                        <p className="text-xs text-[#577171]">Eficiencia tributaria media</p>
+                        <p className="font-semibold text-[#2b3550]">
+                          {formatPercent(clubProjection.summary10Years.averageTaxEfficiencyPercent)}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card className="border-[#e5e7eb] bg-white">
+                  <CardHeader>
+                    <CardTitle className="text-lg text-[#262d3d]">
+                      Evolucao acumulada do imposto sem diferimento vs custo do clube
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ClubProjectionChart projection={clubProjection} />
+                  </CardContent>
+                </Card>
+
+                <Card className="border-[#e5e7eb] bg-white">
+                  <CardHeader>
+                    <CardTitle className="text-lg text-[#262d3d]">Tabela anual de eficiencia tributaria</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-[#e5e7eb] text-left text-[#577171]">
+                            <th className="py-2 pr-4">Ano</th>
+                            <th className="py-2 pr-4">Patrimonio projetado</th>
+                            <th className="py-2 pr-4">Imposto PF acum.</th>
+                            <th className="py-2 pr-4">Custos do clube acum.</th>
+                            <th className="py-2 pr-4">Beneficio liquido acum.</th>
+                            <th className="py-2">Eficiencia media</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {clubProjection.years.map((year) => (
+                            <tr key={`club-year-${year.year}`} className="border-b border-[#f0f0f0]">
+                              <td className="py-2 pr-4 font-medium text-[#262d3d]">{year.year}</td>
+                              <td className="py-2 pr-4 text-[#262d3d]">
+                                {formatCurrency(year.projectedPortfolioValue)}
+                              </td>
+                              <td className="py-2 pr-4 text-[#262d3d]">
+                                {formatCurrency(year.directTaxCumulative)}
+                              </td>
+                              <td className="py-2 pr-4 text-[#262d3d]">
+                                {formatCurrency(year.clubFeeCumulative)}
+                              </td>
+                              <td className="py-2 pr-4 text-[#2f6b38]">
+                                {formatCurrency(year.netTaxBenefitCumulative)}
+                              </td>
+                              <td className="py-2 text-[#2b3550]">
+                                {formatPercent(year.averageTaxEfficiencyPercent)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </section>
+            )}
 
             <section className="space-y-4">
               <div>
                 <h2 className="text-2xl md:text-3xl text-[#262d3d]">Resumo: quanto voce economiza em cada cenario</h2>
               </div>
-              <div className="flex gap-4 overflow-x-auto pb-1 lg:grid lg:grid-cols-3 lg:overflow-visible">
+              <div className="flex gap-4 overflow-x-auto pb-1 lg:grid lg:grid-cols-2 xl:grid-cols-4 lg:overflow-visible">
                 {result.scenarios.map((scenario) => {
                   const cfg = SCENARIO_CONFIG[scenario.code];
                   const maxTax = Math.max(1, ...result.scenarios.map((item) => item.totalTax));
@@ -1788,10 +2324,17 @@ export default function DividendTaxCalculator() {
                             "Dividendos ate R$ 50 mil",
                             jcpMonthly > 0 ? `JCP ${formatCurrency(jcpMonthly)}` : "JCP conforme capacidade",
                           ]
-                        : [
+                        : scenario.code === "C_HOLDING"
+                          ? [
                             "Dividendos via holding",
                             "Retirada mensal controlada",
                             "Diferimento de caixa",
+                          ]
+                          : [
+                            `Patrimonio ${formatCurrency(clubPortfolioValue)}`,
+                            `Proventos ${formatCurrency(clubEligibleAnnual)}/ano`,
+                            `${clubConfig?.participantsCount || TAX_CONSTANTS.CLUBE_MIN_COTISTAS} cotistas`,
+                            `Taxa ${formatPercent(clubFeePercent)}`,
                           ];
 
                   return (
@@ -1836,11 +2379,12 @@ export default function DividendTaxCalculator() {
                         <div>
                           <p className="text-xs text-[#6b7280]">Liquido no bolso</p>
                           <p className="font-semibold text-[#262d3d]">{formatCurrency(scenario.netToPartner)}/ano</p>
-                          {scenario.code === "C_HOLDING" && scenario.deferredTaxAnnual > 0 && (
+                          {(scenario.code === "C_HOLDING" || scenario.code === "D_CLUBE") &&
+                            scenario.deferredTaxAnnual > 0 && (
                             <p className="text-xs text-[#577171] mt-1">
                               + {formatCurrency(scenario.deferredTaxAnnual)}/ano em imposto diferido
                             </p>
-                          )}
+                            )}
                         </div>
 
                         <div>
@@ -1881,37 +2425,42 @@ export default function DividendTaxCalculator() {
                             <thead>
                               <tr className="border-b border-[#e5e7eb] text-left text-[#577171]">
                                 <th className="py-2 pr-4">Linha</th>
-                                <th className="py-2 pr-4">Cenario A</th>
-                                <th className="py-2 pr-4">Cenario B</th>
-                                <th className="py-2">Cenario C</th>
+                                {result.scenarios.map((scenario) => (
+                                  <th key={`head-${scenario.code}`} className="py-2 pr-4">
+                                    {SCENARIO_CONFIG[scenario.code].title}
+                                  </th>
+                                ))}
                               </tr>
                             </thead>
                             <tbody>
                               {BREAKDOWN_ROWS.map((row) => (
                                 <tr key={row.key} className="border-b border-[#f0f0f0]">
                                   <td className="py-2 pr-4 text-[#4b5563]">{row.label}</td>
-                                  <td className="py-2 pr-4 font-medium text-[#262d3d]">
-                                    {formatCurrency(scenarioA?.taxBreakdown[row.key] || 0)}
-                                  </td>
-                                  <td className="py-2 pr-4 font-medium text-[#262d3d]">
-                                    {formatCurrency(scenarioB?.taxBreakdown[row.key] || 0)}
-                                  </td>
-                                  <td className="py-2 font-medium text-[#262d3d]">
-                                    {formatCurrency(scenarioC?.taxBreakdown[row.key] || 0)}
-                                  </td>
+                                  {result.scenarios.map((scenario) => (
+                                    <td
+                                      key={`${scenario.code}-${row.key}`}
+                                      className="py-2 pr-4 font-medium text-[#262d3d]"
+                                    >
+                                      {formatCurrency(scenario.taxBreakdown[row.key] || 0)}
+                                    </td>
+                                  ))}
                                 </tr>
                               ))}
                               <tr className="border-t-2 border-[#d1d5db] bg-[#f9fafb]">
                                 <td className="py-2 pr-4 font-semibold">TOTAL</td>
-                                <td className="py-2 pr-4 font-semibold">{formatCurrency(scenarioA?.totalTax || 0)}</td>
-                                <td className="py-2 pr-4 font-semibold">{formatCurrency(scenarioB?.totalTax || 0)}</td>
-                                <td className="py-2 font-semibold">{formatCurrency(scenarioC?.totalTax || 0)}</td>
+                                {result.scenarios.map((scenario) => (
+                                  <td key={`total-${scenario.code}`} className="py-2 pr-4 font-semibold">
+                                    {formatCurrency(scenario.totalTax || 0)}
+                                  </td>
+                                ))}
                               </tr>
                               <tr className="bg-[#f9fafb]">
                                 <td className="py-2 pr-4 font-semibold">Aliquota efetiva</td>
-                                <td className="py-2 pr-4 font-semibold">{formatPercent(scenarioA?.totalTaxRate || 0)}</td>
-                                <td className="py-2 pr-4 font-semibold">{formatPercent(scenarioB?.totalTaxRate || 0)}</td>
-                                <td className="py-2 font-semibold">{formatPercent(scenarioC?.totalTaxRate || 0)}</td>
+                                {result.scenarios.map((scenario) => (
+                                  <td key={`rate-${scenario.code}`} className="py-2 pr-4 font-semibold">
+                                    {formatPercent(scenario.totalTaxRate || 0)}
+                                  </td>
+                                ))}
                               </tr>
                             </tbody>
                           </table>
@@ -2310,7 +2859,7 @@ export default function DividendTaxCalculator() {
                               {result.sourceBreakdown.map((source) => (
                                 <tr key={source.id} className="border-b border-[#f0f0f0]">
                                   <td className="py-2 pr-3">{source.name}</td>
-                                  <td className="py-2 pr-3">{source.sourceType}</td>
+                                  <td className="py-2 pr-3">{getSourceTypeLabel(source.sourceType)}</td>
                                   <td className="py-2 pr-3">{formatCurrency(source.monthlyAmount)}</td>
                                   <td className="py-2 pr-3">{source.monthsReceived}</td>
                                   <td className="py-2 pr-3">{formatCurrency(source.annualGrossDividends)}</td>

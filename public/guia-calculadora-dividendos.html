@@ -425,11 +425,42 @@
     <nav class="toc">
       <h2>Neste guia</h2>
       <ol>
+        <li><a href="#ativos-tributaveis">Quais ativos entram na tributação de 10%</a></li>
         <li><a href="#passo-a-passo">Passo a passo</a></li>
         <li><a href="#campos">O que preencher em cada campo</a></li>
         <li><a href="#exemplos">Exemplos práticos</a></li>
       </ol>
     </nav>
+
+    <section id="ativos-tributaveis" class="section">
+      <h2>Quais ativos entram na tributação de 10%</h2>
+      <p style="color: var(--ldc-neutral); margin-bottom: 1rem;">
+        A Lei 15.270/2025 estabelece IRRF de 10% sobre dividendos acima de R$ 50 mil/mês por fonte e IRPFM anual de até 10%. Nem todos os ativos são tributados.
+      </p>
+      <div class="fill-guide">
+        <table>
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Ativos</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="field-name"><strong>Entram na tributação</strong></td>
+              <td class="field-desc">Empresas brasileiras (S/A, LTDA), dividendos do exterior, outras fontes tributáveis.</td>
+            </tr>
+            <tr>
+              <td class="field-name"><strong>Não entram (isentos)</strong></td>
+              <td class="field-desc">FIIs (cotas em bolsa, mínimo 100 cotistas), Fiagros, FI-Infra, LCI, LCA, CRI, CRA, debêntures de infraestrutura, caderneta de poupança.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="color: var(--ldc-neutral); font-size: 0.95rem; margin-top: 1rem;">
+        Na calculadora, ao adicionar fontes em "Outras rendas" ou "Múltiplas empresas", use o tipo <strong>FII/Fiagro</strong> ou <strong>LCI/LCA/CRI/CRA/Poupança/FI-Infra</strong> para que esses valores sejam excluídos da base do IRRF e do IRPFM.
+      </p>
+    </section>
 
     <section id="passo-a-passo" class="section">
       <h2>Passo a passo</h2>
@@ -526,8 +557,8 @@
               <td class="field-desc">Salário CLT, aluguéis e FIIs em valores mensais. Só aparece se marcar "Sim".</td>
             </tr>
             <tr>
-              <td class="field-name">Múltiplas empresas</td>
-              <td class="field-desc">Nome da empresa e retirada mensal de cada fonte pagadora. Só aparece se marcar "Sim".</td>
+              <td class="field-name">Múltiplas fontes</td>
+              <td class="field-desc">Nome, tipo de fonte (empresa, FII/Fiagro, LCI/LCA/CRI/CRA, exterior, etc.) e retirada mensal de cada fonte. Só aparece se marcar "Sim".</td>
             </tr>
             <tr>
               <td class="field-name">Refinar dados</td>

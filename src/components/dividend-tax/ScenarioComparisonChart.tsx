@@ -11,6 +11,7 @@ const COLORS: Record<string, string> = {
   A_STATUS_QUO: "#577171",
   B_MIX_OTIMIZADO: "#98ab44",
   C_HOLDING: "#262d3d",
+  D_CLUBE: "#2b3550",
 };
 
 function formatCurrency(value: number) {
