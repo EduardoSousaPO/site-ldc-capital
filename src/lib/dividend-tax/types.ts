@@ -2,8 +2,13 @@ export type BeneficiaryResidency = "residente" | "nao_residente" | "pj";
 
 export type DividendSourceType =
   | "empresa_brasil"
+  | "acoes_dividendos"
   | "exterior"
   | "outros"
+  | "cdb_rdb_tesouro_titulos"
+  | "debentures_comuns"
+  | "fundos_etfs_tributaveis"
+  | "debentures_incentivadas_fi_infra"
   | "fii_fiagro"
   | "titulos_isentos";
 

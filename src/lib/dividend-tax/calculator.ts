@@ -1,5 +1,8 @@
 import { generateDividendTaxAlerts } from "@/lib/dividend-tax/alerts-engine";
-import { REDUTOR_TETO_BY_COMPANY_TYPE } from "@/lib/dividend-tax/constants";
+import {
+  REDUTOR_TETO_BY_COMPANY_TYPE,
+  getSourceTaxTreatment,
+} from "@/lib/dividend-tax/constants";
 import { TAX_CONSTANTS } from "@/lib/dividend-tax/tax-constants";
 import type {
   BusinessActivityType,
@@ -45,18 +48,12 @@ interface CorporateTaxEstimate {
 }
 
 function getSourceRules(sourceType: SourceCalculationResult["sourceType"]): SourceRules {
-  if (sourceType === "fii_fiagro" || sourceType === "titulos_isentos") {
-    return {
-      applyIrrf: false,
-      includeInIrpfmBase: false,
-      excludedByLaw: true,
-    };
-  }
+  const treatment = getSourceTaxTreatment(sourceType);
 
   return {
-    applyIrrf: true,
-    includeInIrpfmBase: true,
-    excludedByLaw: false,
+    applyIrrf: treatment.monthlyDividendRule,
+    includeInIrpfmBase: treatment.includeInIrpfmBase,
+    excludedByLaw: treatment.excludedByLaw,
   };
 }
 
@@ -489,19 +486,32 @@ function createClubProjection(
 
 function createScenarioComparisons(
   input: DividendTaxSimulationInput,
+  sourceBreakdown: SourceCalculationResult[],
   totalAnnualDividends: number,
   irpfmDueCurrent: number,
 ): ScenarioComparisonResult[] {
   const corporate = estimateCorporateTaxes(input.business);
-  const targetIncomeAnnual = estimatePartnerTargetAnnualDividends(input, totalAnnualDividends);
-  const monthlyTarget = targetIncomeAnnual / 12;
-
+  const monthlyRuleSources = sourceBreakdown.filter((source) =>
+    getSourceTaxTreatment(source.sourceType).monthlyDividendRule,
+  );
+  const annualFromRestructurableSources = monthlyRuleSources.reduce(
+    (acc, source) => acc + source.annualGrossDividends,
+    0,
+  );
+  const targetIncomeAnnual = estimatePartnerTargetAnnualDividends(
+    input,
+    annualFromRestructurableSources,
+  );
+  const fixedAnnualIncome = Math.max(0, totalAnnualDividends - targetIncomeAnnual);
   const irrfStatusQuo =
-    input.residency === "nao_residente"
-      ? targetIncomeAnnual * TAX_CONSTANTS.IRRF_ALIQUOTA
-      : input.residency === "residente" && monthlyTarget > TAX_CONSTANTS.IRRF_LIMIAR_MENSAL
+    annualFromRestructurableSources > 0
+      ? monthlyRuleSources.reduce((acc, source) => acc + source.annualIrrf, 0)
+      : input.residency === "nao_residente"
         ? targetIncomeAnnual * TAX_CONSTANTS.IRRF_ALIQUOTA
-        : 0;
+        : input.residency === "residente" &&
+            targetIncomeAnnual / 12 > TAX_CONSTANTS.IRRF_LIMIAR_MENSAL
+          ? targetIncomeAnnual * TAX_CONSTANTS.IRRF_ALIQUOTA
+          : 0;
 
   const breakdownA = createScenarioBreakdown({
     irpj: corporate.irpj,
@@ -514,8 +524,11 @@ function createScenarioComparisons(
   });
 
   const totalTaxA = corporate.total + irrfStatusQuo + irpfmDueCurrent;
-  const netToPartnerA = Math.max(0, targetIncomeAnnual - irrfStatusQuo - irpfmDueCurrent);
-  const baseRateDenominatorA = Math.max(1, targetIncomeAnnual + corporate.total);
+  const netToPartnerA = Math.max(
+    0,
+    targetIncomeAnnual + fixedAnnualIncome - irrfStatusQuo - irpfmDueCurrent,
+  );
+  const baseRateDenominatorA = Math.max(1, targetIncomeAnnual + fixedAnnualIncome + corporate.total);
 
   const proLaboreAnnual = Math.min(60_000, targetIncomeAnnual);
   const remainingAfterProLabore = Math.max(0, targetIncomeAnnual - proLaboreAnnual);
@@ -523,7 +536,15 @@ function createScenarioComparisons(
     remainingAfterProLabore,
     TAX_CONSTANTS.IRRF_LIMIAR_MENSAL * 12,
   );
-  const jcpAnnual = Math.max(0, remainingAfterProLabore - dividendsNoIrrfAnnual);
+  const canUseAdditionalJcp =
+    input.business.regimeTributario !== "simples" && !input.business.jaPagaJcp;
+  const jcpAnnual = canUseAdditionalJcp
+    ? Math.max(0, remainingAfterProLabore - dividendsNoIrrfAnnual)
+    : 0;
+  const dividendsTaxedAnnualB = Math.max(
+    0,
+    remainingAfterProLabore - dividendsNoIrrfAnnual - jcpAnnual,
+  );
   const inssPatronal = proLaboreAnnual * TAX_CONSTANTS.INSS_PATRONAL;
   const inssSocio =
     Math.min(
@@ -533,8 +554,10 @@ function createScenarioComparisons(
 
   const irrfDividendosB =
     input.residency === "nao_residente"
-      ? dividendsNoIrrfAnnual * TAX_CONSTANTS.IRRF_ALIQUOTA
-      : 0;
+      ? (dividendsNoIrrfAnnual + dividendsTaxedAnnualB) * TAX_CONSTANTS.IRRF_ALIQUOTA
+      : dividendsTaxedAnnualB > 0
+        ? dividendsTaxedAnnualB * TAX_CONSTANTS.IRRF_ALIQUOTA
+        : 0;
   const irrfJcp = jcpAnnual * TAX_CONSTANTS.JCP_IRRF;
   const beneficioFiscalJcp = jcpAnnual * TAX_CONSTANTS.REDUTOR_TETO_GERAL;
 
@@ -544,7 +567,7 @@ function createScenarioComparisons(
       Math.max(0, proLaboreAnnual - 60_000),
     exclusiveAnnualIncome: input.annualIncomes.otherExclusiveAnnualIncome + jcpAnnual,
     exemptAnnualIncome: input.annualIncomes.otherExemptAnnualIncome,
-    dividendsAnnual: dividendsNoIrrfAnnual,
+    dividendsAnnual: dividendsNoIrrfAnnual + dividendsTaxedAnnualB + fixedAnnualIncome,
     exclusionsAnnual: input.annualIncomes.excludedFromIrpfmAnnual,
     irrfCreditAnnual: irrfDividendosB,
   });
@@ -552,7 +575,7 @@ function createScenarioComparisons(
   const corporateTaxB = Math.max(0, corporate.total - beneficioFiscalJcp) + inssPatronal;
   const personalTaxB = inssSocio + irrfDividendosB + irrfJcp + irpfmB.due;
   const totalTaxB = corporateTaxB + personalTaxB;
-  const netToPartnerB = Math.max(0, targetIncomeAnnual - personalTaxB);
+  const netToPartnerB = Math.max(0, targetIncomeAnnual + fixedAnnualIncome - personalTaxB);
 
   const breakdownB = createScenarioBreakdown({
     irpj: corporate.irpj,
@@ -581,13 +604,18 @@ function createScenarioComparisons(
     taxableAnnualIncome: input.annualIncomes.otherTaxableAnnualIncome,
     exclusiveAnnualIncome: input.annualIncomes.otherExclusiveAnnualIncome,
     exemptAnnualIncome: input.annualIncomes.otherExemptAnnualIncome,
-    dividendsAnnual: holdingDistributionAnnual,
+    dividendsAnnual: holdingDistributionAnnual + fixedAnnualIncome,
     exclusionsAnnual: input.annualIncomes.excludedFromIrpfmAnnual,
     irrfCreditAnnual: irrfDividendosC,
   });
-  const holdingCostAnnual = TAX_CONSTANTS.HOLDING_CUSTO_MENSAL_ESTIMADO * 12;
+  const holdingCostAnnual = input.business.temHolding
+    ? 0
+    : TAX_CONSTANTS.HOLDING_CUSTO_MENSAL_ESTIMADO * 12;
   const totalTaxC = corporate.total + irrfDividendosC + irpfmC.due + holdingCostAnnual;
-  const netToPartnerC = Math.max(0, targetIncomeAnnual - irrfDividendosC - irpfmC.due);
+  const netToPartnerC = Math.max(
+    0,
+    targetIncomeAnnual + fixedAnnualIncome - irrfDividendosC - irpfmC.due,
+  );
   const deferredTaxAnnual = Math.max(
     0,
     irrfStatusQuo + irpfmDueCurrent - (irrfDividendosC + irpfmC.due),
@@ -604,10 +632,20 @@ function createScenarioComparisons(
     custoHolding: holdingCostAnnual,
   });
 
-  const breakEvenMonthly = Math.round(
-    TAX_CONSTANTS.HOLDING_CUSTO_MENSAL_ESTIMADO /
-      TAX_CONSTANTS.HOLDING_BREAK_EVEN_IRRF_ALIQUOTA,
-  );
+  const breakEvenMonthly = input.business.temHolding
+    ? 0
+    : Math.round(
+        TAX_CONSTANTS.HOLDING_CUSTO_MENSAL_ESTIMADO /
+          TAX_CONSTANTS.HOLDING_BREAK_EVEN_IRRF_ALIQUOTA,
+      );
+  const scenarioBDescription =
+    jcpAnnual > 0
+      ? "Pro-labore + dividendos limitados + JCP."
+      : input.business.regimeTributario === "simples"
+        ? "Pro-labore + dividendos ajustados (sem JCP no Simples)."
+        : input.business.jaPagaJcp
+          ? "Pro-labore + dividendos ajustados (JCP ja tratado no status atual)."
+          : "Pro-labore + dividendos ajustados.";
 
   const scenarios: ScenarioComparisonResult[] = [
     {
@@ -626,9 +664,10 @@ function createScenarioComparisons(
     {
       code: "B_MIX_OTIMIZADO",
       title: "Cenario B - Mix Otimizado",
-      description: "Pro-labore + dividendos limitados + JCP.",
+      description: scenarioBDescription,
       totalTax: totalTaxB,
-      totalTaxRate: (totalTaxB / Math.max(1, targetIncomeAnnual + corporateTaxB)) * 100,
+      totalTaxRate:
+        (totalTaxB / Math.max(1, targetIncomeAnnual + fixedAnnualIncome + corporateTaxB)) * 100,
       netToPartner: netToPartnerB,
       annualSavingsVsStatusQuo: totalTaxA - totalTaxB,
       deferredTaxAnnual: Math.max(0, irrfStatusQuo - irrfDividendosB),
@@ -641,7 +680,8 @@ function createScenarioComparisons(
       title: "Cenario C - Via Holding",
       description: "Diferimento via distribuicao controlada pela holding.",
       totalTax: totalTaxC,
-      totalTaxRate: (totalTaxC / Math.max(1, targetIncomeAnnual + corporate.total)) * 100,
+      totalTaxRate:
+        (totalTaxC / Math.max(1, targetIncomeAnnual + fixedAnnualIncome + corporate.total)) * 100,
       netToPartner: netToPartnerC,
       annualSavingsVsStatusQuo: totalTaxA - totalTaxC,
       deferredTaxAnnual,
@@ -671,14 +711,17 @@ function createScenarioComparisons(
       taxableAnnualIncome: input.annualIncomes.otherTaxableAnnualIncome,
       exclusiveAnnualIncome: input.annualIncomes.otherExclusiveAnnualIncome,
       exemptAnnualIncome: input.annualIncomes.otherExemptAnnualIncome,
-      dividendsAnnual: personalAnnualWithClub,
+      dividendsAnnual: personalAnnualWithClub + fixedAnnualIncome,
       exclusionsAnnual: input.annualIncomes.excludedFromIrpfmAnnual,
       irrfCreditAnnual: irrfDividendosD,
     });
 
     const clubCostAnnual = calculateClubAnnualCost(clube);
     const totalTaxD = corporate.total + irrfDividendosD + irpfmD.due + clubCostAnnual;
-    const netToPartnerD = Math.max(0, targetIncomeAnnual - irrfDividendosD - irpfmD.due);
+    const netToPartnerD = Math.max(
+      0,
+      targetIncomeAnnual + fixedAnnualIncome - irrfDividendosD - irpfmD.due,
+    );
     const deferredTaxClubAnnual = Math.max(
       0,
       irrfStatusQuo + irpfmDueCurrent - (irrfDividendosD + irpfmD.due),
@@ -703,7 +746,8 @@ function createScenarioComparisons(
       title: "Cenario D - Clube de Investimento",
       description: "Parcela da carteira migrada para clube com reinvestimento e diferimento.",
       totalTax: totalTaxD,
-      totalTaxRate: (totalTaxD / Math.max(1, targetIncomeAnnual + corporate.total)) * 100,
+      totalTaxRate:
+        (totalTaxD / Math.max(1, targetIncomeAnnual + fixedAnnualIncome + corporate.total)) * 100,
       netToPartner: netToPartnerD,
       annualSavingsVsStatusQuo: totalTaxA - totalTaxD,
       deferredTaxAnnual: deferredTaxClubAnnual,
@@ -725,20 +769,30 @@ function createScenarioComparisons(
 
 function createRegimeSimulation(
   input: DividendTaxSimulationInput,
+  sourceBreakdown: SourceCalculationResult[],
   totalAnnualDividends: number,
 ): RegimeSimulationResult[] {
   const regimes: BusinessTaxRegime[] = ["simples", "lucro_presumido", "lucro_real"];
+  const annualFromRestructurableSources = sourceBreakdown
+    .filter((source) => getSourceTaxTreatment(source.sourceType).monthlyDividendRule)
+    .reduce((acc, source) => acc + source.annualGrossDividends, 0);
+  const irrfFromCurrentSourcePattern = sourceBreakdown.reduce(
+    (acc, source) => acc + source.annualIrrf,
+    0,
+  );
 
   const results = regimes.map((regime) => {
     const corporate = estimateCorporateTaxes(input.business, regime);
     const targetIncomeAnnual = estimatePartnerTargetAnnualDividends(input, totalAnnualDividends);
-    const monthlyTarget = targetIncomeAnnual / 12;
     const irrf =
-      input.residency === "nao_residente"
-        ? targetIncomeAnnual * TAX_CONSTANTS.IRRF_ALIQUOTA
-        : input.residency === "residente" && monthlyTarget > TAX_CONSTANTS.IRRF_LIMIAR_MENSAL
+      annualFromRestructurableSources > 0
+        ? irrfFromCurrentSourcePattern
+        : input.residency === "nao_residente"
           ? targetIncomeAnnual * TAX_CONSTANTS.IRRF_ALIQUOTA
-          : 0;
+          : input.residency === "residente" &&
+              targetIncomeAnnual / 12 > TAX_CONSTANTS.IRRF_LIMIAR_MENSAL
+            ? targetIncomeAnnual * TAX_CONSTANTS.IRRF_ALIQUOTA
+            : 0;
 
     const irpfm = calculateScenarioIrpfm(input, {
       taxableAnnualIncome: input.annualIncomes.otherTaxableAnnualIncome,
@@ -839,17 +893,19 @@ export function calculateDividendTax(
         ? "Renda anual >= R$ 1.200.000 -> aliquota teto 10%"
         : "Aliquota = ((Renda - 600.000) / 600.000) x 10%";
 
-  const scenarios = createScenarioComparisons(input, totalAnnualDividends, irpfmDue);
+  const scenarios = createScenarioComparisons(input, sourceBreakdown, totalAnnualDividends, irpfmDue);
   const clubScenario = scenarios.find((scenario) => scenario.code === "D_CLUBE");
   const clubProjection = clubScenario
     ? createClubProjection(input.business.clubeInvestimento, clubScenario.deferredTaxAnnual)
     : null;
-  const regimeSimulation = createRegimeSimulation(input, totalAnnualDividends);
+  const regimeSimulation = createRegimeSimulation(input, sourceBreakdown, totalAnnualDividends);
 
   const assumptions: string[] = [
     "Simulacao educacional baseada na Lei 15.270/2025 e parametros informados.",
     "No cenario B foi assumido pro-labore de R$ 5.000/mes com limite de dividendos em R$ 50.000/mes.",
-    "No cenario C foi assumido diferimento via holding com custo mensal estimado de R$ 1.500.",
+    input.business.temHolding
+      ? "No cenario C foi assumido que a holding ja existe no grupo, sem custo incremental de estrutura."
+      : "No cenario C foi assumido diferimento via holding com custo mensal estimado de R$ 1.500.",
     "Resultados nao substituem parecer juridico/contabil individual.",
   ];
 
@@ -858,6 +914,11 @@ export function calculateDividendTax(
       assumptions.length - 1,
       0,
       `No cenario D foi assumido clube com patrimonio inicial de ${formatCurrency(input.business.clubeInvestimento.portfolioValue)}, taxa anual de ${formatPercent(input.business.clubeInvestimento.brokerageFeePercent)} e diferimento sobre ${formatCurrency(input.business.clubeInvestimento.annualDeferredDistributions)} por ano.`,
+    );
+    assumptions.splice(
+      assumptions.length - 1,
+      0,
+      "No dashboard do clube, o beneficio representa diferimento (adiamento) de imposto; tributacao de resgate/saida nao foi modelada.",
     );
     if (
       input.business.clubeInvestimento.stockAllocationPercent <

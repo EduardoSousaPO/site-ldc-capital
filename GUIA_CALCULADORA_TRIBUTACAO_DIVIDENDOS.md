@@ -35,6 +35,11 @@ Observacao:
 - Imposto total estimado (IRRF + IRPFM);
 - Valor liquido anual e impacto percentual.
 
+Regra de preenchimento para evitar dupla contagem:
+
+- se o usuario preencher o bloco de **fontes detalhadas**, a calculadora usa essas fontes como base dos dividendos;
+- nesse caso, o campo inicial de retirada mensal passa a ser apenas referencia visual e nao e somado novamente.
+
 ### 2.2 Camadas de analise
 
 - Composicao da renda global (grafico);
@@ -67,19 +72,29 @@ Observacao:
 ### 3.1.1 Ativos que entram na tributacao de 10% (IRRF e IRPFM)
 
 - **Empresas brasileiras** (S/A, LTDA) — dividendos de acoes;
+- **Dividendos de acoes brasileiras** recebidos via corretora;
 - **Fonte no exterior** — dividendos de empresas estrangeiras;
 - **Outras fontes tributaveis** — dividendos de outras origens sujeitas à lei.
 
-### 3.1.2 Ativos que NAO entram (isentos/excluidos)
+### 3.1.2 Ativos que entram na base anual do IRPFM (sem regra mensal de R$ 50 mil)
+
+- **CDB/RDB/Tesouro Direto e titulos de renda fixa tributaveis**;
+- **Debentures comuns (nao incentivadas)**;
+- **Fundos e ETFs tributaveis** (quando nao enquadrados em isencao legal).
+
+### 3.1.3 Ativos que NAO entram (isentos/excluidos)
 
 - **FIIs** — desde que cotas negociadas em bolsa e fundo com pelo menos 100 cotistas;
 - **Fiagros**;
-- **FI-Infra**;
+- **Debentures incentivadas e FI-Infra**;
 - **LCI, LCA, CRI, CRA**;
-- **Debentures de infraestrutura**;
 - **Caderneta de poupanca**.
 
-Na calculadora, ao adicionar fontes, use o tipo "FII/Fiagro" ou "LCI/LCA/CRI/CRA/Poupanca/FI-Infra" para que esses valores sejam excluidos da base do IRRF e do IRPFM.
+Na calculadora, cada fonte mostra dois indicadores em tempo real:
+- **Regra R$ 50 mil (IRRF mensal)**: SIM/NAO;
+- **Base IRPFM anual**: ENTRA/NAO ENTRA.
+
+Isso reduz erro de classificacao e deixa nitido o efeito de cada ativo no calculo.
 
 ## 3.2 IRPFM anual
 
@@ -106,6 +121,11 @@ Deducoes consideradas:
 - tributacao definitiva;
 - outras deducoes manuais;
 - redutor por empresa.
+
+Tratamento de outras rendas no fluxo simplificado:
+
+- salario CLT e alugueis entram como **rendimentos tributaveis anuais**;
+- FIIs seguem como fonte separada e, quando isentos/requisitos atendidos, ficam fora da base do IRPFM.
 
 Resultado final:
 
@@ -136,12 +156,15 @@ Para cada empresa informada no bloco de redutor:
 - dividendos limitados ao limiar mensal;
 - restante estimado como JCP;
 - considera INSS patronal/socio, IRRF de JCP e beneficio fiscal estimado.
+- se o regime informado for **Simples**, o cenario B nao forca JCP;
+- se marcado **"empresa ja paga JCP"**, o cenario B nao assume JCP incremental.
 
 ## 4.3 Cenario C - Via Holding
 
 - distribuicao controlada via holding com diferimento;
 - adiciona custo anual estimado da holding;
 - apresenta diferimento estimado e break-even mensal.
+- se marcado **"ja existe holding no grupo"**, o custo incremental da estrutura e zerado no cenario C.
 
 ## 4.4 Cenario D - Clube de Investimento
 
@@ -159,8 +182,13 @@ Para cada empresa informada no bloco de redutor:
 - gera painel comparativo com:
   - imposto acumulado sem diferimento;
   - custo acumulado do clube;
-  - beneficio liquido acumulado;
+  - beneficio liquido acumulado (pre-resgate);
   - eficiencia tributaria media em 5 e 10 anos.
+
+Observacao de modelagem:
+
+- no painel do clube, o beneficio representa **diferimento (adiamento) de imposto**;
+- tributacao de resgate/saida futura nao e modelada nesse comparativo.
 
 Saidas por cenario:
 

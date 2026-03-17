@@ -6,7 +6,7 @@ import type {
   ScenarioTaxBreakdown,
 } from "@/lib/dividend-tax/types";
 import { formatCurrency, formatPercent } from "@/lib/dividend-tax/calculator";
-import { getSourceTypeLabel } from "@/lib/dividend-tax/constants";
+import { getSourceTaxTreatment, getSourceTypeLabel } from "@/lib/dividend-tax/constants";
 
 interface ReportMeta {
   leadName?: string;
@@ -125,6 +125,8 @@ export function generateDividendTaxReportHtml(
       <tr>
         <td>${escapeHtml(source.name)}</td>
         <td>${escapeHtml(getSourceTypeLabel(source.sourceType))}</td>
+        <td class="right">${getSourceTaxTreatment(source.sourceType).monthlyDividendRule ? "Sim" : "Nao"}</td>
+        <td class="right">${getSourceTaxTreatment(source.sourceType).includeInIrpfmBase ? "Entra" : "Nao entra"}</td>
         <td class="right">${formatCurrency(source.monthlyAmount)}</td>
         <td class="right">${source.monthsReceived}</td>
         <td class="right">${formatCurrency(source.annualGrossDividends)}</td>
@@ -887,6 +889,8 @@ export function generateDividendTaxReportHtml(
           <tr>
             <th>Fonte pagadora</th>
             <th>Tipo</th>
+            <th class="right">Regra R$ 50 mil</th>
+            <th class="right">Base IRPFM</th>
             <th class="right">Mensal</th>
             <th class="right">Meses</th>
             <th class="right">Anual</th>
@@ -894,7 +898,7 @@ export function generateDividendTaxReportHtml(
           </tr>
         </thead>
         <tbody>
-          ${sourceRows || `<tr><td colspan="6">Sem fontes informadas.</td></tr>`}
+          ${sourceRows || `<tr><td colspan="8">Sem fontes informadas.</td></tr>`}
         </tbody>
       </table>
     </section>

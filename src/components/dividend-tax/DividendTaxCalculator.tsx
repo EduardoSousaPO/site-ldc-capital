@@ -65,7 +65,11 @@ import type {
   ScenarioTaxBreakdown,
 } from "@/lib/dividend-tax/types";
 import { TAX_CONSTANTS } from "@/lib/dividend-tax/tax-constants";
-import { SOURCE_TYPE_OPTIONS, getSourceTypeLabel } from "@/lib/dividend-tax/constants";
+import {
+  SOURCE_TYPE_OPTIONS,
+  getSourceTaxTreatment,
+  getSourceTypeLabel,
+} from "@/lib/dividend-tax/constants";
 import IncomeCompositionChart from "@/components/dividend-tax/IncomeCompositionChart";
 import RegimeComparisonChart from "@/components/dividend-tax/RegimeComparisonChart";
 import {
@@ -337,6 +341,31 @@ function createAdditionalCompany(index: number): AdditionalCompany {
   };
 }
 
+function getSourcePlaceholder(sourceType: DividendSourceType, index: number) {
+  switch (sourceType) {
+    case "empresa_brasil":
+      return `Empresa ${index}`;
+    case "acoes_dividendos":
+      return "Ex: Dividendos PETR4";
+    case "cdb_rdb_tesouro_titulos":
+      return "Ex: CDB / Tesouro Selic";
+    case "debentures_comuns":
+      return "Ex: Debenture XYZ";
+    case "fundos_etfs_tributaveis":
+      return "Ex: ETF/fundo tributavel";
+    case "debentures_incentivadas_fi_infra":
+      return "Ex: Debenture incentivada";
+    case "fii_fiagro":
+      return "Ex: FII HGLG11";
+    case "titulos_isentos":
+      return "Ex: LCI/LCA/CRI/CRA";
+    case "exterior":
+      return "Ex: Dividendos no exterior";
+    default:
+      return "Ex: Fonte adicional";
+  }
+}
+
 function estimateMonthlyIrrfForResident(monthlyAmount: number) {
   if (monthlyAmount > TAX_CONSTANTS.IRRF_LIMIAR_MENSAL) {
     return monthlyAmount * TAX_CONSTANTS.IRRF_ALIQUOTA;
@@ -420,7 +449,8 @@ function humanizeAlert(
   const totalMonthlyDividends = result.totalAnnualDividends / 12;
   const thresholdSource = result.sourceBreakdown.find(
     (source) =>
-      source.sourceType === "empresa_brasil" && source.monthlyAmount > TAX_CONSTANTS.IRRF_LIMIAR_MENSAL,
+      getSourceTaxTreatment(source.sourceType).monthlyDividendRule &&
+      source.monthlyAmount > TAX_CONSTANTS.IRRF_LIMIAR_MENSAL,
   );
 
   switch (alert.code) {
@@ -437,16 +467,16 @@ function humanizeAlert(
         estimatedAnnualSavings: alert.estimatedAnnualSavings,
       };
     }
-    case "fii_excluido_irpfm": {
-      const fiiMonthly = result.sourceBreakdown
-        .filter((source) => source.sourceType === "fii_fiagro")
+    case "fontes_excluidas_irpfm": {
+      const excludedMonthly = result.sourceBreakdown
+        .filter((source) => !getSourceTaxTreatment(source.sourceType).includeInIrpfmBase)
         .reduce((acc, source) => acc + source.monthlyAmount, 0);
       return {
         code: alert.code,
-        title: "Fundos imobiliarios seguem protegidos",
+        title: "Fontes incentivadas ficaram fora da base",
         description:
-          `${formatCurrencyCompact(fiiMonthly)}/mes em FIIs ficaram fora da base do imposto minimo. ` +
-          "Manter essa alocacao pode ajudar na eficiencia tributaria.",
+          `${formatCurrencyCompact(excludedMonthly)}/mes foram classificados como rendimentos excluidos da base do imposto minimo. ` +
+          "Essa separacao evita inflar a base anual do IRPFM.",
         action: null,
         severity: "success",
       };
@@ -623,7 +653,7 @@ function ClubProjectionChart({
           <Line
             type="monotone"
             dataKey="diferimentoLiquido"
-            name="Diferimento liquido"
+            name="Diferimento liquido (pre-resgate)"
             stroke="#8b9a46"
             strokeWidth={3}
             dot={false}
@@ -641,16 +671,22 @@ function traduzirParaEngine(input: UserInputSimplificado): DividendTaxSimulation
   const salarioAnual = input.temOutrasRendas ? input.outrasRendas.salarioCLT * 12 : 0;
   const alugueisAnual = input.temOutrasRendas ? input.outrasRendas.alugueis * 12 : 0;
   const fiisMensal = input.temOutrasRendas ? input.outrasRendas.fiis : 0;
+  const fontesDetalhadas = input.multiplasEmpresas
+    ? input.empresasAdicionais.filter((empresa) => empresa.valorMensal > 0)
+    : [];
+  const usarFontesDetalhadas = fontesDetalhadas.length > 0;
 
-  const fontes: DividendSourceInput[] = [
-    {
+  const fontes: DividendSourceInput[] = [];
+
+  if (!usarFontesDetalhadas) {
+    fontes.push({
       id: "empresa-principal",
       name: "Empresa principal",
       monthlyAmount: Math.max(0, input.retiradaMensal),
       monthsReceived: 12,
       sourceType: "empresa_brasil",
-    },
-  ];
+    });
+  }
 
   if (fiisMensal > 0) {
     fontes.push({
@@ -662,27 +698,35 @@ function traduzirParaEngine(input: UserInputSimplificado): DividendTaxSimulation
     });
   }
 
-  if (input.multiplasEmpresas) {
-    input.empresasAdicionais
-      .filter((empresa) => empresa.valorMensal > 0)
-      .forEach((empresa) => {
-        fontes.push({
-          id: empresa.id,
-          name: empresa.nome.trim() || "Fonte adicional",
-          monthlyAmount: empresa.valorMensal,
-          monthsReceived: 12,
-          sourceType: empresa.sourceType,
-        });
+  if (usarFontesDetalhadas) {
+    fontesDetalhadas.forEach((empresa) => {
+      fontes.push({
+        id: empresa.id,
+        name: empresa.nome.trim() || "Fonte adicional",
+        monthlyAmount: empresa.valorMensal,
+        monthsReceived: 12,
+        sourceType: empresa.sourceType,
       });
+    });
+  }
+
+  if (fontes.length === 0) {
+    fontes.push({
+      id: "empresa-principal",
+      name: "Empresa principal",
+      monthlyAmount: Math.max(0, input.retiradaMensal),
+      monthsReceived: 12,
+      sourceType: "empresa_brasil",
+    });
   }
 
   return {
     residency: "residente",
     sources: fontes,
     annualIncomes: {
-      otherTaxableAnnualIncome: salarioAnual,
+      otherTaxableAnnualIncome: salarioAnual + alugueisAnual,
       otherExclusiveAnnualIncome: 0,
-      otherExemptAnnualIncome: alugueisAnual,
+      otherExemptAnnualIncome: 0,
       excludedFromIrpfmAnnual: 0,
     },
     deductions: {
@@ -989,15 +1033,26 @@ export default function DividendTaxCalculator() {
   const scenarioC = scenariosByCode?.C_HOLDING || null;
   const scenarioD = scenariosByCode?.D_CLUBE || null;
 
-  const proLaboreMensal = Math.min(5_000, userInput.retiradaMensal);
-  const dividendosSemProlabore = userInput.retiradaMensal;
-  const dividendosComProlabore = Math.max(0, userInput.retiradaMensal - proLaboreMensal);
-  const irrfSemProlabore = estimateMonthlyIrrfForResident(dividendosSemProlabore);
-  const irrfComProlabore = estimateMonthlyIrrfForResident(dividendosComProlabore);
-  const inssSocioEstimado = Math.min(
-    proLaboreMensal * TAX_CONSTANTS.INSS_EMPREGADO_ALIQUOTA,
-    TAX_CONSTANTS.INSS_TETO_2026,
-  );
+  const dividendosMensaisEstrategia = result
+    ? result.sourceBreakdown
+      .filter((source) => getSourceTaxTreatment(source.sourceType).monthlyDividendRule)
+      .reduce((acc, source) => acc + source.monthlyAmount, 0)
+    : userInput.retiradaMensal;
+  const proLaboreMensal = Math.min(5_000, dividendosMensaisEstrategia);
+  const dividendosSemProlabore = dividendosMensaisEstrategia;
+  const dividendosComProlabore = Math.max(0, dividendosSemProlabore - proLaboreMensal);
+  const irrfSemProlabore = scenarioA
+    ? scenarioA.taxBreakdown.irrfDividendos / 12
+    : estimateMonthlyIrrfForResident(dividendosSemProlabore);
+  const irrfComProlabore = scenarioB
+    ? scenarioB.taxBreakdown.irrfDividendos / 12
+    : estimateMonthlyIrrfForResident(dividendosComProlabore);
+  const inssSocioEstimado = scenarioB
+    ? scenarioB.taxBreakdown.inssSocio / 12
+    : Math.min(
+      proLaboreMensal * TAX_CONSTANTS.INSS_EMPREGADO_ALIQUOTA,
+      TAX_CONSTANTS.INSS_TETO_2026,
+    );
 
   const jcpAnnual = scenarioB ? scenarioB.taxBreakdown.irrfJcp / TAX_CONSTANTS.JCP_IRRF : 0;
   const jcpMonthly = jcpAnnual / 12;
@@ -1006,7 +1061,7 @@ export default function DividendTaxCalculator() {
   const jcpNetGainMonthly = jcpCompanyBenefitMonthly - jcpPersonalTaxMonthly;
 
   const monthlyTotalDividends = result ? result.totalAnnualDividends / 12 : 0;
-  const showJcpStrategy = userInput.regimeTributario !== "simples";
+  const showJcpStrategy = jcpAnnual > 0 || userInput.regimeTributario === "nao_sei";
   const showHoldingStrategy = monthlyTotalDividends > 30_000;
 
   const holdingDistributionAnnual = result
@@ -1024,7 +1079,8 @@ export default function DividendTaxCalculator() {
   const clubGrowthPercent =
     clubConfig?.annualGrowthPercent || TAX_CONSTANTS.CLUBE_CRESCIMENTO_PADRAO_PERCENTUAL;
   const showClubStrategy = Boolean(scenarioD && clubConfig?.enabled);
-  const strategyCountText = showClubStrategy ? "quatro" : "tres";
+  const strategyCount = 2 + (showJcpStrategy ? 1 : 0) + (showClubStrategy ? 1 : 0);
+  const strategyCountText = strategyCount === 4 ? "quatro" : strategyCount === 3 ? "tres" : "duas";
 
   return (
     <TooltipProvider delayDuration={120}>
@@ -1100,6 +1156,13 @@ export default function DividendTaxCalculator() {
                   <p className="text-xs text-[#577171] mt-2">
                     Inclua dividendos, pro-labore e qualquer retirada recorrente.
                   </p>
+                  {userInput.multiplasEmpresas &&
+                    userInput.empresasAdicionais.some((empresa) => empresa.valorMensal > 0) && (
+                      <p className="text-xs text-amber-700 mt-1">
+                        Como as fontes detalhadas estao preenchidas abaixo, este campo vira referencia e nao soma no
+                        calculo para evitar dupla contagem.
+                      </p>
+                    )}
                 </div>
 
                 <div className="space-y-3">
@@ -1298,7 +1361,7 @@ export default function DividendTaxCalculator() {
 
                 <div className="space-y-3">
                   <Label className="text-sm font-semibold text-[#262d3d]">
-                    Tem mais de uma fonte de dividendos?
+                    Tem mais fontes de renda/dividendos financeiros?
                   </Label>
                   <div className="inline-flex rounded-full border border-[#d1d5db] bg-white p-1">
                     <button
@@ -1338,90 +1401,128 @@ export default function DividendTaxCalculator() {
                   {userInput.multiplasEmpresas && (
                     <div className="space-y-3 rounded-xl border border-[#e5e7eb] bg-white p-4">
                       <p className="text-xs text-[#577171] mb-2">
-                        Escolha o tipo de fonte: FII/Fiagro e LCI/LCA/CRI/CRA/Poupança/FI-Infra ficam fora da base IRRF e IRPFM.
+                        Classifique cada fonte para a ferramenta separar automaticamente: regra mensal dos
+                        dividendos (R$ 50 mil) e composicao da base anual do IRPFM.
                       </p>
+                      <p className="text-xs text-[#577171] mb-2">
+                        Quando voce preencher valores aqui, o sistema usa apenas estas fontes no calculo de
+                        dividendos.
+                      </p>
+                      <div className="rounded-lg border border-[#d1d5db] bg-[#f9faf7] p-3">
+                        <p className="text-xs font-semibold text-[#262d3d] mb-2">Guia rapido por tipo de ativo</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {SOURCE_TYPE_OPTIONS.map((opt) => {
+                            const treatment = getSourceTaxTreatment(opt.value);
+                            return (
+                              <div
+                                key={`guide-${opt.value}`}
+                                className="rounded-md border border-[#e5e7eb] bg-white p-2"
+                              >
+                                <p className="text-xs font-medium text-[#374151]">{opt.label}</p>
+                                <p className="text-[11px] text-[#6b7280] mt-1">
+                                  Regra R$ 50 mil:{" "}
+                                  <strong>{treatment.monthlyDividendRule ? "SIM" : "NAO"}</strong> | Base IRPFM:{" "}
+                                  <strong>{treatment.includeInIrpfmBase ? "ENTRA" : "NAO ENTRA"}</strong>
+                                </p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
                       {userInput.empresasAdicionais.map((empresa, index) => (
-                        <div key={empresa.id} className="grid grid-cols-1 md:grid-cols-[1fr_200px_180px_auto] gap-3 items-end">
-                          <div>
-                            <Label className="text-xs text-[#577171]">Nome da fonte</Label>
-                            <Input
-                              value={empresa.nome}
-                              onChange={(event) =>
+                        <div key={empresa.id} className="space-y-2 rounded-lg border border-[#eef0ea] p-3">
+                          <div className="grid grid-cols-1 md:grid-cols-[1fr_230px_180px_auto] gap-3 items-end">
+                            <div>
+                              <Label className="text-xs text-[#577171]">Nome da fonte</Label>
+                              <Input
+                                value={empresa.nome}
+                                onChange={(event) =>
+                                  setUserInput((prev) => ({
+                                    ...prev,
+                                    empresasAdicionais: prev.empresasAdicionais.map((item) =>
+                                      item.id === empresa.id ? { ...item, nome: event.target.value } : item,
+                                    ),
+                                  }))
+                                }
+                                placeholder={getSourcePlaceholder(empresa.sourceType, index + 1)}
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-[#577171]">Tipo de fonte</Label>
+                              <Select
+                                value={empresa.sourceType}
+                                onValueChange={(value: DividendSourceType) =>
+                                  setUserInput((prev) => ({
+                                    ...prev,
+                                    empresasAdicionais: prev.empresasAdicionais.map((item) =>
+                                      item.id === empresa.id ? { ...item, sourceType: value } : item,
+                                    ),
+                                  }))
+                                }
+                              >
+                                <SelectTrigger className="w-full">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {SOURCE_TYPE_OPTIONS.map((opt) => (
+                                    <SelectItem key={opt.value} value={opt.value}>
+                                      {opt.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-[#577171]">Retirada mensal</Label>
+                              <NumericFormat
+                                customInput={Input}
+                                value={empresa.valorMensal}
+                                thousandSeparator="."
+                                decimalSeparator=","
+                                decimalScale={2}
+                                fixedDecimalScale
+                                prefix="R$ "
+                                allowNegative={false}
+                                onValueChange={(values) =>
+                                  setUserInput((prev) => ({
+                                    ...prev,
+                                    empresasAdicionais: prev.empresasAdicionais.map((item) =>
+                                      item.id === empresa.id
+                                        ? { ...item, valorMensal: values.floatValue || 0 }
+                                        : item,
+                                    ),
+                                  }))
+                                }
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              onClick={() =>
                                 setUserInput((prev) => ({
                                   ...prev,
-                                  empresasAdicionais: prev.empresasAdicionais.map((item) =>
-                                    item.id === empresa.id ? { ...item, nome: event.target.value } : item,
-                                  ),
+                                  empresasAdicionais:
+                                    prev.empresasAdicionais.length === 1
+                                      ? prev.empresasAdicionais
+                                      : prev.empresasAdicionais.filter((item) => item.id !== empresa.id),
                                 }))
                               }
-                              placeholder={empresa.sourceType === "empresa_brasil" ? `Empresa ${index + 1}` : "Ex: FII XYZ"}
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs text-[#577171]">Tipo de fonte</Label>
-                            <Select
-                              value={empresa.sourceType}
-                              onValueChange={(value: DividendSourceType) =>
-                                setUserInput((prev) => ({
-                                  ...prev,
-                                  empresasAdicionais: prev.empresasAdicionais.map((item) =>
-                                    item.id === empresa.id ? { ...item, sourceType: value } : item,
-                                  ),
-                                }))
-                              }
+                              disabled={userInput.empresasAdicionais.length === 1}
                             >
-                              <SelectTrigger className="w-full">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {SOURCE_TYPE_OPTIONS.map((opt) => (
-                                  <SelectItem key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
-                          <div>
-                            <Label className="text-xs text-[#577171]">Retirada mensal</Label>
-                            <NumericFormat
-                              customInput={Input}
-                              value={empresa.valorMensal}
-                              thousandSeparator="."
-                              decimalSeparator=","
-                              decimalScale={2}
-                              fixedDecimalScale
-                              prefix="R$ "
-                              allowNegative={false}
-                              onValueChange={(values) =>
-                                setUserInput((prev) => ({
-                                  ...prev,
-                                  empresasAdicionais: prev.empresasAdicionais.map((item) =>
-                                    item.id === empresa.id
-                                      ? { ...item, valorMensal: values.floatValue || 0 }
-                                      : item,
-                                  ),
-                                }))
-                              }
-                            />
-                          </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={() =>
-                              setUserInput((prev) => ({
-                                ...prev,
-                                empresasAdicionais:
-                                  prev.empresasAdicionais.length === 1
-                                    ? prev.empresasAdicionais
-                                    : prev.empresasAdicionais.filter((item) => item.id !== empresa.id),
-                              }))
-                            }
-                            disabled={userInput.empresasAdicionais.length === 1}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <p className="text-[11px] text-[#6b7280]">
+                            {(() => {
+                              const treatment = getSourceTaxTreatment(empresa.sourceType);
+                              return `Regra R$ 50 mil: ${
+                                treatment.monthlyDividendRule ? "SIM" : "NAO"
+                              } | Base IRPFM: ${
+                                treatment.includeInIrpfmBase ? "ENTRA" : "NAO ENTRA"
+                              }`;
+                            })()}
+                          </p>
                         </div>
                       ))}
 
@@ -1931,7 +2032,7 @@ export default function DividendTaxCalculator() {
                         Sua estrutura ja esta otimizada para o seu perfil atual.
                       </p>
                       <p className="text-sm text-[#35563a]">
-                        Nesta simulacao, os mecanismos de credito e redutor neutralizaram imposto adicional.
+                        Nesta simulacao, nenhum cenario alternativo reduziu a carga total em relacao ao status quo.
                       </p>
                     </div>
                   )}
@@ -1978,13 +2079,13 @@ export default function DividendTaxCalculator() {
                       Economia estimada no Cenario B: {formatCurrency(Math.max(0, scenarioB?.annualSavingsVsStatusQuo || 0))}/ano
                     </p>
                     <p className="text-xs text-[#577171] mt-1">
-                      Valor consolidado com combinacao de pro-labore, limite de dividendos e JCP.
+                      Valor consolidado com combinacao de pro-labore, limite de dividendos e JCP (quando aplicavel).
                     </p>
                   </div>
                 </CardContent>
               </Card>
 
-              {(showJcpStrategy || userInput.regimeTributario === "nao_sei") && (
+              {showJcpStrategy && (
                 <Card className="border-[#dce4c0] bg-white">
                   <CardHeader>
                     <CardTitle className="text-xl text-[#262d3d] flex items-center gap-2">
@@ -2065,7 +2166,11 @@ export default function DividendTaxCalculator() {
                         </p>
                       </div>
                       <div className="rounded-lg border border-[#e5e7eb] p-3">
-                        <p className="text-xs text-[#577171]">Com holding + custos estimados</p>
+                        <p className="text-xs text-[#577171]">
+                          {userInput.jaTemHolding
+                            ? "Com holding ja existente"
+                            : "Com holding + custos estimados"}
+                        </p>
                         <p className="font-semibold text-[#262d3d] text-base">
                           {formatCurrency(scenarioC?.totalTax || 0)}/ano
                         </p>
@@ -2077,13 +2182,17 @@ export default function DividendTaxCalculator() {
                         Economia liquida estimada: {formatCurrency(Math.max(0, scenarioC?.annualSavingsVsStatusQuo || 0))}/ano
                       </p>
                       <p className="text-xs text-[#577171]">
-                        Custo anual da holding: {formatCurrency(scenarioC?.taxBreakdown.custoHolding || 0)}.
+                        {userInput.jaTemHolding
+                          ? "Holding ja existente: sem custo incremental considerado neste cenario."
+                          : `Custo anual da holding: ${formatCurrency(scenarioC?.taxBreakdown.custoHolding || 0)}.`}
                       </p>
                       <p className="text-xs text-[#577171]">
                         Valor potencialmente retido para diferimento: {formatCurrency(holdingDeferredAnnual)}/ano.
                       </p>
                       <p className="text-xs text-[#577171]">
-                        Break-even aproximado: {formatCurrencyCompact((scenarioC?.breakEvenMonthlyDividends || 0))}/mes.
+                        {userInput.jaTemHolding
+                          ? "Break-even nao se aplica: custo incremental da estrutura foi zerado."
+                          : `Break-even aproximado: ${formatCurrencyCompact(scenarioC?.breakEvenMonthlyDividends || 0)}/mes.`}
                       </p>
                     </div>
                   </CardContent>
@@ -2179,6 +2288,9 @@ export default function DividendTaxCalculator() {
                     {formatCurrency(clubProjection.portfolioValue)} e crescimento de{" "}
                     {formatPercent(clubProjection.annualGrowthPercent)} ao ano.
                   </p>
+                  <p className="text-xs text-amber-700 mt-1">
+                    O painel mostra imposto adiado no periodo. Tributacao na saida/resgate nao esta incluida.
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -2200,7 +2312,7 @@ export default function DividendTaxCalculator() {
                         </p>
                       </div>
                       <div className="rounded-lg border border-[#e5e7eb] p-3">
-                        <p className="text-xs text-[#577171]">Diferimento liquido</p>
+                        <p className="text-xs text-[#577171]">Diferimento liquido (pre-resgate)</p>
                         <p className="font-semibold text-[#2f6b38]">
                           {formatCurrency(clubProjection.summary5Years.netTaxBenefitCumulative)}
                         </p>
@@ -2232,7 +2344,7 @@ export default function DividendTaxCalculator() {
                         </p>
                       </div>
                       <div className="rounded-lg border border-[#e5e7eb] p-3">
-                        <p className="text-xs text-[#577171]">Diferimento liquido</p>
+                        <p className="text-xs text-[#577171]">Diferimento liquido (pre-resgate)</p>
                         <p className="font-semibold text-[#2f6b38]">
                           {formatCurrency(clubProjection.summary10Years.netTaxBenefitCumulative)}
                         </p>
@@ -2271,7 +2383,7 @@ export default function DividendTaxCalculator() {
                             <th className="py-2 pr-4">Patrimonio projetado</th>
                             <th className="py-2 pr-4">Imposto PF acum.</th>
                             <th className="py-2 pr-4">Custos do clube acum.</th>
-                            <th className="py-2 pr-4">Beneficio liquido acum.</th>
+                            <th className="py-2 pr-4">Beneficio liquido acum. (pre-resgate)</th>
                             <th className="py-2">Eficiencia media</th>
                           </tr>
                         </thead>
@@ -2322,7 +2434,13 @@ export default function DividendTaxCalculator() {
                         ? [
                             `Pro-labore ${formatCurrency(proLaboreMensal)}`,
                             "Dividendos ate R$ 50 mil",
-                            jcpMonthly > 0 ? `JCP ${formatCurrency(jcpMonthly)}` : "JCP conforme capacidade",
+                            jcpMonthly > 0
+                              ? `JCP ${formatCurrency(jcpMonthly)}`
+                              : userInput.regimeTributario === "simples"
+                                ? "Sem JCP (nao aplicavel no Simples)"
+                                : userInput.jaTemJCP
+                                  ? "Sem JCP incremental (ja praticado)"
+                                  : "Sem JCP incremental",
                           ]
                         : scenario.code === "C_HOLDING"
                           ? [
@@ -2849,6 +2967,8 @@ export default function DividendTaxCalculator() {
                               <tr className="border-b border-[#e5e7eb] text-left text-[#577171]">
                                 <th className="py-2 pr-3">Fonte</th>
                                 <th className="py-2 pr-3">Tipo</th>
+                                <th className="py-2 pr-3">Regra R$ 50 mil</th>
+                                <th className="py-2 pr-3">Base IRPFM</th>
                                 <th className="py-2 pr-3">Mensal</th>
                                 <th className="py-2 pr-3">Meses</th>
                                 <th className="py-2 pr-3">Anual</th>
@@ -2858,12 +2978,25 @@ export default function DividendTaxCalculator() {
                             <tbody>
                               {result.sourceBreakdown.map((source) => (
                                 <tr key={source.id} className="border-b border-[#f0f0f0]">
+                                  {(() => {
+                                    const treatment = getSourceTaxTreatment(source.sourceType);
+                                    return (
+                                      <>
                                   <td className="py-2 pr-3">{source.name}</td>
                                   <td className="py-2 pr-3">{getSourceTypeLabel(source.sourceType)}</td>
+                                  <td className="py-2 pr-3">
+                                    {treatment.monthlyDividendRule ? "Sim" : "Nao"}
+                                  </td>
+                                  <td className="py-2 pr-3">
+                                    {treatment.includeInIrpfmBase ? "Entra" : "Nao entra"}
+                                  </td>
                                   <td className="py-2 pr-3">{formatCurrency(source.monthlyAmount)}</td>
                                   <td className="py-2 pr-3">{source.monthsReceived}</td>
                                   <td className="py-2 pr-3">{formatCurrency(source.annualGrossDividends)}</td>
                                   <td className="py-2">{formatCurrency(source.annualIrrf)}</td>
+                                      </>
+                                    );
+                                  })()}
                                 </tr>
                               ))}
                             </tbody>

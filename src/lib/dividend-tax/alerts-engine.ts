@@ -1,4 +1,5 @@
 import { ALERT_THRESHOLDS, TAX_CONSTANTS } from "@/lib/dividend-tax/tax-constants";
+import { getSourceTaxTreatment } from "@/lib/dividend-tax/constants";
 import type {
   DividendTaxAlert,
   DividendTaxSimulationInput,
@@ -15,17 +16,13 @@ export function generateDividendTaxAlerts(
 ): DividendTaxAlert[] {
   const alerts: DividendTaxAlert[] = [];
 
-  const taxableSources = result.sourceBreakdown.filter(
-    (source) =>
-      source.sourceType === "empresa_brasil" ||
-      source.sourceType === "exterior" ||
-      source.sourceType === "outros",
+  const taxableSources = result.sourceBreakdown.filter((source) =>
+    getSourceTaxTreatment(source.sourceType).monthlyDividendRule,
   );
 
-  const totalMonthlyDividends = input.sources.reduce(
-    (acc, source) => acc + source.monthlyAmount,
-    0,
-  );
+  const totalMonthlyDividends = input.sources
+    .filter((source) => getSourceTaxTreatment(source.sourceType).monthlyDividendRule)
+    .reduce((acc, source) => acc + source.monthlyAmount, 0);
 
   const sourceAboveThreshold = taxableSources.find(
     (source) => source.monthlyAmount > TAX_CONSTANTS.IRRF_LIMIAR_MENSAL,
@@ -48,15 +45,19 @@ export function generateDividendTaxAlerts(
     );
   }
 
-  const hasFiiSource = input.sources.some((source) => source.sourceType === "fii_fiagro");
-  if (hasFiiSource) {
+  const excludedSources = input.sources.filter(
+    (source) => !getSourceTaxTreatment(source.sourceType).includeInIrpfmBase,
+  );
+  if (excludedSources.length > 0) {
+    const excludedNames = excludedSources.slice(0, 3).map((source) => source.name);
+    const suffix = excludedSources.length > 3 ? " e outras fontes" : "";
     alerts.push(
       createAlert({
-        code: "fii_excluido_irpfm",
+        code: "fontes_excluidas_irpfm",
         severity: "success",
-        title: "FIIs/Fiagros fora da base do IRPFM",
+        title: "Fontes incentivadas fora da base do IRPFM",
         description:
-          "Os rendimentos classificados como FII/Fiagro estao sendo excluidos da base anual do IRPFM.",
+          `As fontes ${excludedNames.join(", ")}${suffix} foram classificadas como excluidas da base anual do IRPFM.`,
       }),
     );
   }

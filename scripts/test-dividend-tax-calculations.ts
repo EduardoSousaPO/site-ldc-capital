@@ -199,6 +199,91 @@ function testScenariosAreComparable() {
   console.log("PASS: Comparativo de cenarios A/B/C");
 }
 
+function testScenarioStatusQuoRespectsSourceThresholdPerSource() {
+  const base = createBaseInput();
+  const result = calculateDividendTax({
+    ...base,
+    sources: [
+      {
+        id: "src-main",
+        name: "Empresa principal",
+        monthlyAmount: 50_000,
+        monthsReceived: 12,
+        sourceType: "empresa_brasil",
+      },
+      {
+        id: "src-extra",
+        name: "Carteira de acoes",
+        monthlyAmount: 7_500,
+        monthsReceived: 12,
+        sourceType: "empresa_brasil",
+      },
+    ],
+    business: {
+      ...base.business,
+      regimeTributario: "lucro_real",
+      faturamentoAnual: 1_875_000,
+      margemLucroPercentual: 32,
+    },
+  });
+
+  const scenarioA = result.scenarios.find((item) => item.code === "A_STATUS_QUO");
+  const scenarioB = result.scenarios.find((item) => item.code === "B_MIX_OTIMIZADO");
+  const scenarioC = result.scenarios.find((item) => item.code === "C_HOLDING");
+
+  assert.ok(scenarioA && scenarioB && scenarioC, "Expected scenarios A/B/C");
+  assertAlmostEqual(result.irrfAnnualTotal, 0, 0.01);
+  assertAlmostEqual(scenarioA?.taxBreakdown.irrfDividendos || 0, 0, 0.01);
+  assertAlmostEqual(scenarioA?.taxBreakdown.irpfm || 0, result.irpfmDue, 0.01);
+  assert.ok(
+    (scenarioB?.annualSavingsVsStatusQuo || 0) <= 0 &&
+      (scenarioC?.annualSavingsVsStatusQuo || 0) <= 0,
+    "Expected no artificial savings when all sources stay at or below R$ 50 mil por fonte",
+  );
+  console.log("PASS: Cenario A respeita limiar por fonte no status quo");
+}
+
+function testRegimeSimulationRespectsSourcePattern() {
+  const base = createBaseInput();
+  const result = calculateDividendTax({
+    ...base,
+    sources: [
+      {
+        id: "src-main",
+        name: "Empresa principal",
+        monthlyAmount: 50_000,
+        monthsReceived: 12,
+        sourceType: "empresa_brasil",
+      },
+      {
+        id: "src-extra",
+        name: "Carteira de acoes",
+        monthlyAmount: 7_500,
+        monthsReceived: 12,
+        sourceType: "empresa_brasil",
+      },
+    ],
+    annualIncomes: {
+      ...base.annualIncomes,
+      otherTaxableAnnualIncome: 0,
+      otherExclusiveAnnualIncome: 0,
+      otherExemptAnnualIncome: 0,
+    },
+    deductions: {
+      ...base.deductions,
+      includeCalculatedIrrfCredit: true,
+      irpfProgressivePaid: 0,
+    },
+  });
+
+  assertAlmostEqual(result.irrfAnnualTotal, 0, 0.01);
+  result.regimeSimulation.forEach((regime) => {
+    assertAlmostEqual(regime.breakdown.irrfDividendos, 0, 0.01);
+    assertAlmostEqual(regime.personalTax, result.irpfmDue, 0.01);
+  });
+  console.log("PASS: Simulador de regimes respeita padrao por fonte");
+}
+
 function testInvestmentClubScenario() {
   const base = createBaseInput();
   const result = calculateDividendTax({
@@ -238,6 +323,80 @@ function testInvestmentClubScenario() {
   console.log("PASS: Cenario opcional de clube de investimento");
 }
 
+function testScenarioBRespectsJcpRules() {
+  const base = createBaseInput();
+
+  const simplesResult = calculateDividendTax({
+    ...base,
+    sources: [{ ...base.sources[0], monthlyAmount: 120_000 }],
+    business: {
+      ...base.business,
+      regimeTributario: "simples",
+      jaPagaJcp: false,
+    },
+  });
+  const simplesScenarioB = simplesResult.scenarios.find((item) => item.code === "B_MIX_OTIMIZADO");
+  assert.ok(simplesScenarioB, "Expected scenario B for Simples");
+  assertAlmostEqual(simplesScenarioB?.taxBreakdown.irrfJcp || 0, 0, 0.01);
+  assert.match(simplesScenarioB?.description || "", /sem JCP no Simples/i);
+
+  const alreadyJcpResult = calculateDividendTax({
+    ...base,
+    sources: [{ ...base.sources[0], monthlyAmount: 120_000 }],
+    business: {
+      ...base.business,
+      regimeTributario: "lucro_presumido",
+      jaPagaJcp: true,
+    },
+  });
+  const alreadyJcpScenarioB = alreadyJcpResult.scenarios.find((item) => item.code === "B_MIX_OTIMIZADO");
+  assert.ok(alreadyJcpScenarioB, "Expected scenario B when company already pays JCP");
+  assertAlmostEqual(alreadyJcpScenarioB?.taxBreakdown.irrfJcp || 0, 0, 0.01);
+  assert.match(alreadyJcpScenarioB?.description || "", /JCP ja tratado/i);
+  console.log("PASS: Cenario B respeita regras de JCP");
+}
+
+function testHoldingIncrementalCostWhenAlreadyExists() {
+  const base = createBaseInput();
+  const commonInput: DividendTaxSimulationInput = {
+    ...base,
+    sources: [{ ...base.sources[0], monthlyAmount: 120_000 }],
+    annualIncomes: {
+      ...base.annualIncomes,
+      otherTaxableAnnualIncome: 120_000,
+    },
+  };
+
+  const withExistingHolding = calculateDividendTax({
+    ...commonInput,
+    business: {
+      ...commonInput.business,
+      temHolding: true,
+    },
+  });
+  const withoutHolding = calculateDividendTax({
+    ...commonInput,
+    business: {
+      ...commonInput.business,
+      temHolding: false,
+    },
+  });
+
+  const scenarioWithExistingHolding = withExistingHolding.scenarios.find(
+    (item) => item.code === "C_HOLDING",
+  );
+  const scenarioWithoutHolding = withoutHolding.scenarios.find((item) => item.code === "C_HOLDING");
+
+  assert.ok(scenarioWithExistingHolding, "Expected scenario C with existing holding");
+  assert.ok(scenarioWithoutHolding, "Expected scenario C without holding");
+  assertAlmostEqual(scenarioWithExistingHolding?.taxBreakdown.custoHolding || 0, 0, 0.01);
+  assert.ok(
+    (scenarioWithoutHolding?.taxBreakdown.custoHolding || 0) > 0,
+    "Expected positive holding cost when structure does not exist",
+  );
+  console.log("PASS: Custo incremental da holding respeita checkbox");
+}
+
 function testAlertsEngineCoverage() {
   const base = createBaseInput();
   const result = calculateDividendTax({
@@ -267,11 +426,44 @@ function testAlertsEngineCoverage() {
   });
 
   const alertCodes = new Set(result.alerts.map((item) => item.code));
-  assert.ok(alertCodes.has("fii_excluido_irpfm"));
+  assert.ok(alertCodes.has("fontes_excluidas_irpfm"));
   assert.ok(alertCodes.has("nao_residente_irrf"));
   assert.ok(alertCodes.has("simples_inseguranca_juridica"));
   assert.ok(alertCodes.has("oportunidade_holding"));
   console.log("PASS: Engine de alertas contextuais");
+}
+
+function testFinancialSourceClassification() {
+  const base = createBaseInput();
+  const result = calculateDividendTax({
+    ...base,
+    sources: [
+      {
+        id: "src-cdb",
+        name: "CDB Banco X",
+        monthlyAmount: 10_000,
+        monthsReceived: 12,
+        sourceType: "cdb_rdb_tesouro_titulos",
+      },
+      {
+        id: "src-infra",
+        name: "Debenture Incentivada",
+        monthlyAmount: 5_000,
+        monthsReceived: 12,
+        sourceType: "debentures_incentivadas_fi_infra",
+      },
+    ],
+  });
+
+  const cdb = result.sourceBreakdown.find((source) => source.id === "src-cdb");
+  const infra = result.sourceBreakdown.find((source) => source.id === "src-infra");
+
+  assert.ok(cdb, "Expected CDB source in breakdown");
+  assert.ok(infra, "Expected infra source in breakdown");
+  assert.equal(cdb?.monthlyIrrf, 0, "CDB should not use monthly dividend withholding rule");
+  assert.equal(cdb?.annualIncludedInIrpfmBase, 120_000, "CDB should compose IRPFM base");
+  assert.equal(infra?.annualIncludedInIrpfmBase, 0, "Incentivada should be excluded from base");
+  console.log("PASS: Classificacao de fontes financeiras");
 }
 
 function runDividendTaxTests() {
@@ -281,8 +473,13 @@ function runDividendTaxTests() {
   testIrpfmRateBands();
   testRedutorCappingAndZeroDue();
   testScenariosAreComparable();
+  testScenarioStatusQuoRespectsSourceThresholdPerSource();
+  testRegimeSimulationRespectsSourcePattern();
   testInvestmentClubScenario();
+  testScenarioBRespectsJcpRules();
+  testHoldingIncrementalCostWhenAlreadyExists();
   testAlertsEngineCoverage();
+  testFinancialSourceClassification();
   console.log("\nAll dividend-tax tests passed.");
 }
 

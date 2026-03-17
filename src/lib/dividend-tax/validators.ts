@@ -8,8 +8,13 @@ export const dividendSourceSchema = z.object({
   monthsReceived: z.number().int().min(1).max(12),
   sourceType: z.enum([
     "empresa_brasil",
+    "acoes_dividendos",
     "exterior",
     "outros",
+    "cdb_rdb_tesouro_titulos",
+    "debentures_comuns",
+    "fundos_etfs_tributaveis",
+    "debentures_incentivadas_fi_infra",
     "fii_fiagro",
     "titulos_isentos",
   ]),

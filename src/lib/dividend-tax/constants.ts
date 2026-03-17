@@ -1,4 +1,5 @@
 import { TAX_CONSTANTS } from "@/lib/dividend-tax/tax-constants";
+import type { DividendSourceType } from "@/lib/dividend-tax/types";
 
 export const DIVIDEND_TAX_CONSTANTS = {
   irrfThresholdMonthlyPerSource: TAX_CONSTANTS.IRRF_LIMIAR_MENSAL,
@@ -15,12 +16,109 @@ export const REDUTOR_TETO_BY_COMPANY_TYPE = {
 } as const;
 
 export const SOURCE_TYPE_OPTIONS = [
-  { value: "empresa_brasil", label: "Empresa brasileira (tributavel)" },
+  {
+    value: "empresa_brasil",
+    label: "Dividendos de empresa brasileira (regra R$ 50 mil)",
+  },
+  {
+    value: "acoes_dividendos",
+    label: "Dividendos de acoes brasileiras (regra R$ 50 mil)",
+  },
   { value: "exterior", label: "Fonte no exterior" },
   { value: "outros", label: "Outras fontes tributaveis" },
+  {
+    value: "cdb_rdb_tesouro_titulos",
+    label: "CDB/RDB/Tesouro e titulos de RF tributaveis",
+  },
+  { value: "debentures_comuns", label: "Debentures comuns (tributaveis)" },
+  { value: "fundos_etfs_tributaveis", label: "Fundos/ETFs tributaveis" },
+  {
+    value: "debentures_incentivadas_fi_infra",
+    label: "Debenture incentivada / FI-Infra (isencao legal)",
+  },
   { value: "fii_fiagro", label: "FII/Fiagro (isencao conforme regra)" },
-  { value: "titulos_isentos", label: "LCI/LCA/CRI/CRA/Poupanca/FI-Infra" },
+  { value: "titulos_isentos", label: "LCI/LCA/CRI/CRA/Poupanca (isentos)" },
 ] as const;
+
+export interface SourceTaxTreatment {
+  monthlyDividendRule: boolean;
+  includeInIrpfmBase: boolean;
+  excludedByLaw: boolean;
+  legalBasis: string;
+}
+
+export const SOURCE_TAX_TREATMENT: Record<DividendSourceType, SourceTaxTreatment> = {
+  empresa_brasil: {
+    monthlyDividendRule: true,
+    includeInIrpfmBase: true,
+    excludedByLaw: false,
+    legalBasis: "Lei 15.270/2025: regra de IRRF mensal de dividendos + composicao da base anual.",
+  },
+  acoes_dividendos: {
+    monthlyDividendRule: true,
+    includeInIrpfmBase: true,
+    excludedByLaw: false,
+    legalBasis: "Dividendos distribuidos por PJ entram na regra mensal e na base anual.",
+  },
+  exterior: {
+    monthlyDividendRule: true,
+    includeInIrpfmBase: true,
+    excludedByLaw: false,
+    legalBasis: "Rendimentos tributaveis no exterior entram na composicao da base anual.",
+  },
+  outros: {
+    monthlyDividendRule: true,
+    includeInIrpfmBase: true,
+    excludedByLaw: false,
+    legalBasis: "Categoria residual para dividendos/rendimentos tributaveis de mesma natureza.",
+  },
+  cdb_rdb_tesouro_titulos: {
+    monthlyDividendRule: false,
+    includeInIrpfmBase: true,
+    excludedByLaw: false,
+    legalBasis:
+      "Rendimentos tributados exclusivamente na fonte entram na base anual (nao estao na lista de exclusoes).",
+  },
+  debentures_comuns: {
+    monthlyDividendRule: false,
+    includeInIrpfmBase: true,
+    excludedByLaw: false,
+    legalBasis:
+      "Debentures comuns seguem tributacao regular e entram na base anual, salvo regime especial de isencao.",
+  },
+  fundos_etfs_tributaveis: {
+    monthlyDividendRule: false,
+    includeInIrpfmBase: true,
+    excludedByLaw: false,
+    legalBasis:
+      "Fundos/ETFs tributaveis entram na base anual quando nao enquadrados nas exclusoes legais.",
+  },
+  debentures_incentivadas_fi_infra: {
+    monthlyDividendRule: false,
+    includeInIrpfmBase: false,
+    excludedByLaw: true,
+    legalBasis:
+      "Art. 16-A, §1o, V da Lei 15.270/2025: instrumentos incentivados (infraestrutura) sao excluidos.",
+  },
+  fii_fiagro: {
+    monthlyDividendRule: false,
+    includeInIrpfmBase: false,
+    excludedByLaw: true,
+    legalBasis:
+      "Art. 16-A, §1o, V da Lei 15.270/2025: rendimentos isentos de FII/Fiagro (com requisitos) sao excluidos.",
+  },
+  titulos_isentos: {
+    monthlyDividendRule: false,
+    includeInIrpfmBase: false,
+    excludedByLaw: true,
+    legalBasis:
+      "Art. 16-A, §1o, V da Lei 15.270/2025: LCI/LCA/CRI/CRA e poupanca sao excluidos da base.",
+  },
+};
+
+export function getSourceTaxTreatment(sourceType: DividendSourceType): SourceTaxTreatment {
+  return SOURCE_TAX_TREATMENT[sourceType];
+}
 
 export function getSourceTypeLabel(sourceType: string): string {
   return SOURCE_TYPE_OPTIONS.find((o) => o.value === sourceType)?.label ?? sourceType;
