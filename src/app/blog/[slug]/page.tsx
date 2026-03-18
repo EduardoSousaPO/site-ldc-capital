@@ -5,6 +5,7 @@ import Image from "next/image";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ReactMarkdown from "react-markdown";
+import type { Components } from "react-markdown";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,87 @@ import JsonLd from "@/components/JsonLd";
 interface Props {
   params: Promise<{ slug: string }>;
 }
+
+const markdownComponents: Components = {
+  h1: ({ children }) => (
+    <h2 className="font-serif text-3xl md:text-4xl font-bold text-[#262d3d] mt-10 mb-4 leading-tight">
+      {children}
+    </h2>
+  ),
+  h2: ({ children }) => (
+    <h2 className="font-serif text-2xl md:text-3xl font-bold text-[#262d3d] mt-10 mb-4 leading-tight">
+      {children}
+    </h2>
+  ),
+  h3: ({ children }) => (
+    <h3 className="font-serif text-xl md:text-2xl font-semibold text-[#262d3d] mt-8 mb-3 leading-tight">
+      {children}
+    </h3>
+  ),
+  p: ({ children }) => (
+    <p className="text-base md:text-lg leading-8 text-[#344645] mb-6 whitespace-pre-line">
+      {children}
+    </p>
+  ),
+  ul: ({ children }) => (
+    <ul className="list-disc pl-6 mb-6 space-y-2 text-base md:text-lg text-[#344645]">
+      {children}
+    </ul>
+  ),
+  ol: ({ children }) => (
+    <ol className="list-decimal pl-6 mb-6 space-y-2 text-base md:text-lg text-[#344645]">
+      {children}
+    </ol>
+  ),
+  li: ({ children }) => <li className="leading-8">{children}</li>,
+  hr: () => <hr className="my-8 border-gray-200" />,
+  blockquote: ({ children }) => (
+    <blockquote className="my-8 border-l-4 border-[#98ab44] bg-[#f7f8f3] px-5 py-3 italic text-[#344645]">
+      {children}
+    </blockquote>
+  ),
+  a: ({ href, children }) => {
+    const isExternal = typeof href === "string" && /^https?:\/\//i.test(href);
+
+    return (
+      <a
+        href={href}
+        className="text-[#98ab44] font-medium underline-offset-4 hover:underline"
+        target={isExternal ? "_blank" : undefined}
+        rel={isExternal ? "noopener noreferrer" : undefined}
+      >
+        {children}
+      </a>
+    );
+  },
+  strong: ({ children }) => <strong className="font-semibold text-[#262d3d]">{children}</strong>,
+  em: ({ children }) => <em className="italic">{children}</em>,
+  img: ({ src, alt }) => (
+    // eslint-disable-next-line @next/next/no-img-element -- URLs do conteúdo são dinâmicas e podem ser externas
+    <img
+      src={src ?? ""}
+      alt={alt ?? "Imagem do post"}
+      className="w-full rounded-xl my-6"
+      loading="lazy"
+    />
+  ),
+  code: ({ className, children }) => {
+    const isCodeBlock = Boolean(className && className.includes("language-"));
+
+    if (isCodeBlock) {
+      return <code className={className}>{children}</code>;
+    }
+
+    return (
+      <code className="rounded bg-gray-100 px-1.5 py-0.5 text-sm text-[#262d3d]">{children}</code>
+    );
+  },
+  pre: ({ children }) => (
+    <pre className="my-6 overflow-x-auto rounded-xl bg-[#262d3d] p-4 text-sm text-white">
+      {children}
+    </pre>
+  ),
+};
 
 // Removido generateStaticParams para evitar consultas ao banco durante build
 // A página será renderizada dinamicamente no servidor
@@ -118,8 +200,8 @@ export default async function BlogPostPage({ params }: Props) {
         {/* Content */}
         <section className="py-16">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="prose prose-lg max-w-none prose-headings:font-serif prose-headings:text-[#262d3d] prose-a:text-[#98ab44] prose-a:no-underline hover:prose-a:underline">
-              <ReactMarkdown>{post.content}</ReactMarkdown>
+            <div className="max-w-none">
+              <ReactMarkdown components={markdownComponents}>{post.content}</ReactMarkdown>
             </div>
 
             {/* Share Section */}

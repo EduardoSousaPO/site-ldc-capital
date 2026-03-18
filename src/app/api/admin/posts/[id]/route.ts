@@ -165,7 +165,9 @@ export async function PATCH(
     }
     if (summary !== undefined) updateData.summary = summary;
     if (category) updateData.category = category;
-    if (cover !== undefined) updateData.cover = cover;
+    if (cover !== undefined) {
+      updateData.cover = typeof cover === "string" ? cover.trim() || null : null;
+    }
     if (authorDisplayName !== undefined) {
       updateData.authorDisplayName = (authorDisplayName || "").toString().slice(0, 120);
     }

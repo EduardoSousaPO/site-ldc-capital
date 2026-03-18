@@ -176,7 +176,7 @@ function transformPost(
     content: row.content,
     summary: row.summary || "",
     category: row.category,
-    cover: row.cover || "",
+    cover: row.cover?.trim() || "",
     published: row.published,
     readingTime: row.readingTime || "5 min",
     date: row.publishedAt || row.createdAt,

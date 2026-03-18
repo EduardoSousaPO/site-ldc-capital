@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
         content,
         summary: summary?.trim() || null,
         category: category || "Geral",
-        cover: cover || null,
+        cover: typeof cover === "string" ? cover.trim() || null : null,
         published: published || false,
         readingTime: stats.text,
         authorId: user.id,
