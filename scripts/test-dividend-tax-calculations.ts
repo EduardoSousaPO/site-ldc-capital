@@ -353,7 +353,40 @@ function testScenarioBRespectsJcpRules() {
   assert.ok(alreadyJcpScenarioB, "Expected scenario B when company already pays JCP");
   assertAlmostEqual(alreadyJcpScenarioB?.taxBreakdown.irrfJcp || 0, 0, 0.01);
   assert.match(alreadyJcpScenarioB?.description || "", /JCP ja tratado/i);
+
+  const presumidoResult = calculateDividendTax({
+    ...base,
+    sources: [{ ...base.sources[0], monthlyAmount: 120_000 }],
+    business: {
+      ...base.business,
+      regimeTributario: "lucro_presumido",
+      jaPagaJcp: false,
+    },
+  });
+  const presumidoScenarioB = presumidoResult.scenarios.find((item) => item.code === "B_MIX_OTIMIZADO");
+  assert.ok(presumidoScenarioB, "Expected scenario B in Lucro Presumido");
+  assertAlmostEqual(presumidoScenarioB?.taxBreakdown.irrfJcp || 0, 0, 0.01);
+  assertAlmostEqual(presumidoScenarioB?.taxBreakdown.beneficioFiscalJcp || 0, 0, 0.01);
+  assert.match(presumidoScenarioB?.description || "", /fora do Lucro Real/i);
   console.log("PASS: Cenario B respeita regras de JCP");
+}
+
+function testScenarioBIncludesFullProLaboreInIrpfmBase() {
+  const base = createBaseInput();
+  const result = calculateDividendTax({
+    ...base,
+    sources: [{ ...base.sources[0], monthlyAmount: 55_000 }],
+    business: {
+      ...base.business,
+      regimeTributario: "lucro_real",
+      jaPagaJcp: false,
+    },
+  });
+
+  const scenarioB = result.scenarios.find((item) => item.code === "B_MIX_OTIMIZADO");
+  assert.ok(scenarioB, "Expected scenario B");
+  assertAlmostEqual(scenarioB?.taxBreakdown.irpfm || 0, 6_600, 0.01);
+  console.log("PASS: Cenario B inclui pro-labore integral na base do IRPFM");
 }
 
 function testHoldingIncrementalCostWhenAlreadyExists() {
@@ -477,6 +510,7 @@ function runDividendTaxTests() {
   testRegimeSimulationRespectsSourcePattern();
   testInvestmentClubScenario();
   testScenarioBRespectsJcpRules();
+  testScenarioBIncludesFullProLaboreInIrpfmBase();
   testHoldingIncrementalCostWhenAlreadyExists();
   testAlertsEngineCoverage();
   testFinancialSourceClassification();

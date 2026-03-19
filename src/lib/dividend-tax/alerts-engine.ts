@@ -93,15 +93,22 @@ export function generateDividendTaxAlerts(
   }
 
   if (totalMonthlyDividends > TAX_CONSTANTS.IRRF_LIMIAR_MENSAL && !input.business.jaPagaJcp) {
+    const canUseJcp = input.business.regimeTributario === "lucro_real";
     alerts.push(
       createAlert({
         code: "oportunidade_pro_labore",
         severity: "opportunity",
-        title: "Oportunidade de mix com pro-labore e JCP",
+        title: canUseJcp
+          ? "Oportunidade de mix com pro-labore e JCP"
+          : "Oportunidade de mix com pro-labore",
         description:
-          "Com dividendos elevados, pode haver ganho ao combinar pro-labore isento, dividendos limitados e JCP.",
+          canUseJcp
+            ? "Com dividendos elevados, pode haver ganho ao combinar pro-labore, dividendos limitados e JCP."
+            : "Com dividendos elevados, pode haver ganho ao combinar pro-labore e limite de dividendos por fonte.",
         suggestedAction:
-          "Compare o cenario B para quantificar economia anual e impacto de INSS/JCP.",
+          canUseJcp
+            ? "Compare o cenario B para quantificar economia anual e impacto de INSS/JCP."
+            : "Compare o cenario B para quantificar economia anual e impacto de INSS.",
       }),
     );
   }

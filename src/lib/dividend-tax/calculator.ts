@@ -75,13 +75,25 @@ function calculateIrpfmRate(baseAnnualIncome: number): number {
 function calculateIrpfProgressiveAnnual(annualTaxableIncome: number): number {
   if (annualTaxableIncome <= 0) return 0;
 
-  const monthlyIncome = annualTaxableIncome / 12;
   const faixa =
-    TAX_CONSTANTS.IRPF_FAIXAS.find((item) => monthlyIncome <= item.ate) ||
-    TAX_CONSTANTS.IRPF_FAIXAS[TAX_CONSTANTS.IRPF_FAIXAS.length - 1];
-  const monthlyTax = Math.max(0, monthlyIncome * faixa.aliquota - faixa.deducao);
+    TAX_CONSTANTS.IRPF_FAIXAS_ANUAIS_2026.find((item) => annualTaxableIncome <= item.ate) ||
+    TAX_CONSTANTS.IRPF_FAIXAS_ANUAIS_2026[TAX_CONSTANTS.IRPF_FAIXAS_ANUAIS_2026.length - 1];
+  const impostoTabela = Math.max(0, annualTaxableIncome * faixa.aliquota - faixa.deducao);
 
-  return monthlyTax * 12;
+  if (annualTaxableIncome <= TAX_CONSTANTS.IRPF_REDUCAO_ANUAL_LIMITE_ISENCAO) {
+    return 0;
+  }
+
+  if (annualTaxableIncome < TAX_CONSTANTS.IRPF_REDUCAO_ANUAL_LIMITE_FIM) {
+    const reducao = Math.max(
+      0,
+      TAX_CONSTANTS.IRPF_REDUCAO_ANUAL_FORMULA_BASE -
+        annualTaxableIncome * TAX_CONSTANTS.IRPF_REDUCAO_ANUAL_FORMULA_MULTIPLICADOR,
+    );
+    return Math.max(0, impostoTabela - reducao);
+  }
+
+  return impostoTabela;
 }
 
 function getLucroPresumidoIrpjPresumption(activity: BusinessActivityType): number {
@@ -537,7 +549,7 @@ function createScenarioComparisons(
     TAX_CONSTANTS.IRRF_LIMIAR_MENSAL * 12,
   );
   const canUseAdditionalJcp =
-    input.business.regimeTributario !== "simples" && !input.business.jaPagaJcp;
+    input.business.regimeTributario === "lucro_real" && !input.business.jaPagaJcp;
   const jcpAnnual = canUseAdditionalJcp
     ? Math.max(0, remainingAfterProLabore - dividendsNoIrrfAnnual)
     : 0;
@@ -562,9 +574,7 @@ function createScenarioComparisons(
   const beneficioFiscalJcp = jcpAnnual * TAX_CONSTANTS.REDUTOR_TETO_GERAL;
 
   const irpfmB = calculateScenarioIrpfm(input, {
-    taxableAnnualIncome:
-      input.annualIncomes.otherTaxableAnnualIncome +
-      Math.max(0, proLaboreAnnual - 60_000),
+    taxableAnnualIncome: input.annualIncomes.otherTaxableAnnualIncome + proLaboreAnnual,
     exclusiveAnnualIncome: input.annualIncomes.otherExclusiveAnnualIncome + jcpAnnual,
     exemptAnnualIncome: input.annualIncomes.otherExemptAnnualIncome,
     dividendsAnnual: dividendsNoIrrfAnnual + dividendsTaxedAnnualB + fixedAnnualIncome,
@@ -645,6 +655,8 @@ function createScenarioComparisons(
         ? "Pro-labore + dividendos ajustados (sem JCP no Simples)."
         : input.business.jaPagaJcp
           ? "Pro-labore + dividendos ajustados (JCP ja tratado no status atual)."
+        : input.business.regimeTributario !== "lucro_real"
+          ? "Pro-labore + dividendos ajustados (JCP nao dedutivel fora do Lucro Real)."
           : "Pro-labore + dividendos ajustados.";
 
   const scenarios: ScenarioComparisonResult[] = [

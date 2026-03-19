@@ -315,8 +315,9 @@ function resolveMargin(input: UserInputSimplificado) {
 
 function resolveFaturamentoAnual(input: UserInputSimplificado) {
   if ((input.faturamentoAnual ?? 0) > 0) return input.faturamentoAnual as number;
+  const monthlyReference = getBusinessMonthlyReference(input);
   const marginDecimal = resolveMargin(input) / 100;
-  return (input.retiradaMensal * 12) / Math.max(0.05, marginDecimal);
+  return (monthlyReference * 12) / Math.max(0.05, marginDecimal);
 }
 
 function resolveClubDeferredDistributions(input: UserInputSimplificado) {
@@ -384,6 +385,26 @@ async function parseError(response: Response): Promise<string> {
   } catch {
     return "Falha na requisicao.";
   }
+}
+
+function getBusinessMonthlyReference(input: UserInputSimplificado) {
+  if (input.retiradaMensal > 0) return input.retiradaMensal;
+
+  if (!input.multiplasEmpresas) return 0;
+
+  const companySourcesTotal = input.empresasAdicionais
+    .filter((empresa) => empresa.sourceType === "empresa_brasil" && empresa.valorMensal > 0)
+    .reduce((acc, empresa) => acc + empresa.valorMensal, 0);
+
+  if (companySourcesTotal > 0) return companySourcesTotal;
+
+  return input.empresasAdicionais
+    .filter((empresa) => empresa.valorMensal > 0)
+    .reduce((acc, empresa) => acc + empresa.valorMensal, 0);
+}
+
+function hasPositiveSimulationSources(input: DividendTaxSimulationInput) {
+  return input.sources.some((source) => source.monthlyAmount > 0);
 }
 
 function useCountUp(target: number, enabled: boolean, duration = 1500) {
@@ -503,12 +524,19 @@ function humanizeAlert(
         severity: "success",
       };
     case "oportunidade_pro_labore":
+      const canUseJcp = userInput.regimeTributario === "real" && !userInput.jaTemJCP;
       return {
         code: alert.code,
-        title: "Aproveite a faixa de pro-labore ate R$ 5 mil",
+        title: canUseJcp
+          ? "Aproveite a faixa de pro-labore e o mix tributario"
+          : "Aproveite a faixa de pro-labore ate R$ 5 mil",
         description:
-          "Distribuir parte da retirada como pro-labore pode reduzir dividendos sujeitos ao degrau de 10% e melhorar o mix tributario.",
-        action: "O Cenario B ja contempla essa estrategia no seu caso.",
+          canUseJcp
+            ? "Distribuir parte da retirada como pro-labore e avaliar JCP no Lucro Real pode reduzir o custo total do mix tributario."
+            : "Distribuir parte da retirada como pro-labore pode reduzir dividendos sujeitos ao degrau de 10% e melhorar o mix tributario.",
+        action: canUseJcp
+          ? "O Cenario B ja contempla essa estrategia no seu caso."
+          : "O Cenario B ja contempla essa estrategia no seu caso, sem JCP adicional.",
         severity: "opportunity",
       };
     case "lp_impacto_irpfm":
@@ -884,15 +912,14 @@ export default function DividendTaxCalculator() {
     setLeadError(null);
     setLeadMessage(null);
 
-    if (userInput.retiradaMensal <= 0) {
-      setCalcError("Preencha o valor da retirada para simular.");
-      return;
-    }
-
     setLoadingCalc(true);
 
     try {
       const payload = traduzirParaEngine(userInput);
+
+      if (!hasPositiveSimulationSources(payload)) {
+        throw new Error("Preencha ao menos uma fonte com valor mensal acima de zero para simular.");
+      }
 
       const [response] = await Promise.all([
         fetch("/api/dividend-tax/calculate", {

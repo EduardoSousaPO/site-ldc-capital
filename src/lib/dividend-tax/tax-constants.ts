@@ -73,6 +73,18 @@ export const TAX_CONSTANTS = {
     { ate: 25_000, aliquota: 0.275, deducao: 2_437.5 },
     { ate: Number.POSITIVE_INFINITY, aliquota: 0.335, deducao: 3_937.5 },
   ],
+  IRPF_FAIXAS_ANUAIS_2026: [
+    { ate: 29_145.6, aliquota: 0, deducao: 0 },
+    { ate: 33_919.8, aliquota: 0.075, deducao: 2_185.92 },
+    { ate: 45_012.6, aliquota: 0.15, deducao: 4_729.91 },
+    { ate: 55_976.16, aliquota: 0.225, deducao: 8_105.85 },
+    { ate: Number.POSITIVE_INFINITY, aliquota: 0.275, deducao: 10_904.66 },
+  ],
+  IRPF_REDUCAO_ANUAL_LIMITE_ISENCAO: 60_000,
+  IRPF_REDUCAO_ANUAL_LIMITE_FIM: 88_200,
+  IRPF_REDUCAO_ANUAL_MAXIMA: 2_694.15,
+  IRPF_REDUCAO_ANUAL_FORMULA_BASE: 8_429.73,
+  IRPF_REDUCAO_ANUAL_FORMULA_MULTIPLICADOR: 0.095575,
 
   // Holding
   HOLDING_CUSTO_MENSAL_ESTIMADO: 1_500,
