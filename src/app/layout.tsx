@@ -149,6 +149,19 @@ export default function RootLayout({
           <WhatsAppButton />
         </ToastProvider>
         <Analytics gaId={gaId} metaPixelId={metaPixelId} />
+        {metaPixelId ? (
+          <noscript>
+            {/* Fallback sem JS: um único hit; o pixel principal roda só no useEffect de Analytics */}
+            {/* eslint-disable-next-line @next/next/no-img-element -- requisito do Meta Pixel para noscript */}
+            <img
+              height="1"
+              width="1"
+              style={{ display: "none" }}
+              src={`https://www.facebook.com/tr?id=${metaPixelId}&ev=PageView&noscript=1`}
+              alt=""
+            />
+          </noscript>
+        ) : null}
       </body>
     </html>
   );

@@ -1,12 +1,14 @@
 "use client";
 
 import Script from "next/script";
+import { useEffect } from "react";
 
 declare global {
   interface Window {
     gtag?: (...args: unknown[]) => void;
     dataLayer?: unknown[];
     fbq?: (...args: unknown[]) => void;
+    __ldcMetaPixelBootstrapped?: boolean;
   }
 }
 
@@ -16,7 +18,30 @@ interface AnalyticsProps {
 }
 
 export default function Analytics({ gaId, metaPixelId }: AnalyticsProps) {
-  // Analytics habilitado automaticamente sem banner de cookies
+  // Meta Pixel: uma única inicialização por aba. next/script + hidratação/Strict Mode
+  // podem disparar o snippet duas vezes e dobrar PageView / métricas na Meta.
+  useEffect(() => {
+    if (!metaPixelId || typeof window === "undefined") return;
+    if (window.__ldcMetaPixelBootstrapped) return;
+    window.__ldcMetaPixelBootstrapped = true;
+    if (window.fbq) return;
+
+    const s = document.createElement("script");
+    s.text = `
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '${metaPixelId}');
+fbq('consent', 'grant');
+fbq('track', 'PageView');
+`;
+    document.head.appendChild(s);
+  }, [metaPixelId]);
 
   return (
     <>
@@ -53,40 +78,6 @@ export default function Analytics({ gaId, metaPixelId }: AnalyticsProps) {
         </>
       )}
 
-      {/* Meta Pixel */}
-      {metaPixelId && (
-        <>
-          <Script
-            id="meta-pixel"
-            strategy="afterInteractive"
-            dangerouslySetInnerHTML={{
-              __html: `
-                !function(f,b,e,v,n,t,s)
-                {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-                n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-                if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-                n.queue=[];t=b.createElement(e);t.async=!0;
-                t.src=v;s=b.getElementsByTagName(e)[0];
-                s.parentNode.insertBefore(t,s)}(window, document,'script',
-                'https://connect.facebook.net/en_US/fbevents.js');
-                fbq('init', '${metaPixelId}');
-                fbq('consent', 'grant'); // Consentimento concedido
-                fbq('track', 'PageView');
-              `,
-            }}
-          />
-          <noscript>
-            {/* eslint-disable-next-line @next/next/no-img-element -- Pixel de rastreamento Meta; img obrigatório para noscript */}
-            <img
-              height="1"
-              width="1"
-              style={{ display: "none" }}
-              src={`https://www.facebook.com/tr?id=${metaPixelId}&ev=PageView&noscript=1`}
-              alt=""
-            />
-          </noscript>
-        </>
-      )}
     </>
   );
 }
