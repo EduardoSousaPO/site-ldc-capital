@@ -179,8 +179,10 @@ export default function HeroSection() {
                   <Youtube className="h-4 w-4 shrink-0 text-[#98ab44] sm:h-5 sm:w-5" aria-hidden />
                   <div className="min-w-0">
                     <p className="font-sans text-[9px] uppercase tracking-wider text-white/45 sm:text-[10px]">Canal</p>
-                    <p className="font-serif text-sm font-semibold leading-tight text-white sm:text-base md:text-lg">
-                      Luciano Herzog
+                    <p className="font-serif text-sm font-semibold leading-[1.1] text-white sm:text-base md:text-lg">
+                      Luciano
+                      <br />
+                      Herzog
                     </p>
                   </div>
                 </div>
