@@ -155,9 +155,9 @@ export default function HeroSection() {
                 </div>
               </div>
 
-              {/* Footer com ícones — estilo banner */}
-              <div className="mt-5 grid grid-cols-3 gap-2 border-t border-white/10 pt-5 sm:mt-6 sm:gap-4">
-                <div className="flex items-center justify-center gap-2 sm:justify-start">
+              {/* Footer com ícones — 3 blocos centralizados com espaçamento uniforme */}
+              <div className="mt-5 grid grid-cols-3 items-center border-t border-white/10 pt-5 sm:mt-6">
+                <div className="flex items-center justify-center gap-2">
                   <Calendar className="h-4 w-4 shrink-0 text-[#98ab44] sm:h-5 sm:w-5" aria-hidden />
                   <div className="min-w-0">
                     <p className="font-sans text-[9px] uppercase tracking-wider text-white/45 sm:text-[10px]">Data</p>
@@ -175,7 +175,7 @@ export default function HeroSection() {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center justify-center gap-2 sm:justify-end">
+                <div className="flex items-center justify-center gap-2">
                   <Youtube className="h-4 w-4 shrink-0 text-[#98ab44] sm:h-5 sm:w-5" aria-hidden />
                   <div className="min-w-0">
                     <p className="font-sans text-[9px] uppercase tracking-wider text-white/45 sm:text-[10px]">Canal</p>
