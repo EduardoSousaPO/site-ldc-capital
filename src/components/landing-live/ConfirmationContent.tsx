@@ -48,7 +48,7 @@ export default function ConfirmationContent() {
       <div className="relative z-10 mx-auto w-full max-w-2xl text-center lg:max-w-4xl">
         <div className="mx-auto mb-10 inline-block lg:mb-12">
           <Link href="/">
-            <div className="relative mx-auto h-[72px] w-[200px] sm:h-[88px] sm:w-[240px]">
+            <div className="relative mx-auto h-[144px] w-[400px] sm:h-[176px] sm:w-[480px]">
               <Image
                 src="/images/LDC Capital - Logo Final_Aplicação Horizontal Colorida.png"
                 alt="LDC Capital"

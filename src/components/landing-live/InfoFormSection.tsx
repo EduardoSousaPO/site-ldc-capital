@@ -25,8 +25,8 @@ function FormSkeleton() {
 
 export default function InfoFormSection() {
   return (
-    <section id="formulario" className="relative scroll-mt-12 bg-white py-16 lg:py-24">
-      <div className="pointer-events-none absolute inset-0 opacity-[0.05]">
+    <section id="formulario" className="relative scroll-mt-12 bg-[#1a2233] py-16 lg:py-24">
+      <div className="pointer-events-none absolute inset-0 opacity-[0.04]">
         <div
           className="absolute inset-0"
           style={{
@@ -38,13 +38,13 @@ export default function InfoFormSection() {
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col-reverse gap-10 lg:grid lg:grid-cols-2 lg:items-start lg:gap-16">
           {/* Editorial — mais condensado em largura */}
-          <div className="max-w-xl lg:max-w-none lg:pt-2">
-            <h2 className="mb-5 font-serif text-2xl font-semibold leading-tight text-[#262d3d] sm:text-3xl md:text-4xl">
+          <div className="max-w-xl text-white/85 lg:max-w-none lg:pt-2">
+            <h2 className="mb-5 font-serif text-2xl font-semibold leading-tight text-white sm:text-3xl md:text-4xl">
               O futuro do Brasil já está sendo desenhado nos bastidores e os investidores{' '}
               <span className="text-[#98ab44]">não podem ficar para trás</span>.
             </h2>
 
-            <div className="space-y-4 font-sans text-base leading-relaxed text-[#262d3d]/80 sm:text-lg">
+            <div className="space-y-4 font-sans text-base leading-relaxed text-white/80 sm:text-lg">
               <p>
                 O cenário político e econômico vive um momento decisivo. As peças do tabuleiro para a
                 sucessão presidencial já se movem e suas repercussões impactam diretamente os mercados.
@@ -52,14 +52,14 @@ export default function InfoFormSection() {
               <p>
                 Por isso, o time da LDC Capital se reunirá em uma live no canal de Luciano Herzog no
                 YouTube com o Analista Político da XP Investimentos,{' '}
-                <span className="font-semibold text-[#262d3d]">João Paulo Machado</span>, responsável
-                por elaborar relatórios e análises de cenários macroeconômicos e políticos, incluindo o
+                <span className="font-semibold text-white">João Paulo Machado</span>, responsável por
+                elaborar relatórios e análises de cenários macroeconômicos e políticos, incluindo o
                 acompanhamento de eleições e desafios fiscais.
               </p>
             </div>
 
             <div className="mt-8">
-              <p className="mb-4 font-sans text-sm font-semibold uppercase tracking-[0.18em] text-[#5d6b1f]">
+              <p className="mb-4 font-sans text-sm uppercase tracking-[0.18em] text-[#98ab44]">
                 Na live abordaremos
               </p>
               <ul className="space-y-3.5">
@@ -74,31 +74,31 @@ export default function InfoFormSection() {
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span className="font-sans text-base text-[#262d3d]/85">{t}</span>
+                    <span className="font-sans text-base text-white/85">{t}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
-            <div className="mt-8 rounded-r-lg border-l-4 border-[#98ab44] bg-[#98ab44]/8 p-5">
-              <p className="font-sans text-base italic leading-relaxed text-[#262d3d]/90 sm:text-lg">
+            <div className="mt-8 rounded-r-lg border-l-4 border-[#98ab44] bg-[#0a1628]/50 p-5">
+              <p className="font-sans text-base italic leading-relaxed text-white/85 sm:text-lg">
                 Não é um debate partidário. É uma análise estratégica das informações disponíveis hoje
                 para investidores.
               </p>
             </div>
 
-            <p className="mt-6 font-serif text-lg text-[#262d3d] sm:text-xl">
+            <p className="mt-6 font-serif text-lg text-white sm:text-xl">
               Te esperamos ao vivo no YouTube no dia{' '}
               <span className="font-semibold text-[#98ab44]">{LIVE_CAMPAIGN.date}</span>, às{' '}
               <span className="font-semibold text-[#98ab44]">{LIVE_CAMPAIGN.time}</span>.
             </p>
           </div>
 
-          {/* Form — card escuro premium sobre fundo claro */}
+          {/* Form — card escuro premium */}
           <div className="lg:sticky lg:top-8">
-            <div className="relative rounded-2xl border border-[#262d3d]/15 bg-gradient-to-br from-[#1a2233] to-[#0a1628] p-6 shadow-[0_24px_64px_rgba(38,45,61,0.18)] sm:p-8 lg:p-9">
+            <div className="relative rounded-2xl border border-[#98ab44]/25 bg-gradient-to-br from-[#1a2233] to-[#0a1628] p-6 shadow-[0_24px_64px_rgba(0,0,0,0.45)] sm:p-8 lg:p-9">
               <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 sm:left-8 sm:translate-x-0">
-                <span className="inline-block whitespace-nowrap rounded-full bg-[#98ab44] px-3 py-1 font-sans text-xs font-bold uppercase tracking-wider text-[#262d3d] shadow-md shadow-[#262d3d]/30">
+                <span className="inline-block whitespace-nowrap rounded-full bg-[#98ab44] px-3 py-1 font-sans text-xs font-bold uppercase tracking-wider text-[#262d3d] shadow-md shadow-black/20">
                   Inscrição gratuita
                 </span>
               </div>

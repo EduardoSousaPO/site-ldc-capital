@@ -18,5 +18,5 @@ export default function LiveLandingLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <div className="bg-[#f5f6f8] min-h-screen">{children}</div>;
+  return <div className="dark bg-[#262d3d] min-h-screen">{children}</div>;
 }

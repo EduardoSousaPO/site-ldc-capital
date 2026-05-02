@@ -8,7 +8,7 @@ export default function LandingFooter() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-10">
         <div className="flex flex-col md:flex-row items-center justify-between gap-8">
           <Link href="/" className="-ml-4 sm:-ml-6">
-            <div className="relative w-[220px] sm:w-[280px] lg:w-[320px] h-[80px] sm:h-[100px] lg:h-[120px]">
+            <div className="relative w-[440px] sm:w-[560px] lg:w-[640px] h-[160px] sm:h-[200px] lg:h-[240px]">
               <Image
                 src="/images/LDC Capital - Logo Final_Aplicação Branca + Colorida.png"
                 alt="LDC Capital"

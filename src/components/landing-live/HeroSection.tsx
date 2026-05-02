@@ -35,8 +35,8 @@ const participants: Participant[] = [
 
 export default function HeroSection() {
   return (
-    <section className="relative overflow-hidden bg-[#f5f6f8]">
-      <div className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-[#98ab44]/15 blur-3xl" />
+    <section className="relative overflow-hidden bg-[#262d3d]">
+      <div className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-[#98ab44]/12 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-[#98ab44]/8 blur-3xl" />
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 pb-20 pt-24 sm:px-6 sm:pb-24 lg:px-8 lg:pb-28 lg:pt-28">
@@ -44,9 +44,9 @@ export default function HeroSection() {
           {/* Coluna esquerda */}
           <div>
             <Link href="/" className="mb-8 inline-block">
-              <div className="relative h-[64px] w-[180px] sm:h-[80px] sm:w-[220px] lg:h-[96px] lg:w-[260px]">
+              <div className="relative h-[128px] w-[360px] sm:h-[160px] sm:w-[440px] lg:h-[192px] lg:w-[520px]">
                 <Image
-                  src="/images/LDC Capital - Logo Final_Aplicação Horizontal Colorida.png"
+                  src="/images/LDC Capital - Logo Final_Aplicação Branca + Colorida.png"
                   alt="LDC Capital"
                   fill
                   className="object-contain object-left"
@@ -55,22 +55,22 @@ export default function HeroSection() {
               </div>
             </Link>
 
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#98ab44]/40 bg-[#98ab44]/15 px-3 py-1.5">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#98ab44]/30 bg-[#98ab44]/10 px-3 py-1.5">
               <span className="h-2 w-2 animate-pulse rounded-full bg-[#98ab44]" aria-hidden />
-              <span className="font-sans text-xs font-semibold uppercase tracking-wider text-[#5d6b1f]">
+              <span className="font-sans text-xs uppercase tracking-wider text-[#98ab44]">
                 LIVE · {LIVE_CAMPAIGN.date} · {LIVE_CAMPAIGN.time}
               </span>
             </div>
 
-            <h1 className="mb-3 font-serif text-4xl font-bold leading-[1.05] tracking-[-0.02em] text-[#262d3d] sm:text-5xl md:text-6xl lg:text-[4rem]">
+            <h1 className="mb-3 font-serif text-4xl font-bold leading-[1.05] tracking-[-0.02em] text-white sm:text-5xl md:text-6xl lg:text-[4rem]">
               Eleições <span className="text-[#98ab44]">2026</span>
             </h1>
 
-            <h2 className="mb-6 font-serif text-xl font-normal italic leading-tight tracking-[-0.01em] text-[#577171] sm:text-2xl md:text-3xl">
+            <h2 className="mb-6 font-serif text-xl font-normal italic leading-tight tracking-[-0.01em] text-[#becc6a] sm:text-2xl md:text-3xl">
               O fator que pode mudar o Brasil e seus investimentos
             </h2>
 
-            <p className="mb-8 max-w-xl font-sans text-base leading-relaxed text-[#262d3d]/80 sm:text-lg">
+            <p className="mb-8 max-w-xl font-sans text-base leading-relaxed text-white/80 sm:text-lg">
               Veja como está o desenho atual e as estratégias dos candidatos à eleição em 2026 e como
               esse cenário pode impactar seus investimentos no curto e longo prazo.
             </p>
@@ -78,13 +78,13 @@ export default function HeroSection() {
             <Link
               href="#formulario"
               onClick={() => trackEvent('cta_click', 'live', 'hero_inscreva-se')}
-              className="group inline-flex min-h-12 items-center gap-3 rounded-md bg-[#98ab44] px-8 py-4 font-sans text-sm font-bold uppercase tracking-wider text-[#262d3d] shadow-lg shadow-[#98ab44]/30 transition-all duration-300 hover:bg-[#becc6a] hover:shadow-xl hover:shadow-[#98ab44]/40 sm:px-10 sm:text-base"
+              className="group inline-flex min-h-12 items-center gap-3 rounded-md bg-[#98ab44] px-8 py-4 font-sans text-sm font-bold uppercase tracking-wider text-[#262d3d] shadow-lg shadow-[#98ab44]/20 transition-all duration-300 hover:bg-[#becc6a] hover:shadow-xl hover:shadow-[#98ab44]/30 sm:px-10 sm:text-base"
             >
               <span>Inscreva-se para a live</span>
               <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" aria-hidden />
             </Link>
 
-            <p className="mt-4 max-w-xl font-sans text-xs text-[#577171] sm:text-sm">
+            <p className="mt-4 max-w-xl font-sans text-xs text-white/55 sm:text-sm">
               Transmissão ao vivo no canal de Luciano Herzog no YouTube.
             </p>
           </div>
