@@ -80,21 +80,9 @@ export default function InfoFormSection() {
               </ul>
             </div>
 
-            <div className="mt-8 rounded-r-lg border-l-4 border-[#98ab44] bg-[#0a1628]/50 p-5">
-              <p className="font-sans text-base italic leading-relaxed text-white/85 sm:text-lg">
-                Não é um debate partidário. É uma análise estratégica das informações disponíveis hoje
-                para investidores.
-              </p>
-            </div>
-
-            <p className="mt-6 font-serif text-lg text-white sm:text-xl">
-              Te esperamos ao vivo no YouTube no dia{' '}
-              <span className="font-semibold text-[#98ab44]">{LIVE_CAMPAIGN.date}</span>, às{' '}
-              <span className="font-semibold text-[#98ab44]">{LIVE_CAMPAIGN.time}</span>.
-            </p>
           </div>
 
-          {/* Form — card escuro premium */}
+          {/* Form — card escuro premium + reforço editorial logo abaixo */}
           <div className="lg:sticky lg:top-8">
             <div className="relative rounded-2xl border border-[#98ab44]/25 bg-gradient-to-br from-[#1a2233] to-[#0a1628] p-6 shadow-[0_24px_64px_rgba(0,0,0,0.45)] sm:p-8 lg:p-9">
               <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 sm:left-8 sm:translate-x-0">
@@ -139,6 +127,20 @@ export default function InfoFormSection() {
                 ))}
               </ul>
             </div>
+
+            {/* Reforço editorial logo abaixo do card do formulário */}
+            <div className="mt-6 rounded-r-lg border-l-4 border-[#98ab44] bg-[#0a1628]/50 p-5">
+              <p className="font-sans text-base italic leading-relaxed text-white/85 sm:text-lg">
+                Não é um debate partidário. É uma análise estratégica das informações disponíveis hoje
+                para investidores.
+              </p>
+            </div>
+
+            <p className="mt-5 font-serif text-lg text-white sm:text-xl">
+              Te esperamos ao vivo no YouTube no dia{' '}
+              <span className="font-semibold text-[#98ab44]">{LIVE_CAMPAIGN.date}</span>, às{' '}
+              <span className="font-semibold text-[#98ab44]">{LIVE_CAMPAIGN.time}</span>.
+            </p>
           </div>
         </div>
       </div>
