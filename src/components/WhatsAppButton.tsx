@@ -1,8 +1,14 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
 
 export default function WhatsAppButton() {
+  const pathname = usePathname();
+  if (pathname?.startsWith("/live")) {
+    return null;
+  }
+
   const phoneNumber = "555189301511"; // Número sem + e espaços
   const message = encodeURIComponent("Olá! Vim pelo Site");
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
