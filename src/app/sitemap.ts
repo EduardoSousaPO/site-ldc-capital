@@ -68,6 +68,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
+  // Pivot 2026-04-29 (ver ADR-005): conteúdo /news migrou para /blog. Sitemap
+  // agora lista BlogPost diretamente. Pipeline IA insere BlogPost rows com
+  // categoria das 8 enums em F-015.
+
   try {
     const supabase = createSupabaseAdminClient();
 

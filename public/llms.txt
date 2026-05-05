@@ -1,0 +1,8 @@
+# LDC Capital — Consultoria de Investimentos fee-based (CVM 3976-4)
+# Conteúdo editorial: macro, geopolítica e estratégia patrimonial UHNW.
+
+# Mapa do site (sitemap canônico):
+https://ldccapital.com.br/sitemap.xml
+
+# Hub editorial (artigos densos do blog institucional):
+https://ldccapital.com.br/blog

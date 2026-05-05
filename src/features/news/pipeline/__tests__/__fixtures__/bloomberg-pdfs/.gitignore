@@ -1,0 +1,13 @@
+# Bloomberg PDFs são ASSINATURA PRIVADA do Eduardo (Bloomberg Anywhere).
+# Ver ADR-003 (Bloomberg como sinal interno) e RNF-008 (proteção autoral Bloomberg).
+# Mesmo em repo privado, ToS Bloomberg proíbe redistribuição.
+# Defense in depth: gitignore aqui evita commit acidental.
+#
+# Para rodar testes localmente, copie 4 PDFs Bloomberg reais com os nomes:
+#   - bloomberg-brazilian-news-YYYYMMDD.pdf  (PBN)
+#   - bloomberg-first-word-YYYYMMDD.pdf      (BFW)
+#   - bloomberg-news-YYYYMMDD.pdf            (BN)
+#   - associated-press-traduzido-YYYYMMDD.pdf (APW)
+*.pdf
+!.gitignore
+!README.md

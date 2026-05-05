@@ -14,7 +14,7 @@ import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import CTAButton from "../../components/CTAButton";
 import { getBlogPostBySlug, getBlogPosts } from "../../lib/blog";
-import { getArticleSchema } from "@/lib/schema";
+import { getBlogArticleSchema } from "@/lib/schema";
 import JsonLd from "@/components/JsonLd";
 
 interface Props {
@@ -143,13 +143,16 @@ export default async function BlogPostPage({ params }: Props) {
     .filter(p => p.slug !== post.slug && p.category === post.category)
     .slice(0, 3);
 
-  const articleSchema = getArticleSchema(
-    post.title,
-    post.summary || post.title,
-    post.cover,
-    post.date,
-    post.updatedAt || post.date
-  );
+  const articleSchema = getBlogArticleSchema({
+    title: post.title,
+    summary: post.summary || post.title,
+    cover: post.cover,
+    slug: post.slug,
+    category: post.category,
+    authorDisplayName: post.authorDisplayName ?? post.author.name ?? null,
+    datePublished: post.date,
+    dateModified: post.updatedAt || post.date,
+  });
 
   return (
     <main>

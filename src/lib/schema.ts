@@ -52,6 +52,7 @@ export interface ArticleSchema {
   author: {
     "@type": "Organization" | "Person";
     name: string;
+    url?: string;
   };
   publisher: {
     "@type": "Organization";
@@ -61,6 +62,25 @@ export interface ArticleSchema {
       url: string;
     };
   };
+  mainEntityOfPage?: {
+    "@type": "WebPage";
+    "@id": string;
+  };
+  articleSection?: string;
+  inLanguage?: string;
+}
+
+export interface BlogArticleSchemaInput {
+  title: string;
+  summary?: string;
+  cover?: string | null;
+  slug: string;
+  category?: string | null;
+  authorDisplayName?: string | null;
+  /** ISO 8601 — geralmente `post.date` (publishedAt ?? createdAt). */
+  datePublished: string;
+  /** ISO 8601 — geralmente `post.updatedAt`. */
+  dateModified?: string;
 }
 
 /**
@@ -129,7 +149,11 @@ export function getBreadcrumbSchema(items: Array<{ name: string; url?: string }>
 }
 
 /**
- * Gera o schema JSON-LD para artigo do blog
+ * Gera o schema JSON-LD para artigo do blog (versão LEGADA — assinatura
+ * posicional). Mantida para callers existentes que ainda não migraram para
+ * o helper enriquecido `getBlogArticleSchema`. Para artigos do pipeline IA
+ * pós-pivot, prefira o helper enriquecido (cobre `mainEntityOfPage`,
+ * `articleSection`, `inLanguage`, e respeita `authorDisplayName`).
  */
 export function getArticleSchema(
   title: string,
@@ -139,7 +163,7 @@ export function getArticleSchema(
   dateModified?: string
 ): ArticleSchema {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://ldccapital.com.br";
-  
+
   return {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -160,6 +184,62 @@ export function getArticleSchema(
         url: `${siteUrl}/images/logo-ldc-principal.png`,
       },
     },
+  };
+}
+
+/**
+ * Gera o schema JSON-LD enriquecido para artigos do blog (F-016 — pós-pivot
+ * ADR-005). Adiciona campos que o helper legado `getArticleSchema` não cobre:
+ *
+ *   - `mainEntityOfPage` — canonical URL do artigo (sinal SEO/GEO)
+ *   - `articleSection` — categoria ("Macro Brasil", "Macro Global", etc.) que
+ *     ChatGPT/Perplexity usam para classificar conteúdo
+ *   - `inLanguage: "pt-BR"` — idioma explícito (requisito para artigos macro
+ *     brasileiros)
+ *   - `author.name` — usa `authorDisplayName` ("Editorial LDC" para artigos
+ *     do pipeline) em vez de hardcode "LDC Capital"
+ *   - `author.url` — link para a organização
+ *
+ * O helper aceita um objeto compatível com `BlogPost` (de
+ * `src/app/lib/blog.ts`) sem importar o tipo direto, evitando ciclo client/server.
+ */
+export function getBlogArticleSchema(input: BlogArticleSchemaInput): ArticleSchema {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://ldccapital.com.br";
+  const baseUrl = siteUrl.replace(/\/$/, "");
+  const cover = input.cover && input.cover.length > 0 ? input.cover : undefined;
+  const datePublishedIso = input.datePublished;
+  const dateModifiedIso = input.dateModified ?? datePublishedIso;
+  const authorName = (input.authorDisplayName ?? "").trim() || "LDC Capital";
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: input.title,
+    description: input.summary ?? input.title,
+    image: cover ? (cover.startsWith("http") ? cover : `${baseUrl}${cover}`) : undefined,
+    datePublished: datePublishedIso,
+    dateModified: dateModifiedIso,
+    author: {
+      "@type": "Organization",
+      name: authorName,
+      url: baseUrl,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "LDC Capital",
+      logo: {
+        "@type": "ImageObject",
+        url: `${baseUrl}/images/logo-ldc-principal.png`,
+      },
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `${baseUrl}/blog/${input.slug}`,
+    },
+    ...(input.category && input.category.length > 0
+      ? { articleSection: input.category }
+      : {}),
+    inLanguage: "pt-BR",
   };
 }
 

@@ -9,6 +9,15 @@ export async function middleware(request: NextRequest) {
     },
   });
 
+  // /news/* — pivot 2026-04-29 (ver ADR-005): conteúdo migrou para /blog
+  // (Supabase BlogPost). 301 redirect preserva valor SEO acumulado.
+  // Estratégia: redireciona para /blog (índice). Slugs antigos vão precisar
+  // ser remapeados manualmente se algum tiver tráfego relevante (telemetria
+  // pré-pivot zero — sem briefings publicados em produção).
+  if (request.nextUrl.pathname === "/news" || request.nextUrl.pathname.startsWith("/news/")) {
+    return NextResponse.redirect(new URL("/blog", request.url), 301);
+  }
+
   // Verificar se é rota admin
   if (request.nextUrl.pathname.startsWith("/admin")) {
     // Permitir acesso à página de login
@@ -20,7 +29,7 @@ export async function middleware(request: NextRequest) {
       // Filtrar cookies do projeto correto
       const projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL?.match(/https?:\/\/([^.]+)\.supabase\.co/)?.[1];
       const cookiePrefix = projectRef ? `sb-${projectRef}-` : 'sb-';
-      
+
       const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -29,8 +38,8 @@ export async function middleware(request: NextRequest) {
             getAll() {
               // Filtrar apenas cookies do projeto atual
               const allCookies = request.cookies.getAll();
-              return allCookies.filter(cookie => 
-                cookie.name.startsWith(cookiePrefix) || 
+              return allCookies.filter(cookie =>
+                cookie.name.startsWith(cookiePrefix) ||
                 !cookie.name.startsWith('sb-')
               );
             },
@@ -70,6 +79,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"]
+  // /admin/:path* — auth Supabase (existente).
+  // /news + /news/:path* — 301 redirect para /blog (pivot 2026-04-29).
+  matcher: ["/admin/:path*", "/news", "/news/:path*"],
 };
 

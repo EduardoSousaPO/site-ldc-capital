@@ -39,6 +39,14 @@ ldc-project-*.json
 # vercel
 .vercel
 
+# MCP / runtime artifacts
+.playwright-mcp/
+*.stackdump
+
+# Scripts ad-hoc (convenção: prefixo _ = temporário, não versionar)
+scripts/_*.mjs
+scripts/_*.ts
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
