@@ -1,181 +1,91 @@
 /**
- * F-016b — Upload de PDFs Bloomberg pela página admin.
+ * F-016b — Upload de PDFs Bloomberg via client-side upload (token issuer).
  *
- * POST multipart com 1..N arquivos `application/pdf`. Auth via sessão Supabase
- * admin (`checkAdminAuth()`); o middleware `/admin/*` cobre só páginas — para
- * `/api/admin/*` validamos explicitamente aqui.
+ * O fluxo `multipart/form-data` direto pra Function (versão anterior) batia no
+ * limite hard de 4.5MB do Vercel Functions (`FUNCTION_PAYLOAD_TOO_LARGE`).
+ * PDFs Bloomberg típicos têm 5-15MB. Com `handleUpload` do `@vercel/blob/client`,
+ * o servidor só emite token assinado e o browser sobe direto pro Blob — sem
+ * passar pelo runtime da Function.
  *
- * Anti-SPEC §6.2b (sagrada): conteúdo dos PDFs Bloomberg jamais é logado em
- * texto puro. Logs estruturados emitem apenas filename + size + status. URLs
- * do Blob são `access:'public'` apenas tecnicamente — clientes públicos não
- * têm o pathname dinâmico, e o cleanup TTL 30 dias garante que `bloomberg-pdfs/`
- * não acumule histórico.
+ * Auth via sessão Supabase admin (`checkAdminAuth()`); rejeição lança Error e
+ * `handleUpload` devolve 4xx pro client. Validações (MIME, size) movidas para
+ * `onBeforeGenerateToken` — Vercel Blob honra `allowedContentTypes` e
+ * `maximumSizeInBytes` no upload em si.
  *
- * Limites (RNF-007 / Anti-SPEC §6.3):
- *   - até 10 arquivos por request
- *   - cada arquivo ≤ 10 MB
- *   - somente `application/pdf`
+ * Anti-SPEC §6.2b (sagrada): conteúdo dos PDFs nunca é processado aqui — só
+ * pathname/size em logs estruturados. `addRandomSuffix:false` mantém pathname
+ * determinístico (cliente já compõe timestamp + slug + index).
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { put } from "@vercel/blob";
+import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { checkAdminAuth } from "@/lib/auth-check";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 const BLOB_PREFIX = "bloomberg-pdfs/";
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const MAX_FILES = 10;
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-interface UploadedEntry {
-  url: string;
-  pathname: string;
-  filename: string;
-  size_bytes: number;
-  uploaded_at: string;
-}
-
-function slugifyFilename(raw: string): string {
-  const withoutExt = raw.replace(/\.pdf$/i, "");
-  const slug = withoutExt
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
-  return slug.length > 0 ? slug : "bloomberg-pdf";
-}
-
-function timestampUtc(): string {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return (
-    d.getUTCFullYear().toString() +
-    pad(d.getUTCMonth() + 1) +
-    pad(d.getUTCDate()) +
-    "-" +
-    pad(d.getUTCHours()) +
-    pad(d.getUTCMinutes()) +
-    pad(d.getUTCSeconds())
-  );
-}
-
-export async function POST(request: NextRequest) {
-  const user = await checkAdminAuth();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!blobToken) {
-    console.error(
-      JSON.stringify({
-        event: "bloomberg_pdf_upload_failed",
-        reason: "blob_token_missing",
-      }),
-    );
-    return NextResponse.json(
-      { error: "Blob storage not configured" },
-      { status: 500 },
-    );
-  }
-
-  let formData: FormData;
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  let body: HandleUploadBody;
   try {
-    formData = await request.formData();
+    body = (await request.json()) as HandleUploadBody;
   } catch {
-    return NextResponse.json({ error: "Invalid multipart body" }, { status: 400 });
-  }
-
-  const files = formData.getAll("files").filter((v): v is File => v instanceof File);
-
-  if (files.length === 0) {
-    return NextResponse.json({ error: "No files provided" }, { status: 400 });
-  }
-
-  if (files.length > MAX_FILES) {
     return NextResponse.json(
-      { error: `Too many files (max ${MAX_FILES} per request)` },
+      { error: "Invalid JSON body" },
       { status: 400 },
     );
   }
 
-  for (const file of files) {
-    if (file.type !== "application/pdf") {
-      return NextResponse.json(
-        { error: `Invalid type for "${file.name}" (only application/pdf)` },
-        { status: 400 },
-      );
-    }
-    if (file.size <= 0) {
-      return NextResponse.json(
-        { error: `Empty file "${file.name}"` },
-        { status: 400 },
-      );
-    }
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        {
-          error: `"${file.name}" exceeds 10MB limit`,
-          max_bytes: MAX_FILE_SIZE,
-        },
-        { status: 413 },
-      );
-    }
+  try {
+    const jsonResponse = await handleUpload({
+      body,
+      request,
+      onBeforeGenerateToken: async (pathname) => {
+        const user = await checkAdminAuth();
+        if (!user) {
+          throw new Error("Unauthorized");
+        }
+        if (!pathname.startsWith(BLOB_PREFIX)) {
+          throw new Error(`Invalid pathname prefix (expected ${BLOB_PREFIX})`);
+        }
+        if (!pathname.toLowerCase().endsWith(".pdf")) {
+          throw new Error("Only .pdf files allowed");
+        }
+        return {
+          allowedContentTypes: ["application/pdf"],
+          addRandomSuffix: false,
+          maximumSizeInBytes: MAX_FILE_SIZE,
+          tokenPayload: JSON.stringify({
+            uploader_domain: user.email?.split("@")[1] ?? "unknown",
+          }),
+        };
+      },
+      onUploadCompleted: async ({ blob, tokenPayload }) => {
+        console.info(
+          JSON.stringify({
+            event: "bloomberg_pdf_uploaded",
+            pathname: blob.pathname,
+            url: blob.url,
+            token_payload: tokenPayload,
+          }),
+        );
+      },
+    });
+
+    return NextResponse.json(jsonResponse);
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Upload failed";
+    console.error(
+      JSON.stringify({
+        event: "bloomberg_pdf_upload_failed",
+        error_class: err instanceof Error ? err.constructor.name : typeof err,
+        error_message: message.slice(0, 200),
+      }),
+    );
+    const status = message === "Unauthorized" ? 401 : 400;
+    return NextResponse.json({ error: message }, { status });
   }
-
-  const ts = timestampUtc();
-  const uploaded: UploadedEntry[] = [];
-
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    const slug = slugifyFilename(file.name);
-    const pathname = `${BLOB_PREFIX}${ts}-${i}-${slug}.pdf`;
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      const result = await put(pathname, buffer, {
-        access: "public",
-        contentType: "application/pdf",
-        addRandomSuffix: false,
-        token: blobToken,
-      });
-      uploaded.push({
-        url: result.url,
-        pathname: result.pathname ?? pathname,
-        filename: file.name,
-        size_bytes: file.size,
-        uploaded_at: new Date().toISOString(),
-      });
-      console.info(
-        JSON.stringify({
-          event: "bloomberg_pdf_uploaded",
-          pathname,
-          size_bytes: file.size,
-        }),
-      );
-    } catch (err) {
-      console.error(
-        JSON.stringify({
-          event: "bloomberg_pdf_upload_failed",
-          pathname,
-          size_bytes: file.size,
-          error_class:
-            err instanceof Error ? err.constructor.name : typeof err,
-          error_message: (err instanceof Error
-            ? err.message
-            : String(err)
-          ).slice(0, 200),
-        }),
-      );
-      return NextResponse.json(
-        { error: `Upload failed for "${file.name}"` },
-        { status: 500 },
-      );
-    }
-  }
-
-  return NextResponse.json({ uploaded });
 }

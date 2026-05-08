@@ -34,6 +34,7 @@ import {
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
+import { upload } from "@vercel/blob/client";
 import AdminLayout from "../components/AdminLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,33 @@ interface GenerationResultClient {
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FILES = 10;
 const DEBOUNCE_SECONDS = 30;
+const BLOB_PREFIX = "bloomberg-pdfs/";
+
+function slugifyFilename(raw: string): string {
+  const withoutExt = raw.replace(/\.pdf$/i, "");
+  const slug = withoutExt
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+  return slug.length > 0 ? slug : "bloomberg-pdf";
+}
+
+function timestampUtc(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    d.getUTCFullYear().toString() +
+    pad(d.getUTCMonth() + 1) +
+    pad(d.getUTCDate()) +
+    "-" +
+    pad(d.getUTCHours()) +
+    pad(d.getUTCMinutes()) +
+    pad(d.getUTCSeconds())
+  );
+}
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -232,34 +260,38 @@ export default function PdfUploader() {
         return;
       }
       setUploading(true);
-      const fd = new FormData();
-      valid.forEach((f) => fd.append("files", f));
+      const ts = timestampUtc();
+      let succeeded = 0;
       try {
-        const res = await fetch("/api/admin/bloomberg-pdfs/upload", {
-          method: "POST",
-          body: fd,
-        });
-        if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as {
-            error?: string;
-          };
-          toast.error(body.error ?? `Upload falhou (${res.status})`);
-          return;
+        for (let i = 0; i < valid.length; i++) {
+          const file = valid[i];
+          const slug = slugifyFilename(file.name);
+          const pathname = `${BLOB_PREFIX}${ts}-${i}-${slug}.pdf`;
+          try {
+            await upload(pathname, file, {
+              access: "public",
+              contentType: "application/pdf",
+              handleUploadUrl: "/api/admin/bloomberg-pdfs/upload",
+            });
+            succeeded++;
+          } catch (err) {
+            console.error("Upload failed", { name: file.name, err });
+            toast.error(
+              err instanceof Error
+                ? `"${file.name}": ${err.message}`
+                : `"${file.name}": erro de upload`,
+              { duration: 8000 },
+            );
+          }
         }
-        const data = (await res.json()) as { uploaded: PdfEntry[] };
-        const count = data.uploaded?.length ?? 0;
-        toast.success(
-          `${count} PDF(s) enviado(s) — pipeline em ${DEBOUNCE_SECONDS}s`,
-          { duration: 5000 },
-        );
-        await fetchPdfs();
-        scheduleAutoTrigger();
-      } catch (err) {
-        toast.error(
-          err instanceof Error
-            ? `Erro de upload: ${err.message}`
-            : "Erro de upload",
-        );
+        if (succeeded > 0) {
+          toast.success(
+            `${succeeded} PDF(s) enviado(s) — pipeline em ${DEBOUNCE_SECONDS}s`,
+            { duration: 5000 },
+          );
+          await fetchPdfs();
+          scheduleAutoTrigger();
+        }
       } finally {
         setUploading(false);
       }
