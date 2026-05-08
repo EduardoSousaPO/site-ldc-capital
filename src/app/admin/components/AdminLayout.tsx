@@ -18,6 +18,7 @@ import {
   CloudUpload
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AdminToaster } from "@/components/ui/toaster";
 import { signOut, getCurrentUser, User as AuthUser } from "@/lib/auth-supabase";
 
 interface AdminLayoutProps {
@@ -213,6 +214,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           {children}
         </main>
       </div>
+      <AdminToaster />
     </div>
   );
 }
