@@ -159,6 +159,21 @@
 - **Cobre:** CA-030
 - **Contrato:** `src/features/news/contracts/telegram.ts` → `TelegramPostRequest`
 
+### RF-019 — Gerador de carrossel Instagram/LinkedIn (pós-pivot ADR-005)
+- **Descrição:** Sistema deve oferecer ao admin (Eduardo) a possibilidade de gerar, a partir de um `BlogPost` aprovado (`published=true`), um carrossel reaproveitável em Instagram (1080×1350) e LinkedIn (1080×1080). Pipeline:
+  - (a) **OpenAI gpt-5-mini** com Structured Outputs (`zodResponseFormat`) gera `CarouselScript` (5-7 slides com tipos `hook|contexto|dado|pergunta|prova|CTA` + 2 captions específicas IG/LinkedIn + 3-8 hashtags), guiado por `BLOG_CAROUSEL_SYSTEM_PROMPT_v1.0` (tom Mullen+Breia+Nousi consistente com system-prompt v2.1 do artigo)
+  - (b) `runComplianceCheck()` (engine F-005, frozen) aplicado a cada slide (title+body) e a ambas as captions; HARD-block aborta a geração inteira e retorna 422 com violations
+  - (c) Regex anti-Bloomberg (defense in depth Anti-SPEC §6.2b) sobre slides + captions + hashtags
+  - (d) Templates React (`SlideHook`, `SlideContent`, `SlideQuestion`, `SlideCTA`) com fontes da marca (IvyMode + Public Sans) renderizam via `@vercel/og` ImageResponse → PNG buffer
+  - (e) `jszip` empacota PNGs (instagram/ + linkedin/) + `caption-instagram.md` + `caption-linkedin.md` + `README.md` com instruções
+  - (f) ZIP persiste em Supabase Storage bucket privado `blog-carousels` (TTL 90d via cron); endpoint retorna signed URL 24h
+  - (g) `carousel_runs` registra prompt_version, slides_count, openai tokens+custo BRL, status, zip_pathname
+  - (h) Rate limit ≤10 carrosséis/dia/user (query em `carousel_runs`)
+- **Distribuição não automatizada** — Eduardo posta manualmente (Anti-SPEC §6.1).
+- **Prioridade:** Média (Marco 1 — reaproveitamento aprovado em 2026-04-29)
+- **Cobre:** CA-031..CA-038
+- **Contrato:** `src/features/news/contracts/carousel.ts` → `SlideType`, `CarouselSlide`, `CarouselScript`
+
 ---
 
 ## 2. Requisitos Não-Funcionais (RNF)
@@ -634,6 +649,99 @@ Then: dentro de 30s, mensagem aparece no canal:
   And: evento "telegram_posted" registrado em Supabase
 ```
 
+### CA-031 — Botão "Gerar carrossel" só renderiza/habilita com published=true (cobre RF-019)
+```
+Given: BlogPost com published=false (rascunho)
+When: Eduardo abre /admin/posts/edit/[id]
+Then: botão "Gerar carrossel" aparece em estado disabled
+  And: tooltip indica "Aprove o artigo antes de gerar carrossel"
+
+Given: BlogPost com published=true
+When: Eduardo abre /admin/posts/edit/[id]
+Then: botão "Gerar carrossel" está habilitado em verde-oliva (#98ab44)
+  And: ao clicar, dispara POST /api/admin/posts/[id]/carousel
+```
+
+### CA-032 — OpenAI retorna 5-7 slides validados pelo schema strict (cobre RF-019)
+```
+Given: BlogPost.content de ~1200 palavras, BLOG_CAROUSEL_SYSTEM_PROMPT_v1.0 carregado
+When: generator chama OpenAI gpt-5-mini com Structured Outputs (schema relaxado)
+Then: response.parsed passa em zodResponseFormat (relaxado)
+  And: re-validação com schema strict passa
+  And: slides.length entre 5 e 7
+  And: cada slide tem type ∈ {hook, contexto, dado, pergunta, prova, CTA}
+  And: title.length ≤ 80, body.length ≤ 180
+  And: caption_instagram.length ≤ 2200, caption_linkedin.length ≤ 3000
+  And: hashtags.length entre 3 e 8
+```
+
+### CA-033 — runComplianceCheck() bloqueia ticker/prescrição em qualquer slide → 422 (cobre RF-019, RNF-002)
+```
+Given: OpenAI retorna slide com body "...PETR4 pode subir..."
+When: generator aplica runComplianceCheck() no slide
+Then: violations.length > 0 com type="ticker_br", match="PETR4"
+  And: geração inteira aborta antes do render
+  And: INSERT em carousel_runs com status="compliance_blocked", error_message com tipos das violations
+  And: route retorna 422 com { violations, blog_post_id }
+  And: ZIP NÃO é gerado e nenhum upload acontece
+```
+
+### CA-034 — @vercel/og renderiza PNG nos 2 formatos sem erro (cobre RF-019)
+```
+Given: CarouselScript validado com 6 slides, fontes IvyMode + Public Sans carregadas via fs.readFileSync
+When: render.ts chama new ImageResponse(<SlideHook />, { width: 1080, height: 1350, fonts: [...] })
+Then: response.body é Buffer não-vazio
+  And: PNG decodificado tem dimensões 1080×1350 (Instagram portrait)
+  And: mesmo template re-renderizado com width=1080, height=1080 retorna PNG LinkedIn square
+  And: tipografia segue hierarquia: IvyMode Bold 64-80px (hook), Public Sans Regular 32-40px (body)
+```
+
+### CA-035 — ZIP contém estrutura completa (cobre RF-019)
+```
+Given: 6 slides renderizados nos 2 formatos
+When: zip.ts empacota e retorna Buffer
+Then: ZIP contém:
+  - instagram/slide-1.png ... slide-6.png (1080×1350)
+  - linkedin/slide-1.png ... slide-6.png (1080×1080)
+  - caption-instagram.md (≤2200 chars)
+  - caption-linkedin.md (≤3000 chars)
+  - README.md com instruções de uso (drag&drop em IG/LinkedIn web, hashtags em comentário separado, disclaimer Anti-SPEC)
+  And: filename do ZIP = "{slug}-carousel-{YYYYMMDD-HHmmss}.zip"
+```
+
+### CA-036 — Bucket privado + signed URL 24h (cobre RF-019, RNF-007)
+```
+Given: ZIP gerado e upload bem-sucedido em Supabase Storage bucket "blog-carousels"
+When: route resolve a resposta
+Then: bucket é privado (storage.buckets.public=false)
+  And: createSignedUrl(zip_pathname, 60*60*24) retorna URL assinada
+  And: endpoint retorna { signedUrl, expiresAt: ISO 8601, slides: [...preview metadata...], carouselRunId }
+  And: signedUrl não é acessível sem o token (verificado em smoke local)
+```
+
+### CA-037 — Custo ≤R$0,05 + rate limit 10/dia (cobre RF-019, RNF-003)
+```
+Given: geração com gpt-5-mini ~3K input + 1K output tokens
+When: generator finaliza com sucesso
+Then: openai_cost_brl ≤ 0.05 (estimativa real ~R$0,005)
+  And: carousel_runs.openai_total_tokens e openai_cost_brl populados
+  And: se openai_cost_brl > 0.05, status="failed" + error_message="cost_exceeded"
+
+Given: usuário já tem 10 carousel_runs com status='success' nas últimas 24h
+When: Eduardo clica "Gerar carrossel"
+Then: route retorna 429 com { error: "rate_limit_exceeded", message: "Limite diário atingido (10/dia)" }
+  And: nenhuma chamada OpenAI é feita
+```
+
+### CA-038 — Anti-SPEC §6.2b: zero "Bloomberg" em qualquer artefato (cobre RF-019, §6.2b)
+```
+Given: CarouselScript validado pelo schema
+When: generator aplica regex /bloomberg/i sobre slides[].title, slides[].body, caption_instagram, caption_linkedin, hashtags[]
+Then: se qualquer match → status="compliance_blocked" com type="bloomberg_in_body"
+  And: geração aborta antes do render
+  And: route retorna 422 com violation
+```
+
 ---
 
 ## 5. Casos de borda
@@ -817,6 +925,7 @@ Then: dentro de 30s, mensagem aparece no canal:
 | RF-014 | CA-028 | F-011 | B | N1 |
 | RF-015 | CA-029 | F-012 | B | N1 |
 | RF-016 | CA-030 | F-013 (Marco 2) | C | N2 |
+| RF-019 | CA-031..CA-038 | F-019 | B | N1 |
 
 ---
 
