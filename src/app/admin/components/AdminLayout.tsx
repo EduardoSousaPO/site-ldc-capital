@@ -14,7 +14,8 @@ import {
   X,
   User,
   BookOpen,
-  TrendingUp
+  TrendingUp,
+  CloudUpload
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOut, getCurrentUser, User as AuthUser } from "@/lib/auth-supabase";
@@ -88,6 +89,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       href: "/admin/categories",
       icon: FileText,
       current: pathname.startsWith("/admin/categories")
+    },
+    {
+      name: "Bloomberg PDFs",
+      href: "/admin/bloomberg-pdfs",
+      icon: CloudUpload,
+      current: pathname.startsWith("/admin/bloomberg-pdfs")
     },
     {
       name: "Materiais",
