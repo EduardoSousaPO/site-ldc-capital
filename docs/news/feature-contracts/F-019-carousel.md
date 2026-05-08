@@ -4,6 +4,28 @@
 
 ---
 
+## ⚠️ Pivot 2026-05-09 — formato editorial → X-mock screenshot (ADR-006)
+
+A versão v1.0 deste contrato (templates editoriais SlideHook/Content/Question/CTA, IG portrait + LinkedIn square) foi **descartada antes do PR**. Substituída por v2.0 com formato mock-tweet do X.com, conforme refs Andrey Nousi e Renato Breia validadas em 2026-05-09.
+
+Mudanças vigentes (ver ADR-006 para racional completo):
+
+- **1 template único** (`SlideTweet.tsx`) com prop `variation` (LDC | Luciano) e `hasImage` opcional. SUBSTITUI os 4 templates editoriais.
+- **Schema v2.0** — `slide.body` cap 320 → **360 chars**, novo campo `slide.image_prompt` opcional, validação bold markdown (≤5 `**xxx**`).
+- **Prompt v2.0** — fingerprint `blog-carousel-v2.0-2026-05-09`. Tom Mullen+Breia+Nousi adaptado para sintaxe de tweet.
+- **DALL-E 3** standard 1792×1024 — 3 imagens por carrossel (slides 1/3/6), compartilhadas entre as 2 variações.
+- **2 variações** (LDC institucional + Luciano pessoal) com **conteúdo idêntico**, só muda o header. Avatar LDC tem backdrop `#1A2332`.
+- **Formato único 1080×1350** (descarte do 1080×1080 separado para LinkedIn).
+- **ZIP** com pastas `ldc/` + `luciano/` (12 PNGs total) + 2 captions + README atualizado.
+- **Cost guard** R$0,05 → **R$1,00** (refletindo R$0,70 estimado real: R$0,04 OpenAI + R$0,66 DALL-E).
+- Anti-SPEC §6.2b regex agora também aplicada em `image_prompt` antes do DALL-E (defense in depth).
+
+Reaproveitado da v1.0: `generator.ts`, `compliance-mapper.ts`, `carousel-runs-db.ts`, `storage.ts`, `cleanup` cron, migration `carousel_runs`, bucket `blog-carousels`, route handler (com cost guard ajustado), UI (com modal toggle).
+
+CAs vigentes: **CA-039..CA-042** (RF-019b). CA-031..CA-038 mantidos na SPEC apenas para auditoria histórica.
+
+---
+
 ## Identificação
 
 - **ID:** F-019

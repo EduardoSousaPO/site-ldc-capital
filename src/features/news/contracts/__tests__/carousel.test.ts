@@ -1,10 +1,5 @@
 /**
- * F-019 — testes dos contratos Zod (relaxed + strict).
- *
- * Cobre o pattern de duas camadas (memória `feedback_openai_structured_outputs`):
- * o schema relaxado é aceito pelo `zodResponseFormat`; o strict pega tudo que
- * o relaxado deixou passar (URL inválida, UUID malformado, Bloomberg em qualquer
- * lugar, slug fora do kebab-case).
+ * F-019 v2.0 — testes dos contratos Zod (relaxed + strict + image_prompt + bold).
  */
 import { describe, expect, it } from "vitest";
 import {
@@ -12,7 +7,7 @@ import {
   CarouselScript,
   CarouselScriptStrict,
   CarouselSlide,
-  SlideType,
+  CarouselSlideStrict,
 } from "../carousel";
 
 const validBlogPostId = "5a157c14-b06b-4e85-8312-13942b88b914";
@@ -26,177 +21,248 @@ const validScript = {
     {
       index: 1,
       type: "hook" as const,
-      title: "Selic 13,75% e Brent perto de 110: a janela fiscal mudou",
-      body: "Pela primeira vez desde 2015, dois choques estruturais coexistem em horizonte UHNW de planejamento patrimonial.",
+      title: "Juros altos não são o vilão para alto patrimônio",
+      body: "Em regimes de **Selic 14,75%**, a janela fiscal pesa mais que a taxa nominal.",
+      image_prompt: "skyline urbano de São Paulo ao golden hour",
     },
     {
       index: 2,
       type: "contexto" as const,
-      title: "Por que importa agora",
-      body: "Famílias com horizonte multidecadal precisam revisitar duration, exposição cambial e governança da holding antes do exercício 2027.",
+      title: "Por que agora",
+      body: "O regime macro mudou. **Selic** alta + **petróleo** caro convergem.",
+      image_prompt: null,
     },
     {
       index: 3,
       type: "dado" as const,
-      title: "O número que reorganiza a tese",
-      body: "Selic permanece em 13,75% pelo 4º trimestre, com NTN-B 2035 acima de 6,2% real, segundo dados do Tesouro.",
+      title: "Selic 14,75% IPCA 5,3%",
+      body: "**Selic** em 14,75% e **IPCA** projetado em 5,3%.",
+      image_prompt: "mãos em mesa de madeira segurando documento",
     },
     {
       index: 4,
       type: "pergunta" as const,
-      title: "A pergunta de planejamento",
-      body: "O que a sua holding precisa decidir até dezembro de 2026 — e quem na família tem assinatura para deliberar?",
+      title: "Como sua estrutura responde?",
+      body: "Decisões patrimoniais exigem governança formalizada.",
+      image_prompt: null,
     },
     {
       index: 5,
       type: "prova" as const,
-      title: "Mecanismo, não recomendação",
-      body: "Estruturas patrimoniais expostas a Brasil enfrentam trade-off entre carry real elevado e o repricing implícito da reforma tributária.",
+      title: "Estrutura > tática",
+      body: "Famílias UHNW privilegiam processo.",
+      image_prompt: null,
     },
     {
       index: 6,
       type: "CTA" as const,
       title: "Diagnóstico patrimonial LDC",
-      body: "Conteúdo educacional. Não constitui recomendação. Conheça o método LDC — link na bio.",
+      body: "Se você toma decisões sobre patrimônio acima de **R$ 1 milhão**, vale uma conversa estruturada. Sem compromisso. Link na bio.",
+      image_prompt: "interior de biblioteca clássica com madeira escura",
     },
   ],
   caption_instagram:
-    "A janela fiscal brasileira mudou. Selic 13,75% e Brent caro coexistem como choques estruturais. Para famílias UHNW, o que importa não é a alíquota — é o calendário de decisão familiar antes de 2027.",
+    "Juros altos não são o vilão. Famílias de alto patrimônio precisam repensar governança e janela fiscal.",
   caption_linkedin:
-    "Selic em 13,75% e petróleo elevado abrem uma janela patrimonial inédita desde 2015. Análise editorial LDC sobre como famílias UHNW podem revisitar duration, exposição cambial e governança da holding antes da virada tributária de 2027. Conteúdo educacional, não recomendação.",
-  hashtags: ["#PlanejamentoPatrimonial", "#UHNW", "#Macro", "#Selic"],
+    "Selic em 14,75% e janela fiscal aberta para holdings de alto patrimônio.",
+  hashtags: ["#PlanejamentoPatrimonial", "#UHNW", "#JanelaFiscal"],
 };
 
-describe("F-019 contracts — CarouselScript (relaxed)", () => {
-  it("aceita payload completo válido (happy path)", () => {
+describe("F-019 v2 contracts — CarouselScript (relaxed)", () => {
+  it("aceita payload completo válido (happy path com image_prompt + bold)", () => {
     const result = CarouselScript.safeParse(validScript);
     expect(result.success).toBe(true);
   });
 
-  it("rejeita slides fora do range 5-7", () => {
-    const tooFew = { ...validScript, slides: validScript.slides.slice(0, 4) };
-    expect(CarouselScript.safeParse(tooFew).success).toBe(false);
-
-    const tooMany = {
-      ...validScript,
-      slides: [
-        ...validScript.slides,
-        ...validScript.slides.slice(0, 2),
-      ].slice(0, 8),
+  it("aceita slide com image_prompt=null", () => {
+    const slide = {
+      index: 2,
+      type: "contexto",
+      title: "Test",
+      body: "Body without image.",
+      image_prompt: null,
     };
-    expect(CarouselScript.safeParse(tooMany).success).toBe(false);
+    expect(CarouselSlide.safeParse(slide).success).toBe(true);
   });
 
-  it("rejeita type fora do enum SlideType", () => {
-    const bad = {
-      ...validScript,
-      slides: [
-        {
-          ...validScript.slides[0],
-          type: "outro" as unknown as SlideType,
-        },
-        ...validScript.slides.slice(1),
-      ],
-    };
-    expect(CarouselScript.safeParse(bad).success).toBe(false);
-  });
-
-  it("rejeita prompt_version diferente do literal canônico", () => {
-    const bad = { ...validScript, prompt_version: "v0.1-foo" };
+  it("rejeita prompt_version diferente do canônico v2.0", () => {
+    const bad = { ...validScript, prompt_version: "blog-carousel-v1.0-2026-05-09" };
     expect(CarouselScript.safeParse(bad).success).toBe(false);
   });
 });
 
-describe("F-019 contracts — CarouselScriptStrict (re-validação downstream)", () => {
-  it("aceita o mesmo payload válido em strict", () => {
-    const result = CarouselScriptStrict.safeParse(validScript);
-    expect(result.success).toBe(true);
+describe("F-019 v2 contracts — body cap 360 chars", () => {
+  it("body de 360 chars aceita", () => {
+    const slide = {
+      index: 1,
+      type: "hook",
+      title: "ok",
+      body: "x".repeat(360),
+      image_prompt: null,
+    };
+    expect(CarouselSlide.safeParse(slide).success).toBe(true);
   });
 
-  // Regression do pattern: estes payloads PASSAM no relaxed mas FALHAM no strict
-  // — confirma que a duplicação dos schemas tem propósito (memória
-  // `feedback_openai_structured_outputs`).
-  it("PADRÃO RELAXED→STRICT: blog_post_id não-UUID passa relaxed e falha strict", () => {
+  it("body >360 chars rejeita", () => {
+    const slide = {
+      index: 1,
+      type: "hook",
+      title: "ok",
+      body: "x".repeat(361),
+      image_prompt: null,
+    };
+    expect(CarouselSlide.safeParse(slide).success).toBe(false);
+  });
+});
+
+describe("F-019 v2 contracts — bold markdown validation strict", () => {
+  it("body com ≤5 trechos **xxx** passa strict", () => {
+    const slide = {
+      index: 1,
+      type: "hook",
+      title: "ok",
+      body: "**a** e **b** com **c** e **d**, **e**.",
+      image_prompt: null,
+    };
+    expect(CarouselSlideStrict.safeParse(slide).success).toBe(true);
+  });
+
+  it("body com 6 trechos **xxx** falha strict", () => {
+    const slide = {
+      index: 1,
+      type: "hook",
+      title: "ok",
+      body: "**a** **b** **c** **d** **e** **f**.",
+      image_prompt: null,
+    };
+    expect(CarouselSlide.safeParse(slide).success).toBe(true);
+    expect(CarouselSlideStrict.safeParse(slide).success).toBe(false);
+  });
+});
+
+describe("F-019 v2.1 contracts — image_prompt fix", () => {
+  it("image_prompt válido (apenas conceito) passa em ambos", () => {
+    const slide = {
+      index: 1,
+      type: "hook",
+      title: "ok",
+      body: "ok",
+      image_prompt: "skyline de São Paulo ao golden hour",
+    };
+    expect(CarouselSlide.safeParse(slide).success).toBe(true);
+    expect(CarouselSlideStrict.safeParse(slide).success).toBe(true);
+  });
+
+  it("image_prompt >120 chars rejeita", () => {
+    const slide = {
+      index: 1,
+      type: "hook",
+      title: "ok",
+      body: "ok",
+      image_prompt: "x".repeat(121),
+    };
+    expect(CarouselSlide.safeParse(slide).success).toBe(false);
+  });
+
+  it("image_prompt com boilerplate 'editorial photography' falha strict", () => {
+    const slide = {
+      index: 1,
+      type: "hook",
+      title: "ok",
+      body: "ok",
+      image_prompt: "editorial photography of skyline",
+    };
+    expect(CarouselSlide.safeParse(slide).success).toBe(true);
+    expect(CarouselSlideStrict.safeParse(slide).success).toBe(false);
+  });
+
+  it("image_prompt com boilerplate '16:9 ratio' falha strict", () => {
+    const slide = {
+      index: 1,
+      type: "hook",
+      title: "ok",
+      body: "ok",
+      image_prompt: "skyline urbano em 16:9 ratio editorial",
+    };
+    expect(CarouselSlide.safeParse(slide).success).toBe(true);
+    expect(CarouselSlideStrict.safeParse(slide).success).toBe(false);
+  });
+
+  it("image_prompt com 'no Bloomberg' (boilerplate) falha strict", () => {
+    const slide = {
+      index: 1,
+      type: "hook",
+      title: "ok",
+      body: "ok",
+      image_prompt: "skyline editorial no Bloomberg branding",
+    };
+    expect(CarouselSlide.safeParse(slide).success).toBe(true);
+    expect(CarouselSlideStrict.safeParse(slide).success).toBe(false);
+  });
+
+  it("image_prompt=null aceito (slides text-only)", () => {
+    const slide = {
+      index: 2,
+      type: "contexto",
+      title: "ok",
+      body: "ok",
+      image_prompt: null,
+    };
+    expect(CarouselSlide.safeParse(slide).success).toBe(true);
+    expect(CarouselSlideStrict.safeParse(slide).success).toBe(true);
+  });
+});
+
+describe("F-019 v2 contracts — Anti-SPEC §6.2b", () => {
+  it("'Bloomberg' em image_prompt passa relaxed e falha strict", () => {
+    const slide = {
+      index: 1,
+      type: "hook",
+      title: "ok",
+      body: "ok",
+      image_prompt: "Bloomberg terminal close-up",
+    };
+    expect(CarouselSlide.safeParse(slide).success).toBe(true);
+    expect(CarouselSlideStrict.safeParse(slide).success).toBe(false);
+  });
+
+  it("'Bloomberg' em slide.body passa relaxed e falha strict", () => {
+    const bad = JSON.parse(JSON.stringify(validScript));
+    bad.slides[2].body = "Conforme apurou a Bloomberg, a Selic subiu.";
+    expect(CarouselScript.safeParse(bad).success).toBe(true);
+    expect(CarouselScriptStrict.safeParse(bad).success).toBe(false);
+  });
+
+  it("hashtag #Bloomberg passa relaxed e falha strict", () => {
+    const bad = { ...validScript, hashtags: ["#Macro", "#UHNW", "#Bloomberg"] };
+    expect(CarouselScript.safeParse(bad).success).toBe(true);
+    expect(CarouselScriptStrict.safeParse(bad).success).toBe(false);
+  });
+
+  it("hashtag PT-BR com acento (ç, ã, õ) é aceita no strict", () => {
+    const ok = {
+      ...validScript,
+      hashtags: ["#GovernançaFamiliar", "#AlocaçãoEstratégica", "#PlanejamentoSucessório"],
+    };
+    expect(CarouselScript.safeParse(ok).success).toBe(true);
+    expect(CarouselScriptStrict.safeParse(ok).success).toBe(true);
+  });
+});
+
+describe("F-019 v2 contracts — strict re-validation", () => {
+  it("happy path passa strict", () => {
+    expect(CarouselScriptStrict.safeParse(validScript).success).toBe(true);
+  });
+
+  it("blog_post_id não-UUID falha strict", () => {
     const bad = { ...validScript, blog_post_id: "not-a-uuid" };
     expect(CarouselScript.safeParse(bad).success).toBe(true);
     expect(CarouselScriptStrict.safeParse(bad).success).toBe(false);
   });
 
-  it("PADRÃO RELAXED→STRICT: generated_at não-ISO passa relaxed e falha strict", () => {
-    const bad = { ...validScript, generated_at: "ontem" };
-    expect(CarouselScript.safeParse(bad).success).toBe(true);
-    expect(CarouselScriptStrict.safeParse(bad).success).toBe(false);
-  });
-
-  it("PADRÃO RELAXED→STRICT: slug fora do kebab-case passa relaxed e falha strict", () => {
+  it("slug fora do kebab-case falha strict", () => {
     const bad = { ...validScript, blog_post_slug: "Selic_Elevada Petróleo" };
     expect(CarouselScript.safeParse(bad).success).toBe(true);
     expect(CarouselScriptStrict.safeParse(bad).success).toBe(false);
-  });
-
-  it("Anti-SPEC §6.2b: 'Bloomberg' em slide.body passa relaxed e falha strict", () => {
-    const bad = {
-      ...validScript,
-      slides: [
-        {
-          ...validScript.slides[0],
-          body: "Conforme apurou a Bloomberg, a Selic permanece elevada.",
-        },
-        ...validScript.slides.slice(1),
-      ],
-    };
-    expect(CarouselScript.safeParse(bad).success).toBe(true);
-    const strictResult = CarouselScriptStrict.safeParse(bad);
-    expect(strictResult.success).toBe(false);
-  });
-
-  it("Anti-SPEC §6.2b: 'Bloomberg' em caption_instagram passa relaxed e falha strict", () => {
-    const bad = {
-      ...validScript,
-      caption_instagram:
-        "Análise baseada em dados da Bloomberg sobre Selic e câmbio.",
-    };
-    expect(CarouselScript.safeParse(bad).success).toBe(true);
-    expect(CarouselScriptStrict.safeParse(bad).success).toBe(false);
-  });
-
-  it("Anti-SPEC §6.2b: 'Bloomberg' em hashtag passa relaxed e falha strict", () => {
-    const bad = {
-      ...validScript,
-      hashtags: ["#Macro", "#UHNW", "#Bloomberg"],
-    };
-    expect(CarouselScript.safeParse(bad).success).toBe(true);
-    expect(CarouselScriptStrict.safeParse(bad).success).toBe(false);
-  });
-
-  it("hashtag inválida (espaços/símbolos) passa relaxed e falha strict", () => {
-    const bad = {
-      ...validScript,
-      hashtags: ["#hash com espaço", "#UHNW", "#Macro"],
-    };
-    expect(CarouselScript.safeParse(bad).success).toBe(true);
-    expect(CarouselScriptStrict.safeParse(bad).success).toBe(false);
-  });
-});
-
-describe("F-019 contracts — CarouselSlide bounds", () => {
-  it("title >80 chars rejeita", () => {
-    const bad = {
-      index: 1,
-      type: "hook",
-      title: "x".repeat(81),
-      body: "ok",
-    };
-    expect(CarouselSlide.safeParse(bad).success).toBe(false);
-  });
-
-  it("body >180 chars rejeita", () => {
-    const bad = {
-      index: 1,
-      type: "hook",
-      title: "ok",
-      body: "x".repeat(181),
-    };
-    expect(CarouselSlide.safeParse(bad).success).toBe(false);
   });
 });

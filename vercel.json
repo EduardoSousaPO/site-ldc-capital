@@ -18,6 +18,10 @@
     {
       "path": "/api/admin/bloomberg-pdfs/cleanup",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/admin/blog-carousels/cleanup",
+      "schedule": "0 5 * * *"
     }
   ]
 }

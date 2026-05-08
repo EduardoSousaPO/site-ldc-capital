@@ -52,3 +52,6 @@ scripts/_*.ts
 next-env.d.ts
 
 /src/generated/prisma
+
+# F-019 carousel local previews (artefatos transientes — não commitar)
+/.preview/
