@@ -13,8 +13,13 @@
  * `maximumSizeInBytes` no upload em si.
  *
  * Anti-SPEC §6.2b (sagrada): conteúdo dos PDFs nunca é processado aqui — só
- * pathname/size em logs estruturados. `addRandomSuffix:false` mantém pathname
- * determinístico (cliente já compõe timestamp + slug + index).
+ * pathname/size em logs estruturados.
+ *
+ * `addRandomSuffix:true` é obrigatório aqui: sem suffix, o SDK
+ * `@vercel/blob/client.upload()` faz HEAD check antes do PUT pra detectar
+ * colisão, e esse HEAD bate em `vercel.com/api/blob/` que não tem CORS pro
+ * nosso domínio custom (`www.ldccapital.com.br`). Como o pipeline lista todos
+ * os arquivos sob `bloomberg-pdfs/`, o suffix aleatório é transparente.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -55,7 +60,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
         return {
           allowedContentTypes: ["application/pdf"],
-          addRandomSuffix: false,
+          addRandomSuffix: true,
           maximumSizeInBytes: MAX_FILE_SIZE,
           tokenPayload: JSON.stringify({
             uploader_domain: user.email?.split("@")[1] ?? "unknown",
