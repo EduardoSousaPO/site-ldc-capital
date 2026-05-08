@@ -14,6 +14,7 @@ import Image from "next/image";
 import Link from "next/link";
 import AdminLayout from "../../../components/AdminLayout";
 import { toast } from "sonner";
+import { CarouselButton } from "./CarouselButton";
 
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
 
@@ -197,6 +198,9 @@ export default function EditPostPage() {
               )}
               Publicar
             </Button>
+            {postId && (
+              <CarouselButton postId={postId} isPublished={formData.published} />
+            )}
           </div>
         </div>
 

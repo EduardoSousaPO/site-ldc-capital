@@ -159,6 +159,41 @@
 - **Cobre:** CA-030
 - **Contrato:** `src/features/news/contracts/telegram.ts` → `TelegramPostRequest`
 
+### RF-019 — Gerador de carrossel Instagram/LinkedIn (pós-pivot ADR-005) — **v1.0 DESATIVADO 2026-05-09 (ADR-006)**
+
+> **⚠️ Substituído por RF-019b** (formato X-mock screenshot pós-pivot ADR-006). RF-019 v1.0 nunca chegou a produção — o batch #15 foi validado em smoke local mas descartado antes do PR. Mantido aqui para auditoria histórica.
+- **Descrição (v1.0):** Sistema deve oferecer ao admin (Eduardo) a possibilidade de gerar, a partir de um `BlogPost` aprovado (`published=true`), um carrossel reaproveitável em Instagram (1080×1350) e LinkedIn (1080×1080). Pipeline:
+  - (a) **OpenAI gpt-5-mini** com Structured Outputs (`zodResponseFormat`) gera `CarouselScript` (5-7 slides com tipos `hook|contexto|dado|pergunta|prova|CTA` + 2 captions específicas IG/LinkedIn + 3-8 hashtags), guiado por `BLOG_CAROUSEL_SYSTEM_PROMPT_v1.0` (tom Mullen+Breia+Nousi consistente com system-prompt v2.1 do artigo)
+  - (b) `runComplianceCheck()` (engine F-005, frozen) aplicado a cada slide (title+body) e a ambas as captions; HARD-block aborta a geração inteira e retorna 422 com violations
+  - (c) Regex anti-Bloomberg (defense in depth Anti-SPEC §6.2b) sobre slides + captions + hashtags
+  - (d) Templates React (`SlideHook`, `SlideContent`, `SlideQuestion`, `SlideCTA`) com fontes da marca (IvyMode + Public Sans) renderizam via `@vercel/og` ImageResponse → PNG buffer
+  - (e) `jszip` empacota PNGs (instagram/ + linkedin/) + `caption-instagram.md` + `caption-linkedin.md` + `README.md` com instruções
+  - (f) ZIP persiste em Supabase Storage bucket privado `blog-carousels` (TTL 90d via cron); endpoint retorna signed URL 24h
+  - (g) `carousel_runs` registra prompt_version, slides_count, openai tokens+custo BRL, status, zip_pathname
+  - (h) Rate limit ≤10 carrosséis/dia/user (query em `carousel_runs`)
+- **Distribuição não automatizada** — Eduardo posta manualmente (Anti-SPEC §6.1).
+- **Prioridade:** Média (Marco 1 — reaproveitamento aprovado em 2026-04-29)
+- **Cobre:** CA-031..CA-038 (v1.0, desativados — ver RF-019b)
+- **Contrato:** `src/features/news/contracts/carousel.ts` v1.0 (substituído por v2.0 em ADR-006)
+
+### RF-019b — Gerador de carrossel formato X.com mock-tweet (pós-pivot ADR-006)
+
+- **Descrição:** Substituição do RF-019 v1.0. A partir de um `BlogPost` aprovado, sistema gera carrossel onde **cada slide é um screenshot simulado de tweet** com header X.com (avatar + nome + ✓ verificado azul + handle), body em PT-BR com **bold markdown** em palavras-chave, e imagem AI hero (DALL-E 3) embedada apenas em slides 1, 3 e 6. Pipeline:
+  - (a) **OpenAI gpt-5-mini** com Structured Outputs gera `CarouselScript v2.0` (5-7 slides com `body` ≤360 chars + `image_prompt` opcional para slides 1/3/6 + 2 captions + hashtags). Prompt v2.0 fingerprint `blog-carousel-v2.0-2026-05-09`.
+  - (b) `runComplianceCheck()` aplicado a cada slide e ambas captions; **regex `/bloomberg/i` adicional em `image_prompt`** (defense in depth Anti-SPEC §6.2b — DALL-E não pode inadvertidamente gerar Bloomberg branded content).
+  - (c) **DALL-E 3** standard `1792×1024` style:natural — 3 chamadas (slides 1/3/6); custo ~R$0,22/imagem. Imagens **compartilhadas entre as 2 variações** (gera 1×, reusa 2×). Falha graciosa: 3 retries, fallback text-only se falhar.
+  - (d) Template **único** `SlideTweet.tsx` renderiza qualquer tipo de slide (parametrizado por `variation` + `hasImage`).
+  - (e) **Duas variações** geradas em sequência:
+    - **LDC**: avatar `ldc-capital.png` + backdrop `#1A2332`, displayName "LDC Capital", handle `@ldc.capital`
+    - **Luciano**: avatar `luciano-herzog.png` (sem backdrop), displayName "Luciano Herzog", handle `@luciano.herzog`
+  - (f) **Formato único 1080×1350** (IG portrait — vale também para LinkedIn). 12 PNGs por carrossel (6 slides × 2 variações).
+  - (g) ZIP com pastas `ldc/` e `luciano/` separadas + captions + README atualizado.
+  - (h) Cost guard **R$1,00** (sentinela; estima R$0,70 real). Rate limit **mantido em 10/dia/user**.
+- **Distribuição NÃO automatizada** — Eduardo posta manualmente (Anti-SPEC §6.1). Escolhe variação por contexto (institucional vs pessoal).
+- **Prioridade:** Média (substitui RF-019)
+- **Cobre:** CA-039..CA-042 (substituem CA-031..CA-038 v1.0 desativados)
+- **Contrato:** `src/features/news/contracts/carousel.ts` → schema v2.0 (`SlideType`, `CarouselSlide` com `image_prompt` opcional, `CarouselScript` com `body.max(360)` + bold markdown validation)
+
 ---
 
 ## 2. Requisitos Não-Funcionais (RNF)
@@ -634,6 +669,164 @@ Then: dentro de 30s, mensagem aparece no canal:
   And: evento "telegram_posted" registrado em Supabase
 ```
 
+> **⚠️ CA-031 a CA-038 abaixo: v1.0 DESATIVADO 2026-05-09 (ADR-006).** Mantidos para auditoria histórica. Vigentes pós-pivot: CA-039..CA-042.
+
+### CA-031 — Botão "Gerar carrossel" só renderiza/habilita com published=true (cobre RF-019)
+```
+Given: BlogPost com published=false (rascunho)
+When: Eduardo abre /admin/posts/edit/[id]
+Then: botão "Gerar carrossel" aparece em estado disabled
+  And: tooltip indica "Aprove o artigo antes de gerar carrossel"
+
+Given: BlogPost com published=true
+When: Eduardo abre /admin/posts/edit/[id]
+Then: botão "Gerar carrossel" está habilitado em verde-oliva (#98ab44)
+  And: ao clicar, dispara POST /api/admin/posts/[id]/carousel
+```
+
+### CA-032 — OpenAI retorna 5-7 slides validados pelo schema strict (cobre RF-019)
+```
+Given: BlogPost.content de ~1200 palavras, BLOG_CAROUSEL_SYSTEM_PROMPT_v1.0 carregado
+When: generator chama OpenAI gpt-5-mini com Structured Outputs (schema relaxado)
+Then: response.parsed passa em zodResponseFormat (relaxado)
+  And: re-validação com schema strict passa
+  And: slides.length entre 5 e 7
+  And: cada slide tem type ∈ {hook, contexto, dado, pergunta, prova, CTA}
+  And: title.length ≤ 80, body.length ≤ 320
+        (smoke #5 evolução: 180 → 280 → 320. 180 cortava CTA com
+        disclaimer literal CVM 3976-4 (~90 chars); 280 ainda truncava
+        slide.prova; 320 + regra HARD no prompt elimina truncação)
+  And: cada body termina com pontuação final (. ! ?) — regra HARD
+        no prompt v1.0 evita greedy truncation pelo LLM
+  And: caption_instagram.length ≤ 2200, caption_linkedin.length ≤ 3000
+  And: hashtags.length entre 3 e 8
+```
+
+### CA-033 — runComplianceCheck() bloqueia ticker/prescrição em qualquer slide → 422 (cobre RF-019, RNF-002)
+```
+Given: OpenAI retorna slide com body "...PETR4 pode subir..."
+When: generator aplica runComplianceCheck() no slide
+Then: violations.length > 0 com type="ticker_br", match="PETR4"
+  And: geração inteira aborta antes do render
+  And: INSERT em carousel_runs com status="compliance_blocked", error_message com tipos das violations
+  And: route retorna 422 com { violations, blog_post_id }
+  And: ZIP NÃO é gerado e nenhum upload acontece
+```
+
+### CA-034 — @vercel/og renderiza PNG nos 2 formatos sem erro (cobre RF-019)
+```
+Given: CarouselScript validado com 6 slides, fontes IvyMode + Public Sans carregadas via fs.readFileSync
+When: render.ts chama new ImageResponse(<SlideHook />, { width: 1080, height: 1350, fonts: [...] })
+Then: response.body é Buffer não-vazio
+  And: PNG decodificado tem dimensões 1080×1350 (Instagram portrait)
+  And: mesmo template re-renderizado com width=1080, height=1080 retorna PNG LinkedIn square
+  And: tipografia segue hierarquia: IvyMode Bold 64-80px (hook), Public Sans Regular 32-40px (body)
+```
+
+### CA-035 — ZIP contém estrutura completa (cobre RF-019)
+```
+Given: 6 slides renderizados nos 2 formatos
+When: zip.ts empacota e retorna Buffer
+Then: ZIP contém:
+  - instagram/slide-1.png ... slide-6.png (1080×1350)
+  - linkedin/slide-1.png ... slide-6.png (1080×1080)
+  - caption-instagram.md (≤2200 chars)
+  - caption-linkedin.md (≤3000 chars)
+  - README.md com instruções de uso (drag&drop em IG/LinkedIn web, hashtags em comentário separado, disclaimer Anti-SPEC)
+  And: filename do ZIP = "{slug}-carousel-{YYYYMMDD-HHmmss}.zip"
+```
+
+### CA-036 — Bucket privado + signed URL 24h (cobre RF-019, RNF-007)
+```
+Given: ZIP gerado e upload bem-sucedido em Supabase Storage bucket "blog-carousels"
+When: route resolve a resposta
+Then: bucket é privado (storage.buckets.public=false)
+  And: createSignedUrl(zip_pathname, 60*60*24) retorna URL assinada
+  And: endpoint retorna { signedUrl, expiresAt: ISO 8601, slides: [...preview metadata...], carouselRunId }
+  And: signedUrl não é acessível sem o token (verificado em smoke local)
+```
+
+### CA-037 — Custo ≤R$0,05 + rate limit 10/dia (cobre RF-019, RNF-003)
+```
+Given: geração com gpt-5-mini ~3K input + 1K output tokens
+When: generator finaliza com sucesso
+Then: openai_cost_brl ≤ 0.05 (estimativa real ~R$0,005)
+  And: carousel_runs.openai_total_tokens e openai_cost_brl populados
+  And: se openai_cost_brl > 0.05, status="failed" + error_message="cost_exceeded"
+
+Given: usuário já tem 10 carousel_runs com status='success' nas últimas 24h
+When: Eduardo clica "Gerar carrossel"
+Then: route retorna 429 com { error: "rate_limit_exceeded", message: "Limite diário atingido (10/dia)" }
+  And: nenhuma chamada OpenAI é feita
+```
+
+### CA-038 — Anti-SPEC §6.2b: zero "Bloomberg" em qualquer artefato (cobre RF-019, §6.2b)
+```
+Given: CarouselScript validado pelo schema
+When: generator aplica regex /bloomberg/i sobre slides[].title, slides[].body, caption_instagram, caption_linkedin, hashtags[]
+Then: se qualquer match → status="compliance_blocked" com type="bloomberg_in_body"
+  And: geração aborta antes do render
+  And: route retorna 422 com violation
+```
+
+### CA-039 — SlideTweet renderiza header X.com correto por variação (cobre RF-019b)
+```
+Given: CarouselScript v2.0 validado, variação="ldc"
+When: SlideTweet renderiza
+Then: PNG 1080×1350 contém:
+  - badge "X.com" canto superior direito (PublicSans Bold 26 #FFFFFF)
+  - avatar circular 56×56 do arquivo ldc-capital.png com backdrop #1A2332
+  - displayName "LDC Capital" PublicSans Bold 28 #FFFFFF
+  - ✓ verificado azul (#1D9BF0) inline ao lado do nome
+  - handle "@ldc.capital" PublicSans Regular 22 #71767B
+  And: variação="luciano" usa luciano-herzog.png SEM backdrop
+       e handle "@luciano.herzog"
+```
+
+### CA-040 — Body suporta bold markdown inline (cobre RF-019b)
+```
+Given: slide.body com sintaxe "Selic em **14,75%** ao ano"
+When: SlideTweet renderiza
+Then: trecho "14,75%" aparece em PublicSans Bold (mesmo size do body)
+  And: restante em PublicSans Regular
+  And: máximo 5 trechos **xxx** por slide.body (validação Zod)
+  And: schema relaxado aceita; strict valida limite
+```
+
+### CA-041 — DALL-E 3 gera imagem hero para slides 1, 3, 6 com fallback (cobre RF-019b)
+```
+Given: slide.image_prompt populado em slides 1, 3, 6
+When: image-gen.ts chama OpenAI Images API
+Then: response retorna imagem 1792×1024
+  And: buffer é cropped para 920×520 (16:9) e embedded no slide
+  And: regex /bloomberg/i é aplicada no image_prompt ANTES da chamada
+       (defense in depth Anti-SPEC §6.2b)
+
+Given: DALL-E falha 3× consecutivas
+When: pipeline detecta retries esgotados
+Then: slide é renderizado SEM imagem (text-only)
+  And: error_message logado em carousel_runs com lista de slides afetados
+  And: status='success' SE outros slides OK; status='failed' SE todos falharem
+```
+
+### CA-042 — ZIP contém estrutura ldc/+luciano/ + cost guard R$1,00 (cobre RF-019b, RNF-003)
+```
+Given: 6 slides × 2 variações renderizados
+When: zip.ts empacota
+Then: ZIP contém:
+  - ldc/slide-1-hook.png ... slide-6-cta.png
+  - luciano/slide-1-hook.png ... slide-6-cta.png
+  - caption-instagram.md
+  - caption-linkedin.md
+  - README.md (atualizado: explica 2 variações + uso institucional vs pessoal)
+
+Given: openai_cost_brl + dalle_cost_brl > 1,00
+When: pipeline finaliza
+Then: status='failed' com error_message='cost_exceeded'
+  And: ZIP é gerado mesmo assim (custo é sentinela, não bloqueio — Eduardo decide via auditoria)
+  And: rate limit 10/dia/user permanece (mesmo padrão do v1.0)
+```
+
 ---
 
 ## 5. Casos de borda
@@ -817,6 +1010,8 @@ Then: dentro de 30s, mensagem aparece no canal:
 | RF-014 | CA-028 | F-011 | B | N1 |
 | RF-015 | CA-029 | F-012 | B | N1 |
 | RF-016 | CA-030 | F-013 (Marco 2) | C | N2 |
+| RF-019 (v1.0 desativado — ADR-006) | CA-031..CA-038 (auditoria) | F-019 v1.0 (descartado) | B | N1 |
+| RF-019b (X-mock pós-pivot ADR-006) | CA-039..CA-042 | F-019 v2.0 | B | N1 |
 
 ---
 

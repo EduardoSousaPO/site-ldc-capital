@@ -94,10 +94,117 @@
 
 ### [ ] F-019 — Gerador de carrossel Instagram/LinkedIn (estilo Andrey Nousi/Renato Breia)
 
-- **Risco:** B
-- **Cobre:** novo escopo aprovado em 2026-04-29 (reaproveitamento de conteúdo)
-- **CI alvo:** N1
-- **Resumo:** Após Marcos aprovar artigo, IA gera roteiro de carrossel (5-7 slides com tipo: hook, dado, pergunta, prova, CTA). Templates React renderizam via `@vercel/og` (1080x1350 Instagram portrait, 1080x1080 LinkedIn quadrado). Output: ZIP com PNGs + legenda sugerida. UI: botão "Gerar carrossel" em `/admin/posts/[id]`. Custo estimado: R$0,05/carrossel.
+- **Risco:** B (UI nova + integração IA + persistência + rate limit; sem mudança em compliance engine)
+- **Cobre:** RF-019 (novo, ver SPEC), CA-031..CA-038, ADR-005 (reaproveitamento de conteúdo pós-pivot), Anti-SPEC §6.1 (sem automação de postagem), §6.2 e §6.2b sagradas
+- **Branch:** `feat/F-019-carousel-generator`
+- **CI alvo:** N1 (lint + typecheck + build + ≥1 teste por CA)
+- **Feature contract:** [feature-contracts/F-019-carousel.md](./feature-contracts/F-019-carousel.md)
+
+**Resumo:** Após Marcos aprovar artigo (`BlogPost.published=true`), Eduardo abre `/admin/posts/edit/[id]` e clica "Gerar carrossel" (botão verde-oliva no header). Backend: lê BlogPost.content → OpenAI gpt-5-mini com Structured Outputs (BLOG_CAROUSEL_SYSTEM_PROMPT_v1.0) gera CarouselScript (5-7 slides + 2 captions + hashtags). `runComplianceCheck()` aplicado em cada slide e em ambas as captions — HARD-block aborta tudo, retorna 422 com violations. Templates React (IvyMode + Public Sans, paleta da marca) renderizam via `@vercel/og` em 2 formatos (1080×1350 IG portrait + 1080×1080 LinkedIn square). Empacota PNGs + caption-instagram.md + caption-linkedin.md + README.md em ZIP via jszip. Persiste ZIP em Supabase Storage `blog-carousels` (privado, TTL 90d via cron). Retorna signed URL 24h. UI mostra preview dos slides + botão "Baixar ZIP". Eduardo posta manualmente — sem automação de distribuição.
+
+**Definition of Ready**
+
+- [x] ADR-005 documenta o pivot e o escopo de reaproveitamento (§Roadmap)
+- [x] BlogPost CRUD + aprovação token-based mergeados (F-018)
+- [x] Compliance engine F-005 frozen, reusável via `runComplianceCheck()`
+- [x] `blogpost-db.ts` permite ler `BlogPost` por id (reuso)
+- [x] `supabase-storage-admin.ts` helper service-role disponível (reuso F-016b smoke #5)
+- [x] Stack IA travada (OpenAI gpt-5-mini), proibido Anthropic SDK (memória `feedback_no_anthropic_sdk`)
+- [x] OpenAI Structured Outputs limitations conhecidas (memória `feedback_openai_structured_outputs` — schema relaxado + re-validação strict)
+- [x] Fontes da marca disponíveis em `src/fonts/` (IvyMode + Public Sans)
+- [x] Paleta da marca confirmada (#262d3d / #FFFFFF / #98ab44 / #344645 hairline)
+- [x] BlogPost real para smoke: `5a157c14-b06b-4e85-8312-13942b88b914` ("Selic elevada, petróleo caro...")
+- [ ] **Pré-requisito:** migration `create_blog_carousels_bucket_and_runs_table` aplicada via MCP
+
+**Escopo incluído**
+
+- `src/features/news/contracts/carousel.ts` (NOVO) — `SlideType`, `CarouselSlide`, `CarouselScript` (relaxed para zodResponseFormat) + `CarouselScriptStrict` para re-validação downstream
+- `src/features/news/carousel/prompt.ts` (NOVO) — `BLOG_CAROUSEL_SYSTEM_PROMPT_v1.0` (fingerprint imutável `blog-carousel-v1.0-2026-05-09`), tom Mullen+Breia+Nousi consistente com system-prompt v2.1, regras Anti-SPEC explícitas
+- `src/features/news/carousel/generator.ts` (NOVO) — `generateCarousel(blogPostId, generatedByUserId)`: lê BlogPost → OpenAI → re-validação strict → compliance per-slide+caption → render → zip → upload Supabase Storage → signed URL 24h → INSERT `carousel_runs`
+- `src/features/news/carousel/render.ts` (NOVO) — wrapper `@vercel/og` ImageResponse → PNG buffer; carrega IvyMode + Public Sans via `fs.readFileSync`
+- `src/features/news/carousel/zip.ts` (NOVO) — wrapper jszip empacotando `instagram/slide-N.png`, `linkedin/slide-N.png`, `caption-instagram.md`, `caption-linkedin.md`, `README.md`
+- `src/features/news/carousel/templates/` (NOVOS):
+  - `SlideHook.tsx` — slide 1, fundo dark `#262d3d`, IvyMode Bold 64-80px
+  - `SlideContent.tsx` — contexto/dado/prova, fundo claro `#FFFFFF`, hairline `#344645`, body Public Sans 32-40px
+  - `SlideQuestion.tsx` — pergunta, fundo dark, IvyMode italic
+  - `SlideCTA.tsx` — slide final, logo LDC + footer compliance fixo CVM 3976-4
+- `src/app/api/admin/posts/[id]/carousel/route.ts` (NOVO) — POST com `checkAdminAuth()`; valida `published=true`; rate limit ≤10/dia/user via SELECT em `carousel_runs`; `maxDuration=300`; retorna `{ signedUrl, expiresAt, slides: [...preview metadata...], carouselRunId }` ou 422 com violations ou 429 quando limite
+- `src/app/api/admin/blog-carousels/cleanup/route.ts` (NOVO) — cron CRON_SECRET timing-safe; deleta zips >90d em `blog-carousels`
+- `src/app/admin/posts/edit/[id]/CarouselButton.tsx` (NOVO, Client) — botão verde-oliva no header da página de edição; só habilitado se `published=true`; tooltip explicativo no estado disabled
+- `src/app/admin/posts/edit/[id]/CarouselPreviewModal.tsx` (NOVO, Client) — modal com grid de preview + "Baixar ZIP" + "Copiar caption IG" + "Copiar caption LinkedIn"
+- `src/app/admin/posts/edit/[id]/page.tsx` (ALTERADO) — adicionar `<CarouselButton />` no header
+- `vercel.json` (ALTERADO) — adicionar 5º cron `/api/admin/blog-carousels/cleanup` em `0 5 * * *`
+- Testes Vitest em `__tests__/` (≥8 — um por CA)
+
+**Escopo excluído**
+
+- **NÃO** automação de postagem em Instagram/LinkedIn (Anti-SPEC §6.1) — Eduardo posta manualmente
+- **NÃO** charts/tabelas embutidos nos slides no MVP — apenas texto denso (padrão Breia)
+- **NÃO** geração de imagens de capa diferentes do hook — todos os slides seguem template puro de texto
+- **NÃO** versão em inglês — PT-BR exclusivo (Anti-SPEC §6.1)
+- **NÃO** integração com Buffer/Hootsuite/Later — fora de escopo
+- **NÃO** edição inline dos slides na UI — geração é one-shot; se Eduardo quiser ajustar, gera de novo (rate limit cobre)
+
+**Anti-SPEC relevante**
+
+- **§6.1** — sem automação de postagem; o ZIP é entregue para o Eduardo postar manualmente
+- **§6.2** (sagrada) — compliance CVM HARD: sem ticker (regex BR/US), sem prescrição, sem promessa. `runComplianceCheck()` aplicado em cada slide + ambas captions
+- **§6.2b** (sagrada) — Bloomberg jamais aparece em slide, caption, hashtag, alt-text ou metadata. Defense in depth: prompt instrui explicitamente + regex test pós-geração
+- **§6.3** — sem Anthropic SDK (memória `feedback_no_anthropic_sdk`); rate limit server-side; sem polling
+- **§6.4** — sem chat widget no admin; ZIP é fluxo síncrono request/response
+
+**Critérios de aceite (espelham SPEC §4 — CA-031..CA-038)**
+
+- **CA-031** Botão "Gerar carrossel" só renderiza/habilita se `BlogPost.published=true`
+- **CA-032** OpenAI responde com 5-7 slides validados pelo schema strict (re-validação obrigatória)
+- **CA-033** `runComplianceCheck()` bloqueia ticker/prescrição em qualquer slide ou caption → 422 com violations + `carousel_runs.status='compliance_blocked'`
+- **CA-034** `@vercel/og` renderiza PNG 1080×1350 e 1080×1080 sem erro (carregando IvyMode + Public Sans)
+- **CA-035** ZIP contém 5-7 PNGs por formato + 1 caption-instagram.md + 1 caption-linkedin.md + 1 README.md
+- **CA-036** Bucket `blog-carousels` é privado; URL signed expira em 24h
+- **CA-037** Custo ≤ R$0,05 por carrossel (logado em `carousel_runs.openai_cost_brl`); rate limit ≤10/dia/user via SELECT em `carousel_runs` (429 quando atingido)
+- **CA-038** Anti-SPEC: nenhum slide, caption ou hashtag menciona "Bloomberg" (regex `/bloomberg/i` em todo output)
+
+**Testes mínimos (≥8 — Vitest 4 + Rolldown)**
+
+| Teste | Tipo | Cobre CA | Arquivo |
+|---|---|---|---|
+| CarouselButton aparece só com published=true | unit (RTL) | CA-031 | `__tests__/CarouselButton.test.tsx` |
+| OpenAI mock retorna 5-7 slides + schema strict valida | integration (mock) | CA-032 | `__tests__/generator.test.ts` |
+| ticker em slide.body bloqueia geração + grava status='compliance_blocked' | integration | CA-033 | `__tests__/compliance.test.ts` |
+| render retorna Buffer PNG nos 2 formatos | unit (mock ImageResponse) | CA-034 | `__tests__/render.test.ts` |
+| zip contém estrutura correta (instagram/, linkedin/, captions, README) | unit | CA-035 | `__tests__/zip.test.ts` |
+| route POST com bucket privado retorna signed URL com expiry 24h | integration (mock storage) | CA-036 | `__tests__/route.test.ts` |
+| custo BRL ≤ 0.05 logado + rate limit 429 quando ≥10/dia | integration | CA-037 | `__tests__/route.test.ts` |
+| **negativo:** "Bloomberg" em caption-instagram bloqueia geração | integration | CA-038 / §6.2b | `__tests__/compliance.test.ts` |
+
+**Migration**
+
+```sql
+-- create_blog_carousels_bucket_and_runs_table
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('blog-carousels', 'blog-carousels', false, 20971520, ARRAY['application/zip']::text[])
+ON CONFLICT (id) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS carousel_runs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  blog_post_id UUID NOT NULL REFERENCES "BlogPost"(id) ON DELETE CASCADE,
+  generated_by_user_id UUID NOT NULL REFERENCES auth.users(id),
+  generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  prompt_version TEXT NOT NULL,
+  slides_count INT NOT NULL CHECK (slides_count BETWEEN 5 AND 7),
+  openai_total_tokens INT NOT NULL DEFAULT 0,
+  openai_cost_brl NUMERIC(10,4) NOT NULL DEFAULT 0,
+  status TEXT NOT NULL CHECK (status IN ('success','compliance_blocked','failed')),
+  zip_pathname TEXT,
+  error_message TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_carousel_runs_blog_post ON carousel_runs(blog_post_id, generated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_carousel_runs_user_day ON carousel_runs(generated_by_user_id, generated_at DESC);
+```
+
+**Estabilidade do prompt**
+
+- `BLOG_CAROUSEL_SYSTEM_PROMPT_v1.0` é literal estável após release — qualquer edição muda o `__PROMPT_FINGERPRINT` e exige nova ADR (mesma disciplina do system-prompt v2.1 do artigo).
 
 ---
 
