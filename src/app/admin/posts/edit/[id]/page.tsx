@@ -120,10 +120,17 @@ export default function EditPostPage() {
     autoSaveTimer.current = setTimeout(async () => {
       try {
         setAutoSaveStatus("saving");
+        // Bug histórico (resolvido 2026-05-08): o auto-save hardcoded
+        // `published: false`, despublicando todo post aprovado quando
+        // alguém abria a página de edição. PATCH endpoint só altera
+        // `published` quando o campo está presente no payload, então
+        // omitimos para preservar o estado atual do post.
+        const { published: _ignoredPublished, ...autoSavePayload } = formData;
+        void _ignoredPublished;
         const res = await fetch(`/api/admin/posts/${postId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...formData, published: false }),
+          body: JSON.stringify(autoSavePayload),
         });
         if (res.ok) {
           setAutoSaveStatus("saved");
