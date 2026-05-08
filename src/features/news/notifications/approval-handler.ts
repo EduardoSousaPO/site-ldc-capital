@@ -151,7 +151,7 @@ function htmlResponse(
 }
 
 function safeAdminUrl(blogPostId: string): string {
-  return `/admin/posts/${encodeURIComponent(blogPostId)}`;
+  return `/admin/posts/edit/${encodeURIComponent(blogPostId)}`;
 }
 
 function formatPtBR(iso: string): string {

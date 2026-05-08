@@ -124,6 +124,21 @@ describe("approval-email / sendApprovalEmail", () => {
     expect(payload.html).toContain(baseInput.blogPostTitle);
   });
 
+  it("sendApprovalEmail: link 'Ver artigo no admin' aponta para /admin/posts/edit/{id} (regressão 2026-05-08)", async () => {
+    // Bug histórico: o link gerava /admin/posts/{id} sem 'edit/', resultando
+    // em 404 quando Marcos/Eduardo clicavam para revisar antes de aprovar.
+    // Verificar que o link resolvido bate com a rota real de edição.
+    const { resend, captured } = makeMockResend();
+    await sendApprovalEmail(baseInput, { resend });
+    const html = captured[0]!.html;
+    expect(html).toContain(
+      `${baseInput.baseUrl}/admin/posts/edit/${baseInput.blogPostId}`,
+    );
+    expect(html).not.toContain(
+      `${baseInput.baseUrl}/admin/posts/${baseInput.blogPostId}"`,
+    );
+  });
+
   it("sendApprovalEmail: ccEmails=[] NÃO inclui campo cc no payload Resend", async () => {
     const { resend, captured } = makeMockResend();
     await sendApprovalEmail(

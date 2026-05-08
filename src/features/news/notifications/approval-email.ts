@@ -106,7 +106,7 @@ export function displayNameFor(email: string): string {
 function renderEmailHtml(input: SendApprovalEmailInput): string {
   const approveUrl = `${input.baseUrl}/api/posts/approve?token=${encodeURIComponent(input.rawToken)}`;
   const rejectUrl = `${input.baseUrl}/api/posts/reject?token=${encodeURIComponent(input.rawToken)}`;
-  const adminUrl = `${input.baseUrl}/admin/posts/${encodeURIComponent(input.blogPostId)}`;
+  const adminUrl = `${input.baseUrl}/admin/posts/edit/${encodeURIComponent(input.blogPostId)}`;
 
   const title = escapeHtml(input.blogPostTitle);
   const summary = escapeHtml(input.blogPostSummary);
