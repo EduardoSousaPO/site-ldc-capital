@@ -1,10 +1,11 @@
 /**
- * F-016b — Deletar PDF Bloomberg individual do Vercel Blob.
+ * F-016b — Deletar PDF Bloomberg individual do Supabase Storage.
  *
- * DELETE protegido por sessão Supabase admin. Param `pathname` é o caminho
- * completo do blob (URI-encoded pelo client). Validação de path traversal:
- * pathname decodificado precisa começar com `bloomberg-pdfs/` e não conter
- * `..` — protege contra deletar fora do prefixo Bloomberg.
+ * DELETE protegido por sessão Supabase admin. Param `pathname` é o nome do
+ * arquivo no bucket (URI-encoded pelo client). Validação contra path
+ * traversal: nada com `/` ou `..`.
+ *
+ * Migrado de Vercel Blob na 2026-05-08.
  *
  * Anti-SPEC §6.2b: deletar é a única operação destrutiva exposta publicamente
  * em Bloomberg artifacts; reforça TTL voluntário antes do cleanup automático
@@ -12,13 +13,14 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { del } from "@vercel/blob";
 import { checkAdminAuth } from "@/lib/auth-check";
+import {
+  getSupabaseStorageAdmin,
+  BLOOMBERG_PDFS_BUCKET,
+} from "@/lib/supabase-storage-admin";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-const BLOB_PREFIX = "bloomberg-pdfs/";
 
 export async function DELETE(
   request: NextRequest,
@@ -29,14 +31,6 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!blobToken) {
-    return NextResponse.json(
-      { error: "Blob storage not configured" },
-      { status: 500 },
-    );
-  }
-
   const { pathname: rawPathname } = await context.params;
   let pathname: string;
   try {
@@ -45,13 +39,31 @@ export async function DELETE(
     return NextResponse.json({ error: "Invalid pathname" }, { status: 400 });
   }
 
-  // Path traversal guard: somente blobs sob o prefixo bloomberg-pdfs/.
-  if (!pathname.startsWith(BLOB_PREFIX) || pathname.includes("..")) {
+  // Path traversal guard — bucket plano: sem subdiretórios, sem ".."
+  if (
+    pathname.includes("..") ||
+    pathname.includes("/") ||
+    !pathname.toLowerCase().endsWith(".pdf")
+  ) {
     return NextResponse.json({ error: "Invalid pathname" }, { status: 400 });
   }
 
   try {
-    await del(pathname, { token: blobToken });
+    const supabase = getSupabaseStorageAdmin();
+    const { error } = await supabase.storage
+      .from(BLOOMBERG_PDFS_BUCKET)
+      .remove([pathname]);
+    if (error) {
+      console.error(
+        JSON.stringify({
+          event: "bloomberg_pdf_delete_failed",
+          pathname,
+          error_message: error.message.slice(0, 200),
+        }),
+      );
+      return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+    }
+
     console.info(
       JSON.stringify({
         event: "bloomberg_pdf_deleted",

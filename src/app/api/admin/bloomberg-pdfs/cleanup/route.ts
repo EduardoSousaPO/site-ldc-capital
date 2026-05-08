@@ -2,7 +2,10 @@
  * F-016b — Cron diário (04h UTC / 01h BRT) para deletar PDFs Bloomberg >30d.
  *
  * Anti-SPEC §6.2b (sagrada) + ToS Bloomberg: artifact tem TTL voluntário
- * de 30 dias. Sem este cron, `bloomberg-pdfs/` acumula indefinidamente.
+ * de 30 dias. Sem este cron, bucket Supabase `bloomberg-pdfs` acumula
+ * indefinidamente.
+ *
+ * Migrado de Vercel Blob na 2026-05-08.
  *
  * Auth via `CRON_SECRET` em `Authorization: Bearer ...` (timing-safe — RNF-007),
  * mesmo padrão do `/api/posts/cleanup-expired-tokens`. Disparado pelo Vercel
@@ -12,13 +15,16 @@
 
 import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { list, del } from "@vercel/blob";
+import {
+  getSupabaseStorageAdmin,
+  BLOOMBERG_PDFS_BUCKET,
+} from "@/lib/supabase-storage-admin";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const BLOB_PREFIX = "bloomberg-pdfs/";
 const TTL_DAYS = 30;
+const LIST_LIMIT = 1000;
 
 function constantTimeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
@@ -40,42 +46,51 @@ async function handle(request: NextRequest): Promise<NextResponse> {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!blobToken) {
-    return NextResponse.json(
-      { error: "Blob storage not configured" },
-      { status: 500 },
-    );
-  }
-
   const ts = new Date().toISOString();
   const cutoff = Date.now() - TTL_DAYS * 24 * 60 * 60 * 1000;
 
   try {
-    const { blobs } = await list({ prefix: BLOB_PREFIX, token: blobToken });
+    const supabase = getSupabaseStorageAdmin();
+    const { data: files, error: listError } = await supabase.storage
+      .from(BLOOMBERG_PDFS_BUCKET)
+      .list("", {
+        limit: LIST_LIMIT,
+        sortBy: { column: "created_at", order: "asc" },
+      });
+    if (listError) {
+      console.error(
+        JSON.stringify({
+          event: "bloomberg_pdfs_cleanup_failed",
+          error_message: listError.message.slice(0, 200),
+          ts,
+        }),
+      );
+      return new NextResponse("Internal error", { status: 500 });
+    }
 
-    const expired = blobs.filter(
-      (b) => new Date(b.uploadedAt).getTime() < cutoff,
-    );
+    const allFiles = files ?? [];
+    const expired = allFiles.filter((f) => {
+      const created = f.created_at ?? f.updated_at;
+      if (!created) return false;
+      return new Date(created).getTime() < cutoff;
+    });
 
     let deletedCount = 0;
-    for (const b of expired) {
-      try {
-        await del(b.url, { token: blobToken });
-        deletedCount++;
-      } catch (err) {
+    if (expired.length > 0) {
+      const paths = expired.map((f) => f.name);
+      const { error: deleteError } = await supabase.storage
+        .from(BLOOMBERG_PDFS_BUCKET)
+        .remove(paths);
+      if (deleteError) {
         console.error(
           JSON.stringify({
             event: "bloomberg_pdf_cleanup_delete_failed",
-            pathname: b.pathname,
-            error_class:
-              err instanceof Error ? err.constructor.name : typeof err,
-            error_message: (err instanceof Error
-              ? err.message
-              : String(err)
-            ).slice(0, 200),
+            error_message: deleteError.message.slice(0, 200),
+            attempted_count: paths.length,
           }),
         );
+      } else {
+        deletedCount = paths.length;
       }
     }
 
@@ -83,7 +98,7 @@ async function handle(request: NextRequest): Promise<NextResponse> {
       JSON.stringify({
         event: "bloomberg_pdfs_cleanup_run",
         deleted_count: deletedCount,
-        scanned_count: blobs.length,
+        scanned_count: allFiles.length,
         ttl_days: TTL_DAYS,
         ts,
       }),
@@ -91,7 +106,7 @@ async function handle(request: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json({
       deleted_count: deletedCount,
-      scanned_count: blobs.length,
+      scanned_count: allFiles.length,
       ttl_days: TTL_DAYS,
       ts,
     });

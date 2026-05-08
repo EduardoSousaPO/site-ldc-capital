@@ -1,28 +1,34 @@
 /**
  * Camada de leitura de PDFs Bloomberg para o pipeline.
  *
- * Em PRODUÇÃO (Vercel): lê de Vercel Blob via `BLOB_READ_WRITE_TOKEN`
- * (provisionado automaticamente). PDFs ficam em `bloomberg-pdfs/` com TTL
- * de 30 dias (RNF-008 + ADR-003 — auto-cleanup via cron separado em F-008).
+ * Em PRODUÇÃO (Vercel): lê de Supabase Storage (bucket privado `bloomberg-pdfs`)
+ * via service role. Migrado de Vercel Blob na 2026-05-08 — Vercel Blob client
+ * SDK tem bug de CORS no endpoint `vercel.com/api/blob/` para domínios custom
+ * (vide migração `create_bloomberg_pdfs_storage_bucket` + commits da época).
  *
- * Em DEV LOCAL (sem `BLOB_READ_WRITE_TOKEN`): cai para o filesystem,
+ * Em DEV LOCAL (sem `SUPABASE_SERVICE_ROLE_KEY`): cai para o filesystem,
  * lendo da pasta de fixtures
  * `src/features/news/pipeline/__tests__/__fixtures__/bloomberg-pdfs/`.
  * Decisão técnica aprovada pelo Eduardo: smoke test em dev usa fixtures
  * reais já versionadas (gitignored por padrão; ver `.gitignore` da pasta).
  *
- * Anti-SPEC §6.2: NÃO logar conteúdo de PDF Bloomberg. Apenas IDs/filenames.
+ * Anti-SPEC §6.2b (sagrada): NÃO logar conteúdo de PDF Bloomberg. Apenas
+ * IDs/filenames. Bucket `bloomberg-pdfs` é privado — só service role lê.
  */
 
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
+import {
+  getSupabaseStorageAdmin,
+  BLOOMBERG_PDFS_BUCKET,
+} from "@/lib/supabase-storage-admin";
 
 export interface BloombergPdfRef {
   id: string;
   filename: string;
   buffer: Buffer;
-  source: "vercel_blob" | "filesystem";
+  source: "supabase_storage" | "filesystem";
 }
 
 interface ListOptions {
@@ -39,11 +45,12 @@ const FIXTURES_DIR_REL = path.join(
   "__fixtures__",
   "bloomberg-pdfs",
 );
-const BLOB_PREFIX = "bloomberg-pdfs/";
 
-function blobConfigured(): boolean {
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  return typeof token === "string" && token.trim().length > 0;
+function storageConfigured(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+  );
 }
 
 async function listFromFilesystem(limit: number): Promise<BloombergPdfRef[]> {
@@ -77,23 +84,35 @@ async function listFromFilesystem(limit: number): Promise<BloombergPdfRef[]> {
   return results;
 }
 
-async function listFromVercelBlob(limit: number): Promise<BloombergPdfRef[]> {
-  const blob = await import("@vercel/blob");
-  const { blobs } = await blob.list({ prefix: BLOB_PREFIX });
-  const ordered = [...blobs].sort(
-    (a, b) =>
-      new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
+async function listFromSupabaseStorage(
+  limit: number,
+): Promise<BloombergPdfRef[]> {
+  const supabase = getSupabaseStorageAdmin();
+  const { data: files, error: listError } = await supabase.storage
+    .from(BLOOMBERG_PDFS_BUCKET)
+    .list("", {
+      limit: Math.max(limit * 4, 20),
+      sortBy: { column: "created_at", order: "desc" },
+    });
+  if (listError) throw listError;
+  if (!files) return [];
+
+  const pdfs = files.filter(
+    (f) => f.name.toLowerCase().endsWith(".pdf") && !f.name.startsWith("."),
   );
+
   const out: BloombergPdfRef[] = [];
-  for (const item of ordered.slice(0, limit)) {
-    const res = await fetch(item.url);
-    if (!res.ok) continue;
-    const arrayBuffer = await res.arrayBuffer();
+  for (const file of pdfs.slice(0, limit)) {
+    const { data: blob, error: dlError } = await supabase.storage
+      .from(BLOOMBERG_PDFS_BUCKET)
+      .download(file.name);
+    if (dlError || !blob) continue;
+    const arrayBuffer = await blob.arrayBuffer();
     out.push({
-      id: randomUUID(),
-      filename: item.pathname.replace(BLOB_PREFIX, ""),
+      id: file.name,
+      filename: file.name,
       buffer: Buffer.from(arrayBuffer),
-      source: "vercel_blob",
+      source: "supabase_storage",
     });
   }
   return out;
@@ -101,21 +120,21 @@ async function listFromVercelBlob(limit: number): Promise<BloombergPdfRef[]> {
 
 /**
  * Retorna os N PDFs Bloomberg mais recentes disponíveis. Em produção lê de
- * Vercel Blob; em dev local lê do filesystem (fixtures). Se nenhum PDF estiver
- * disponível em qualquer fonte, retorna lista vazia — caller decide se aborta
- * ou prossegue Perplexity-only (Anti-SPEC §6.3 / RNF-008 não tornam PDFs
- * obrigatórios).
+ * Supabase Storage; em dev local lê do filesystem (fixtures). Se nenhum PDF
+ * estiver disponível em qualquer fonte, retorna lista vazia — caller decide
+ * se aborta ou prossegue Perplexity-only (Anti-SPEC §6.3 / RNF-008 não tornam
+ * PDFs obrigatórios).
  */
 export async function listLatestBloombergPdfs(
   options: ListOptions = {},
 ): Promise<BloombergPdfRef[]> {
   const limit = options.limit ?? 5;
-  if (blobConfigured()) {
+  if (storageConfigured()) {
     try {
-      return await listFromVercelBlob(limit);
+      return await listFromSupabaseStorage(limit);
     } catch (err) {
       console.error(
-        "[news/pipeline/pdf-storage] falha ao listar Vercel Blob, caindo no filesystem:",
+        "[news/pipeline/pdf-storage] falha ao listar Supabase Storage, caindo no filesystem:",
         err instanceof Error ? err.message : err,
       );
     }
@@ -124,32 +143,30 @@ export async function listLatestBloombergPdfs(
 }
 
 /**
- * Carrega um PDF específico por ID. Em produção, ID é o pathname no Blob
- * (sem o prefixo); em dev local, ID é o filename na pasta de fixtures.
+ * Carrega um PDF específico por ID. Em produção, ID é o nome do arquivo no
+ * bucket Supabase Storage; em dev local, ID é o filename na pasta de fixtures.
  */
 export async function loadBloombergPdfById(
   id: string,
 ): Promise<BloombergPdfRef | null> {
-  if (blobConfigured()) {
+  if (storageConfigured()) {
     try {
-      const blob = await import("@vercel/blob");
-      const url = `${BLOB_PREFIX}${id}`;
-      const head = await blob.head(url).catch(() => null);
-      if (head) {
-        const res = await fetch(head.url);
-        if (res.ok) {
-          const arrayBuffer = await res.arrayBuffer();
-          return {
-            id,
-            filename: id,
-            buffer: Buffer.from(arrayBuffer),
-            source: "vercel_blob",
-          };
-        }
+      const supabase = getSupabaseStorageAdmin();
+      const { data: blob, error } = await supabase.storage
+        .from(BLOOMBERG_PDFS_BUCKET)
+        .download(id);
+      if (!error && blob) {
+        const arrayBuffer = await blob.arrayBuffer();
+        return {
+          id,
+          filename: id,
+          buffer: Buffer.from(arrayBuffer),
+          source: "supabase_storage",
+        };
       }
     } catch (err) {
       console.error(
-        "[news/pipeline/pdf-storage] falha ao carregar do Vercel Blob:",
+        "[news/pipeline/pdf-storage] falha ao carregar do Supabase Storage:",
         err instanceof Error ? err.message : err,
       );
     }

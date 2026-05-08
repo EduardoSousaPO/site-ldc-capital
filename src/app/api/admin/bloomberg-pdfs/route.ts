@@ -1,23 +1,28 @@
 /**
- * F-016b — Listagem de PDFs Bloomberg em Vercel Blob.
+ * F-016b — Listagem de PDFs Bloomberg em Supabase Storage.
  *
- * GET protegido por sessão Supabase admin. Retorna PDFs em `bloomberg-pdfs/`
- * uploaded nos últimos 30 dias (mesmo TTL do cleanup), ordenados por
- * `uploaded_at` desc.
+ * GET protegido por sessão Supabase admin. Retorna PDFs uploaded nos últimos
+ * 30 dias (mesmo TTL do cleanup), ordenados por `created_at` desc.
  *
- * Anti-SPEC §6.2b: pathname expõe slug do filename apenas — buffer e conteúdo
- * jamais são lidos aqui (a UI só precisa de metadata).
+ * Migrado de Vercel Blob na 2026-05-08 — vide commits da época.
+ *
+ * Anti-SPEC §6.2b: bucket privado, service role bypassa RLS. URLs retornadas
+ * são apenas o `path` (não public URL); o conteúdo só é acessível via API
+ * autenticada.
  */
 
 import { NextResponse } from "next/server";
-import { list } from "@vercel/blob";
 import { checkAdminAuth } from "@/lib/auth-check";
+import {
+  getSupabaseStorageAdmin,
+  BLOOMBERG_PDFS_BUCKET,
+} from "@/lib/supabase-storage-admin";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const BLOB_PREFIX = "bloomberg-pdfs/";
 const TTL_DAYS = 30;
+const LIST_LIMIT = 100;
 
 interface PdfEntry {
   url: string;
@@ -32,33 +37,44 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!blobToken) {
-    return NextResponse.json(
-      { error: "Blob storage not configured" },
-      { status: 500 },
-    );
-  }
-
   try {
-    const { blobs } = await list({ prefix: BLOB_PREFIX, token: blobToken });
-    const cutoff = Date.now() - TTL_DAYS * 24 * 60 * 60 * 1000;
-    const entries: PdfEntry[] = blobs
-      .filter((b) => b.pathname.toLowerCase().endsWith(".pdf"))
-      .map((b) => ({
-        url: b.url,
-        pathname: b.pathname,
-        size_bytes: b.size,
-        uploaded_at: new Date(b.uploadedAt).toISOString(),
-      }))
-      .filter((e) => new Date(e.uploaded_at).getTime() >= cutoff)
-      .sort(
-        (a, b) =>
-          new Date(b.uploaded_at).getTime() -
-          new Date(a.uploaded_at).getTime(),
+    const supabase = getSupabaseStorageAdmin();
+    const { data: files, error } = await supabase.storage
+      .from(BLOOMBERG_PDFS_BUCKET)
+      .list("", {
+        limit: LIST_LIMIT,
+        sortBy: { column: "created_at", order: "desc" },
+      });
+    if (error) {
+      console.error(
+        JSON.stringify({
+          event: "bloomberg_pdf_list_failed",
+          error_message: error.message.slice(0, 200),
+        }),
       );
+      return NextResponse.json({ error: "List failed" }, { status: 500 });
+    }
+    if (!files) return NextResponse.json({ pdfs: [] });
 
-    return NextResponse.json({ pdfs: entries });
+    const cutoff = Date.now() - TTL_DAYS * 24 * 60 * 60 * 1000;
+    const pdfs: PdfEntry[] = files
+      .filter(
+        (f) =>
+          f.name.toLowerCase().endsWith(".pdf") && !f.name.startsWith("."),
+      )
+      .map((f) => {
+        const created = f.created_at ?? f.updated_at ?? new Date().toISOString();
+        const sizeRaw = (f.metadata as { size?: number } | null)?.size;
+        return {
+          url: f.name,
+          pathname: f.name,
+          size_bytes: typeof sizeRaw === "number" ? sizeRaw : 0,
+          uploaded_at: new Date(created).toISOString(),
+        };
+      })
+      .filter((e) => new Date(e.uploaded_at).getTime() >= cutoff);
+
+    return NextResponse.json({ pdfs });
   } catch (err) {
     console.error(
       JSON.stringify({

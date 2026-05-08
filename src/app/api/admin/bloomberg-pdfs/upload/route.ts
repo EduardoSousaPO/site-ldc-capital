@@ -1,41 +1,75 @@
 /**
- * F-016b — Upload de PDFs Bloomberg via client-side upload (token issuer).
+ * F-016b — Upload de PDFs Bloomberg via Supabase Storage signed upload URL.
  *
- * O fluxo `multipart/form-data` direto pra Function (versão anterior) batia no
- * limite hard de 4.5MB do Vercel Functions (`FUNCTION_PAYLOAD_TOO_LARGE`).
- * PDFs Bloomberg típicos têm 5-15MB. Com `handleUpload` do `@vercel/blob/client`,
- * o servidor só emite token assinado e o browser sobe direto pro Blob — sem
- * passar pelo runtime da Function.
+ * Migrado de Vercel Blob (`@vercel/blob/client`) na 2026-05-08 — o client SDK
+ * tinha bug de CORS no `vercel.com/api/blob/` para domínios custom. Supabase
+ * Storage emite signed upload URLs que aceitam CORS de qualquer origem.
  *
- * Auth via sessão Supabase admin (`checkAdminAuth()`); rejeição lança Error e
- * `handleUpload` devolve 4xx pro client. Validações (MIME, size) movidas para
- * `onBeforeGenerateToken` — Vercel Blob honra `allowedContentTypes` e
- * `maximumSizeInBytes` no upload em si.
+ * Fluxo:
+ *   1. Client POST `{ filename, contentType, sizeBytes }` para esta rota.
+ *   2. Server valida auth admin + tipo PDF + tamanho ≤10MB + slug.
+ *   3. Server chama `storage.from(bucket).createSignedUploadUrl(path)` e
+ *      devolve `{ token, path, signedUrl }` — o token é válido por 2 horas.
+ *   4. Client faz PUT direto no `signedUrl` com o body do arquivo.
  *
- * Anti-SPEC §6.2b (sagrada): conteúdo dos PDFs nunca é processado aqui — só
- * pathname/size em logs estruturados.
- *
- * `addRandomSuffix:true` é obrigatório aqui: sem suffix, o SDK
- * `@vercel/blob/client.upload()` faz HEAD check antes do PUT pra detectar
- * colisão, e esse HEAD bate em `vercel.com/api/blob/` que não tem CORS pro
- * nosso domínio custom (`www.ldccapital.com.br`). Como o pipeline lista todos
- * os arquivos sob `bloomberg-pdfs/`, o suffix aleatório é transparente.
+ * Anti-SPEC §6.2b (sagrada): o servidor jamais lê o conteúdo do PDF — só
+ * gera token. Bucket privado, service role bypassa RLS, conteúdo Bloomberg
+ * jamais é exposto publicamente.
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { checkAdminAuth } from "@/lib/auth-check";
+import {
+  getSupabaseStorageAdmin,
+  BLOOMBERG_PDFS_BUCKET,
+} from "@/lib/supabase-storage-admin";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const BLOB_PREFIX = "bloomberg-pdfs/";
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
+function slugifyFilename(raw: string): string {
+  const withoutExt = raw.replace(/\.pdf$/i, "");
+  const slug = withoutExt
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+  return slug.length > 0 ? slug : "bloomberg-pdf";
+}
+
+function timestampUtc(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    d.getUTCFullYear().toString() +
+    pad(d.getUTCMonth() + 1) +
+    pad(d.getUTCDate()) +
+    "-" +
+    pad(d.getUTCHours()) +
+    pad(d.getUTCMinutes()) +
+    pad(d.getUTCSeconds())
+  );
+}
+
+interface RequestBody {
+  filename?: unknown;
+  contentType?: unknown;
+  sizeBytes?: unknown;
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  let body: HandleUploadBody;
+  const user = await checkAdminAuth();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let body: RequestBody;
   try {
-    body = (await request.json()) as HandleUploadBody;
+    body = (await request.json()) as RequestBody;
   } catch {
     return NextResponse.json(
       { error: "Invalid JSON body" },
@@ -43,54 +77,89 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  try {
-    const jsonResponse = await handleUpload({
-      body,
-      request,
-      onBeforeGenerateToken: async (pathname) => {
-        const user = await checkAdminAuth();
-        if (!user) {
-          throw new Error("Unauthorized");
-        }
-        if (!pathname.startsWith(BLOB_PREFIX)) {
-          throw new Error(`Invalid pathname prefix (expected ${BLOB_PREFIX})`);
-        }
-        if (!pathname.toLowerCase().endsWith(".pdf")) {
-          throw new Error("Only .pdf files allowed");
-        }
-        return {
-          allowedContentTypes: ["application/pdf"],
-          addRandomSuffix: true,
-          maximumSizeInBytes: MAX_FILE_SIZE,
-          tokenPayload: JSON.stringify({
-            uploader_domain: user.email?.split("@")[1] ?? "unknown",
-          }),
-        };
-      },
-      onUploadCompleted: async ({ blob, tokenPayload }) => {
-        console.info(
-          JSON.stringify({
-            event: "bloomberg_pdf_uploaded",
-            pathname: blob.pathname,
-            url: blob.url,
-            token_payload: tokenPayload,
-          }),
-        );
-      },
-    });
+  const filename = typeof body.filename === "string" ? body.filename : "";
+  const contentType =
+    typeof body.contentType === "string" ? body.contentType : "";
+  const sizeBytes =
+    typeof body.sizeBytes === "number" ? body.sizeBytes : NaN;
 
-    return NextResponse.json(jsonResponse);
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Upload failed";
-    console.error(
+  if (!filename || !filename.toLowerCase().endsWith(".pdf")) {
+    return NextResponse.json(
+      { error: "filename must end with .pdf" },
+      { status: 400 },
+    );
+  }
+  if (contentType !== "application/pdf") {
+    return NextResponse.json(
+      { error: "Only application/pdf is allowed" },
+      { status: 400 },
+    );
+  }
+  if (
+    !Number.isFinite(sizeBytes) ||
+    sizeBytes <= 0 ||
+    sizeBytes > MAX_FILE_SIZE
+  ) {
+    return NextResponse.json(
+      { error: `File size must be in (0, ${MAX_FILE_SIZE}] bytes` },
+      { status: 413 },
+    );
+  }
+
+  const slug = slugifyFilename(filename);
+  const ts = timestampUtc();
+  const random = Math.random().toString(36).slice(2, 8);
+  const path = `${ts}-${random}-${slug}.pdf`;
+
+  try {
+    const supabase = getSupabaseStorageAdmin();
+    const { data, error } = await supabase.storage
+      .from(BLOOMBERG_PDFS_BUCKET)
+      .createSignedUploadUrl(path);
+
+    if (error || !data) {
+      console.error(
+        JSON.stringify({
+          event: "bloomberg_pdf_signed_url_failed",
+          path,
+          error_message: error?.message?.slice(0, 200) ?? "unknown",
+        }),
+      );
+      return NextResponse.json(
+        { error: "Failed to generate upload URL" },
+        { status: 500 },
+      );
+    }
+
+    console.info(
       JSON.stringify({
-        event: "bloomberg_pdf_upload_failed",
-        error_class: err instanceof Error ? err.constructor.name : typeof err,
-        error_message: message.slice(0, 200),
+        event: "bloomberg_pdf_upload_url_issued",
+        path,
+        size_bytes: sizeBytes,
+        uploader_domain: user.email?.split("@")[1] ?? "unknown",
       }),
     );
-    const status = message === "Unauthorized" ? 401 : 400;
-    return NextResponse.json({ error: message }, { status });
+
+    return NextResponse.json({
+      path: data.path,
+      token: data.token,
+      signedUrl: data.signedUrl,
+    });
+  } catch (err) {
+    console.error(
+      JSON.stringify({
+        event: "bloomberg_pdf_signed_url_failed",
+        path,
+        error_class: err instanceof Error ? err.constructor.name : typeof err,
+        error_message: (err instanceof Error
+          ? err.message
+          : String(err)
+        ).slice(0, 200),
+      }),
+    );
+    return NextResponse.json(
+      { error: "Failed to generate upload URL" },
+      { status: 500 },
+    );
   }
 }

@@ -3,14 +3,16 @@
 /**
  * F-016b — UI de upload + auto-trigger do pipeline IA.
  *
- * Fluxo:
+ * Fluxo (Supabase Storage signed upload, migrado de Vercel Blob 2026-05-08):
  *   1. Eduardo arrasta 1..N PDFs (HTML5 dragdrop, sem dep externa).
  *   2. Validação client-side: MIME `application/pdf`, ≤10MB cada, ≤10 arquivos.
- *   3. POST multipart `/api/admin/bloomberg-pdfs/upload`.
- *   4. Toast sucesso + countdown 30s. Cada novo upload reseta o timer (debounce
+ *   3. Por arquivo: POST JSON `/api/admin/bloomberg-pdfs/upload` →
+ *      `{ path, token, signedUrl }`. Server gera URL assinada de upload.
+ *   4. Browser PUT direto no `signedUrl` com o body do arquivo.
+ *   5. Toast sucesso + countdown 30s. Cada novo upload reseta o timer (debounce
  *      verdadeiro: cancela trigger pendente e recomeça).
- *   5. Ao zerar o countdown, POST `/api/admin/bloomberg-pdfs/trigger-pipeline`.
- *   6. Mostra resumo do GenerationResult com link para `/admin/posts`.
+ *   6. Ao zerar o countdown, POST `/api/admin/bloomberg-pdfs/trigger-pipeline`.
+ *   7. Mostra resumo do GenerationResult com link para `/admin/posts`.
  *
  * Drag&drop nativo escolhido para evitar dep nova (`react-dropzone`) — o uso é
  * simples e não justifica o bundle extra.
@@ -34,7 +36,6 @@ import {
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
-import { upload } from "@vercel/blob/client";
 import AdminLayout from "../components/AdminLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,33 +60,6 @@ interface GenerationResultClient {
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_FILES = 10;
 const DEBOUNCE_SECONDS = 30;
-const BLOB_PREFIX = "bloomberg-pdfs/";
-
-function slugifyFilename(raw: string): string {
-  const withoutExt = raw.replace(/\.pdf$/i, "");
-  const slug = withoutExt
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80);
-  return slug.length > 0 ? slug : "bloomberg-pdf";
-}
-
-function timestampUtc(): string {
-  const d = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return (
-    d.getUTCFullYear().toString() +
-    pad(d.getUTCMonth() + 1) +
-    pad(d.getUTCDate()) +
-    "-" +
-    pad(d.getUTCHours()) +
-    pad(d.getUTCMinutes()) +
-    pad(d.getUTCSeconds())
-  );
-}
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -260,19 +234,42 @@ export default function PdfUploader() {
         return;
       }
       setUploading(true);
-      const ts = timestampUtc();
       let succeeded = 0;
       try {
-        for (let i = 0; i < valid.length; i++) {
-          const file = valid[i];
-          const slug = slugifyFilename(file.name);
-          const pathname = `${BLOB_PREFIX}${ts}-${i}-${slug}.pdf`;
+        for (const file of valid) {
           try {
-            await upload(pathname, file, {
-              access: "public",
-              contentType: "application/pdf",
-              handleUploadUrl: "/api/admin/bloomberg-pdfs/upload",
+            const issueRes = await fetch(
+              "/api/admin/bloomberg-pdfs/upload",
+              {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({
+                  filename: file.name,
+                  contentType: "application/pdf",
+                  sizeBytes: file.size,
+                }),
+              },
+            );
+            if (!issueRes.ok) {
+              const body = (await issueRes
+                .json()
+                .catch(() => ({}))) as { error?: string };
+              throw new Error(
+                body.error ?? `URL signing failed (${issueRes.status})`,
+              );
+            }
+            const { signedUrl } = (await issueRes.json()) as {
+              signedUrl: string;
+            };
+
+            const putRes = await fetch(signedUrl, {
+              method: "PUT",
+              headers: { "content-type": "application/pdf" },
+              body: file,
             });
+            if (!putRes.ok) {
+              throw new Error(`Upload PUT failed (${putRes.status})`);
+            }
             succeeded++;
           } catch (err) {
             console.error("Upload failed", { name: file.name, err });
