@@ -63,6 +63,7 @@ import {
   updatePipelineRun,
 } from "./blogpost-db";
 import { persistBlockedDraft } from "./blocked-draft-storage";
+import { generateAndAttachCover } from "./cover-image-gen";
 import { createApprovalToken } from "@/features/news/persistence/approval-token-storage";
 import {
   parseCcEmails,
@@ -378,6 +379,14 @@ async function processArticle(
     );
     return { status: "error", slug: article.slug };
   }
+
+  // 4b. Cover AI editorial (DALL-E 3). Falha graciosa: post fica sem capa,
+  // pipeline segue. Custo ~R$0,22/post. Não bloqueia aprovação Marcos
+  // (workflow F-018 só checa BlogPost.published, não cover).
+  await generateAndAttachCover({
+    blogPostId: inserted.id,
+    categoriaSlug: article.categoria_slug,
+  });
 
   // Telemetria de pipeline (sentinela 0×64). Telemetria de "publicado" final
   // (com IP hash do clique de Marcos) ocorre em /api/posts/approve em F-018.
