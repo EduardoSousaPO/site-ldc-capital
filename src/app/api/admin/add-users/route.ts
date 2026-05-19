@@ -7,12 +7,12 @@ export async function POST(_request: NextRequest) {
   try {
     const supabase = createSupabaseAdminClient();
 
-    const defaultPassword = "Admin123"; // solicitado pelo cliente
+    const defaultPassword = process.env.ADMIN_SYNC_PASSWORD || "LdcBlog2026";
 
     const usersToCreate = [
       { email: "eduardo.sousa@ldccapital.com.br", name: "Eduardo Sousa" },
+      { email: "marcos.meneghel@ldccapital.com.br", name: "Marcos Meneghel" },
       { email: "luciano.herzog@ldccapital.com.br", name: "Luciano Herzog" },
-      { email: "germano.laube@ldccapital.com.br", name: "Germano Laube" },
     ];
 
     const results: Array<{ email: string; status: "created" | "exists" | "error"; message?: string }> = [];

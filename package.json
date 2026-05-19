@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "db:seed": "tsx scripts/seed.ts",
+    "admin:sync-users": "tsx scripts/sync-admin-users.ts",
     "setup-sheets": "tsx scripts/setup-google-sheets.ts",
     "test:wealth-planning": "tsx scripts/test-wealth-planning.ts",
     "test:wealth-planning:fixed": "tsx scripts/test-wealth-planning-fixed.ts",

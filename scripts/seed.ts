@@ -66,6 +66,17 @@ async function ensureAdminUser() {
 
     if (listError) throw listError;
     authUserId = users?.users?.find((u) => u.email?.toLowerCase() === adminEmail.toLowerCase())?.id ?? null;
+
+    if (!authUserId) {
+      throw new Error("Nao foi possivel obter o ID do usuario admin");
+    }
+
+    const { error: updateError } = await supabase.auth.admin.updateUserById(authUserId, {
+      password: adminPassword,
+      email_confirm: true,
+      user_metadata: { name: adminName, role: "ADMIN" },
+    });
+    if (updateError) throw updateError;
   }
 
   if (!authUserId) {
