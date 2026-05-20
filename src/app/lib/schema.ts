@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+// Atribuição de campanha (UTMs + landing/referrer). Todos opcionais —
+// o form continua válido mesmo sem nenhum UTM presente.
+const attributionField = z.string().max(255).optional();
+
 // Schema para formulário de lead
 export const leadFormSchema = z.object({
   nome: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -7,7 +11,7 @@ export const leadFormSchema = z.object({
   email: z.string().email("Email inválido"),
   patrimonio: z.enum([
     "0-300k",
-    "300k-1m", 
+    "300k-1m",
     "1m-5m",
     "5m-10m",
     "10m-30m",
@@ -15,13 +19,20 @@ export const leadFormSchema = z.object({
   ]),
   origem: z.enum([
     "youtube",
-    "google", 
+    "google",
     "instagram",
     "indicacao",
     "linkedin",
     "outros"
   ]),
-  consentimento: z.boolean().refine(val => val === true, "Consentimento obrigatório")
+  consentimento: z.boolean().refine(val => val === true, "Consentimento obrigatório"),
+  utm_source: attributionField,
+  utm_medium: attributionField,
+  utm_campaign: attributionField,
+  utm_content: attributionField,
+  utm_term: attributionField,
+  landing_page: attributionField,
+  referrer: attributionField,
 });
 
 export type LeadFormData = z.infer<typeof leadFormSchema>;

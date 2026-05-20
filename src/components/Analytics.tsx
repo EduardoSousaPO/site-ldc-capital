@@ -15,9 +15,10 @@ declare global {
 interface AnalyticsProps {
   gaId?: string;
   metaPixelId?: string;
+  gtmId?: string;
 }
 
-export default function Analytics({ gaId, metaPixelId }: AnalyticsProps) {
+export default function Analytics({ gaId, metaPixelId, gtmId }: AnalyticsProps) {
   // Meta Pixel: uma única inicialização por aba. next/script + hidratação/Strict Mode
   // podem disparar o snippet duas vezes e dobrar PageView / métricas na Meta.
   useEffect(() => {
@@ -45,6 +46,36 @@ fbq('track', 'PageView');
 
   return (
     <>
+      {/* Google Tag Manager — habilita centralização de eventos (GA4, Ads, etc.).
+          Inicializa dataLayer antes de qualquer push externo. */}
+      {gtmId && (
+        <>
+          <Script
+            id="google-tag-manager"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `
+                window.dataLayer = window.dataLayer || [];
+                (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+                new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+                j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+                'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+                })(window,document,'script','dataLayer','${gtmId}');
+              `,
+            }}
+          />
+          <noscript>
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+              height="0"
+              width="0"
+              style={{ display: "none", visibility: "hidden" }}
+              title="Google Tag Manager"
+            />
+          </noscript>
+        </>
+      )}
+
       {/* Google Analytics 4 */}
       {gaId && (
         <>
