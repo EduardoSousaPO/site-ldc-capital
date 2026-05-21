@@ -1,0 +1,4 @@
+# Pasta preparada para testes e2e (Playwright).
+# HOJE: playwright é dependência (^1.57) mas nenhum spec versionado ainda.
+# Backlog: testes e2e para fluxos admin (TODO §2).
+# CI N3 só será ativado quando houver e2e + smoke estáveis.

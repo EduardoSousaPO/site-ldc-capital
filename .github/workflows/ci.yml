@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────
+  # N1 — lint + typecheck + unit tests (obrigatório para A, B, Fast Fix).
+  # Ver AGENTS.md §12 "CI por níveis".
+  # ─────────────────────────────────────────────────────────────────────────
+  n1:
+    name: N1 — lint + typecheck + test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests (vitest)
+        run: npm test
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # N2 — N1 + integration + contract + build.
+  # TODO: ativar quando integration/contract tests cobrirem fluxos críticos
+  # (ver TODO.md §2 — backlog de "Ativar testes e2e para fluxos admin").
+  # ─────────────────────────────────────────────────────────────────────────
+  # n2:
+  #   name: N2 — integration + contract + build
+  #   needs: n1
+  #   runs-on: ubuntu-latest
+  #   if: contains(github.event.pull_request.labels.*.name, 'classe-c') || contains(github.event.pull_request.labels.*.name, 'classe-d')
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         submodules: recursive
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         cache: npm
+  #     - run: npm ci
+  #     - run: npm test -- tests/integration
+  #     - run: npm test -- tests/contract
+  #     - run: npm run build
+  #     env:
+  #       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL_PREVIEW }}
+  #       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_PREVIEW }}
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # N3 — N2 + e2e + smoke + migration validation + preview deploy check.
+  # TODO: ativar quando houver e2e (Playwright) e smoke tests estáveis.
+  # Obrigatório para features classe D (produção, migration, env, deploy).
+  # ─────────────────────────────────────────────────────────────────────────
+  # n3:
+  #   name: N3 — e2e + smoke + migration validation
+  #   needs: n2
+  #   runs-on: ubuntu-latest
+  #   if: contains(github.event.pull_request.labels.*.name, 'classe-d')
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         submodules: recursive
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
+  #         cache: npm
+  #     - run: npm ci
+  #     - run: npx playwright install --with-deps
+  #     - run: npm test -- tests/e2e
+  #     - name: Smoke test
+  #       run: bash scripts/smoke.sh
+  #     - name: Migration validation
+  #       run: bash scripts/validate-migrations.sh

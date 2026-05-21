@@ -1,0 +1,3 @@
+# Pasta preparada para testes de contrato (Zod schema match).
+# HOJE: alguns asserts Zod existem dentro de src/features/news/**/__tests__/.
+# Consolidação futura sob demanda.

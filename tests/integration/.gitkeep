@@ -1,0 +1,3 @@
+# Pasta preparada para testes de integração.
+# HOJE: testes vivem em src/**/__tests__/. Sem integration tests dedicados ainda.
+# CI N2 só será ativado quando esta pasta tiver testes que cobrem fluxos críticos.

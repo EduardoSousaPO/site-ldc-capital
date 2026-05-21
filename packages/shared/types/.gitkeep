@@ -1,0 +1,13 @@
+# Destino final dos Zod consolidados (fonte de verdade dos contratos).
+#
+# HOJE (2026-05-20): vazio. Schemas Zod vivem em:
+#   - src/features/news/contracts/         (pipeline IA F-007/F-008/F-019)
+#   - src/lib/dividend-tax/types.ts        (calculadora)
+#   - src/lib/wealth-planning/validations.ts
+#   - src/lib/pgbl/calculations.ts
+#   - src/lib/schema.ts                    (esquema raiz)
+#
+# Migração para cá: sob demanda dentro de Feature Contract de feature relevante.
+# NÃO fazer big-bang refactor. Ver DECISIONS_LOG (2026-05-20).
+#
+# Espelho legível: docs/contracts/CONTRACTS.md

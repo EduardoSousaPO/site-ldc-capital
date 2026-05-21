@@ -1,0 +1,8 @@
+# Feature contracts extensos (C/D, > 40 linhas) vivem aqui.
+# Feature contracts curtos (B) vivem inline no TODO.md.
+#
+# Feature contracts presentes neste diretório (migrados de docs/news/feature-contracts/
+# em 2026-05-21 — Fase 6b da reorganização Harness v3.2):
+#   - F-007-pipeline-ia.md   (pipeline IA → BlogPost; legacy parcial pós-pivot ADR-005)
+#   - F-008-cron-commit.md   (cron + commit GitHub; descontinuado por ADR-005)
+#   - F-019-carousel.md      (carrossel social X-mock; em produção desde 2026-05-09)
