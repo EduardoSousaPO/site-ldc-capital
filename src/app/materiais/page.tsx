@@ -232,7 +232,7 @@ export default function MateriaisPage() {
                 Conteúdo Especializado
               </h3>
               <p className="text-gray-600 leading-relaxed">
-                Material desenvolvido por consultores com mais de 400M sob gestão e consultoria
+                Material desenvolvido por consultores com mais de R$400M+ sob consultoria
               </p>
             </div>
 

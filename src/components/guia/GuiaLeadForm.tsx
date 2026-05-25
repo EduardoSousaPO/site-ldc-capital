@@ -2,9 +2,10 @@
 
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { submitGuiaLead } from '@/lib/guia-leads/actions';
 import { PATRIMONIO_OPTIONS, GuiaFormState } from '@/types/guia-lead';
+import { trackLead, trackMetaEvent } from '@/lib/analytics';
 
 function maskWhatsApp(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 11);
@@ -51,25 +52,80 @@ const initialState: GuiaFormState = {
 export default function GuiaLeadForm() {
   const [state, formAction] = useActionState(submitGuiaLead, initialState);
   const [whatsapp, setWhatsapp] = useState('');
+  const [showFallback, setShowFallback] = useState(false);
+  const redirected = useRef(false);
+  const viewTracked = useRef(false);
 
-  if (state.success) {
+  useEffect(() => {
+    if (!viewTracked.current) {
+      viewTracked.current = true;
+      trackMetaEvent('ViewContent', {
+        content_name: 'guia-bankers-page',
+        content_type: 'landing_page',
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (state.success && state.whatsappUrl) {
+      if (!redirected.current) {
+        redirected.current = true;
+        trackLead('guia-bankers');
+        const redirectTimer = setTimeout(() => {
+          window.location.href = state.whatsappUrl!;
+        }, 1500);
+        const fallbackTimer = setTimeout(() => {
+          setShowFallback(true);
+        }, 3000);
+        return () => {
+          clearTimeout(redirectTimer);
+          clearTimeout(fallbackTimer);
+        };
+      }
+    }
+  }, [state.success, state.whatsappUrl]);
+
+  if (state.success && state.whatsappUrl) {
     return (
       <div className="text-center py-8 space-y-4">
-        <div className="w-14 h-14 mx-auto bg-[#98ab44]/20 rounded-full flex items-center justify-center">
-          <svg className="w-7 h-7 text-[#98ab44]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-          </svg>
+        <div className="animate-pulse">
+          <div className="w-16 h-16 mx-auto bg-[#98ab44]/20 rounded-full flex items-center justify-center">
+            <svg className="w-8 h-8 text-[#98ab44]" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+            </svg>
+          </div>
         </div>
-        <p className="font-serif text-white text-lg sm:text-xl font-semibold leading-snug">
-          {state.message}
+
+        <h3 className="font-serif text-[#98ab44] text-xl">
+          Redirecionando para WhatsApp...
+        </h3>
+
+        <p className="text-white/70 text-sm font-sans">
+          Envie a mensagem para receber seu guia!
         </p>
+
+        {showFallback && (
+          <div className="mt-6 space-y-3">
+            <p className="text-white/60 text-sm font-sans">
+              Não abriu automaticamente?
+            </p>
+            <a
+              href={state.whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block px-6 py-3 bg-green-600 text-white font-semibold rounded-lg
+                         hover:bg-green-700 transition-colors font-sans"
+            >
+              Abrir WhatsApp Manualmente
+            </a>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <form action={formAction} className="space-y-4">
-      {/* Nome */}
       <div>
         <input
           type="text"
@@ -87,7 +143,6 @@ export default function GuiaLeadForm() {
         )}
       </div>
 
-      {/* WhatsApp */}
       <div>
         <input
           type="tel"
@@ -107,7 +162,6 @@ export default function GuiaLeadForm() {
         )}
       </div>
 
-      {/* E-mail */}
       <div>
         <input
           type="email"
@@ -125,7 +179,6 @@ export default function GuiaLeadForm() {
         )}
       </div>
 
-      {/* Patrimônio */}
       <div>
         <select
           name="patrimonio_range"
@@ -150,20 +203,18 @@ export default function GuiaLeadForm() {
         )}
       </div>
 
-      {/* Erro geral */}
       {!state.success && state.message && (
         <p className="text-red-400 text-sm text-center font-sans">{state.message}</p>
       )}
 
       <SubmitButton />
 
-      {/* Texto de confiança */}
       <div className="pt-1 text-center space-y-1">
         <p className="text-white/70 text-xs font-sans font-medium">
           Luciano Herzog | CEO LDC Capital | CVM 3976-4
         </p>
         <p className="text-white/50 text-xs font-sans">
-          R$400M sob gestão | Gestão independente, sem conflito de interesses
+          R$400M+ sob consultoria | Consultoria independente, sem conflito de interesses
         </p>
       </div>
     </form>
