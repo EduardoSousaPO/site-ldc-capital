@@ -45,17 +45,34 @@ export function trackMetaEvent(eventName: string, params?: Record<string, unknow
   if (typeof window !== "undefined" && window.fbq) {
     window.fbq("track", eventName, params);
   }
+  if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+    try {
+      const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+      if (pixelId) {
+        const data = new URLSearchParams({
+          id: pixelId,
+          ev: eventName,
+          dl: window.location.href,
+          rl: document.referrer,
+          ts: Date.now().toString(),
+          cd: JSON.stringify(params || {}),
+        });
+        navigator.sendBeacon(`https://www.facebook.com/tr/?${data.toString()}`);
+      }
+    } catch { /* silencioso */ }
+  }
 }
 
 /**
  * Tracka um lead (formulário preenchido)
  */
-export function trackLead(source: string, value?: number) {
+export function trackLead(source: string, value?: number, params?: Record<string, unknown>) {
   trackEvent("lead", "engagement", source, value);
   trackMetaEvent("Lead", {
     content_name: source,
     value: value,
     currency: "BRL",
+    ...params,
   });
 }
 

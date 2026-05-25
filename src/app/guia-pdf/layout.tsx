@@ -11,7 +11,6 @@ export const metadata: Metadata = {
 export default function GuiaPdfLayout({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ margin: 0, padding: 0, background: '#f8f8f6', minHeight: '100vh' }}>
-      {/* TODO: pixel Meta — não incluir nesta página de PDF */}
       {children}
     </div>
   );

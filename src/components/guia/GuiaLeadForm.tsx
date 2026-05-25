@@ -52,6 +52,7 @@ const initialState: GuiaFormState = {
 export default function GuiaLeadForm() {
   const [state, formAction] = useActionState(submitGuiaLead, initialState);
   const [whatsapp, setWhatsapp] = useState('');
+  const [patrimonio, setPatrimonio] = useState('');
   const [showFallback, setShowFallback] = useState(false);
   const redirected = useRef(false);
   const viewTracked = useRef(false);
@@ -70,7 +71,12 @@ export default function GuiaLeadForm() {
     if (state.success && state.whatsappUrl) {
       if (!redirected.current) {
         redirected.current = true;
-        trackLead('guia-bankers');
+        const valueMap: Record<string, number> = {
+          menos_100k: 10, '100k_300k': 25, '300k_500k': 50, acima_500k: 100,
+        };
+        trackLead('guia-bankers', valueMap[patrimonio] || 25, {
+          patrimonio_faixa: patrimonio,
+        });
         const redirectTimer = setTimeout(() => {
           window.location.href = state.whatsappUrl!;
         }, 1500);
@@ -183,7 +189,8 @@ export default function GuiaLeadForm() {
         <select
           name="patrimonio_range"
           required
-          defaultValue=""
+          value={patrimonio}
+          onChange={(e) => setPatrimonio(e.target.value)}
           className="w-full px-4 py-3.5 bg-[#344645]/50 border border-[#577171]/40
                      rounded-lg text-white font-sans text-sm appearance-none cursor-pointer
                      focus:border-[#98ab44] focus:ring-2 focus:ring-[#98ab44]/20
