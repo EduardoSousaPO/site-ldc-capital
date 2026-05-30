@@ -79,10 +79,10 @@ export default function GuiaLeadForm() {
         });
         const redirectTimer = setTimeout(() => {
           window.location.href = state.whatsappUrl!;
-        }, 1500);
+        }, 800);
         const fallbackTimer = setTimeout(() => {
           setShowFallback(true);
-        }, 3000);
+        }, 2200);
         return () => {
           clearTimeout(redirectTimer);
           clearTimeout(fallbackTimer);
