@@ -69,11 +69,15 @@ export default function GuiaPage() {
             <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl shadow-black/40">
               <div className="absolute inset-0 bg-gradient-to-t from-[#262d3d]/40 via-transparent to-transparent z-10" />
               <Image
-                src="/images/DSC_5671.JPG"
-                alt="Luciano Herzog — CEO LDC Capital"
+                src="/images/luciano-guia.webp"
+                alt="Luciano Herzog — Consultor de Investimentos CVM"
                 fill
                 className="object-cover object-[center_20%]"
+                sizes="(max-width: 640px) 224px, (max-width: 1024px) 256px, 288px"
+                quality={80}
                 priority
+                placeholder="blur"
+                blurDataURL="data:image/jpeg;base64,/9j/2wBDABsSFBcUERsXFhceHBsgKEIrKCUlKFE6PTBCYFVlZF9VXVtqeJmBanGQc1tdhbWGkJ6jq62rZ4C8ybqmx5moq6T/2wBDARweHigjKE4rK06kbl1upKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKSkpKT/wAARCAAHAAoDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAAAAID/8QAGhAAAgIDAAAAAAAAAAAAAAAAAAECBBETIf/EABQBAQAAAAAAAAAAAAAAAAAAAAH/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwDC3Z1uMUustPKAAv/Z"
               />
             </div>
             <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-20 bg-[#262d3d]/95 px-4 py-1.5 rounded-full border border-[#98ab44]/30 shadow-lg whitespace-nowrap">
@@ -95,6 +99,45 @@ export default function GuiaPage() {
             </li>
           ))}
         </ul>
+      </section>
+
+      {/* ── PROVA SOCIAL ──────────────────────── */}
+      <section className="px-4 sm:px-8 pb-10 sm:pb-14 max-w-5xl mx-auto">
+        <div className="max-w-2xl mx-auto lg:mx-0 space-y-6">
+          <div className="flex flex-wrap items-center gap-3 justify-center lg:justify-start">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#98ab44]/30 bg-[#98ab44]/10">
+              <svg className="w-3.5 h-3.5 text-[#98ab44]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <span className="text-[#98ab44] text-xs font-sans font-semibold">CVM 3976-4</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/15 bg-white/5">
+              <span className="text-white/60 text-xs font-sans">Consultoria independente</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-white/15 bg-white/5">
+              <span className="text-white/60 text-xs font-sans">R$400M+ sob consultoria</span>
+            </span>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            <blockquote className="bg-white/5 border border-white/10 rounded-xl px-5 py-4">
+              <p className="font-sans text-white/75 text-sm leading-relaxed italic">
+                &ldquo;Finalmente encontrei um consultor que trabalha para mim, não para o banco.&rdquo;
+              </p>
+              <cite className="block mt-2 font-sans text-[#98ab44] text-xs not-italic font-semibold">
+                — Roberto M., São Paulo
+              </cite>
+            </blockquote>
+            <blockquote className="bg-white/5 border border-white/10 rounded-xl px-5 py-4">
+              <p className="font-sans text-white/75 text-sm leading-relaxed italic">
+                &ldquo;A diversificação internacional que a LDC montou para minha família mudou completamente nossa segurança financeira.&rdquo;
+              </p>
+              <cite className="block mt-2 font-sans text-[#98ab44] text-xs not-italic font-semibold">
+                — Fernanda L., Curitiba
+              </cite>
+            </blockquote>
+          </div>
+        </div>
       </section>
 
       {/* ── FORMULÁRIO ─────────────────────────── */}

@@ -30,15 +30,21 @@ export function createEmailTransporter() {
   });
 }
 
+type EmailAttachment = {
+  filename: string;
+  content: Buffer;
+};
+
 // Função genérica para enviar email (usa Resend ou SMTP)
 async function sendEmail(options: {
   to: string;
   subject: string;
   html: string;
   from?: string;
+  attachments?: EmailAttachment[];
 }): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const fromEmail = options.from || `LDC Capital <${process.env.SMTP_USER || CONTATO_EMAIL}>`;
-  
+
   // Se Resend estiver configurado, usar Resend
   if (useResend && resend) {
     try {
@@ -47,13 +53,17 @@ async function sendEmail(options: {
         to: options.to,
         subject: options.subject,
         html: options.html,
+        attachments: options.attachments?.map((a) => ({
+          filename: a.filename,
+          content: a.content,
+        })),
       });
-      
+
       if (error) {
         console.error('Erro Resend:', error);
         return { success: false, error: error.message };
       }
-      
+
       console.log('Email enviado via Resend:', data?.id);
       return { success: true, messageId: data?.id };
     } catch (error) {
@@ -61,7 +71,7 @@ async function sendEmail(options: {
       return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' };
     }
   }
-  
+
   // Se SMTP estiver configurado, usar nodemailer
   if (process.env.SMTP_USER && process.env.SMTP_PASS) {
     try {
@@ -71,8 +81,12 @@ async function sendEmail(options: {
         to: options.to,
         subject: options.subject,
         html: options.html,
+        attachments: options.attachments?.map((a) => ({
+          filename: a.filename,
+          content: a.content,
+        })),
       });
-      
+
       console.log('Email enviado via SMTP:', result.messageId);
       return { success: true, messageId: result.messageId };
     } catch (error) {
@@ -176,6 +190,56 @@ export async function sendNewLeadEmail(data: {
     to: CONTATO_EMAIL,
     subject,
     html: htmlContent,
+  });
+}
+
+// Função para enviar o guia ao lead via /guia
+export async function sendGuiaEmail(nome: string, email: string) {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ldccapital.com.br';
+
+  // Tenta carregar o PDF estático gerado por `npm run pdf:build`.
+  // Se não existir (ambiente novo ou deploy sem build do PDF), o email vai como link-only.
+  let attachments: { filename: string; content: Buffer }[] | undefined;
+  try {
+    const { readFile } = await import('node:fs/promises');
+    const path = await import('node:path');
+    const pdfPath = path.join(process.cwd(), 'public', 'guia-ldc-capital.pdf');
+    const buf = await readFile(pdfPath);
+    attachments = [{ filename: 'LDC-Capital-Guia.pdf', content: buf }];
+  } catch {
+    console.warn('[sendGuiaEmail] PDF estático ausente em public/guia-ldc-capital.pdf — enviando email link-only.');
+  }
+
+  const htmlContent = `
+    <div style="font-family:'Public Sans',sans-serif;max-width:560px;margin:0 auto;color:#1a1f2e;">
+      <div style="background:#262d3d;padding:32px 40px;">
+        <p style="color:#ffffff;font-size:18px;font-weight:600;margin:0;">LDC Capital</p>
+      </div>
+      <div style="padding:40px;background:#f8f8f6;">
+        <h1 style="font-size:22px;font-weight:700;margin:0 0 16px;">Olá, ${nome}.</h1>
+        <p style="font-size:15px;line-height:1.7;margin:0 0 24px;color:#3d4455;">
+          Seu guia está ${attachments ? 'em anexo neste email' : 'pronto para download'}.
+          ${attachments ? 'Caso queira ler direto no navegador, use o botão abaixo.' : 'Clique no botão abaixo para acessar.'}
+        </p>
+        <a href="${siteUrl}/guia-pdf"
+           style="display:inline-block;background:#98ab44;color:#1a1f2e;
+                  font-weight:700;font-size:14px;padding:14px 28px;
+                  text-decoration:none;border-radius:4px;">
+          ${attachments ? 'Abrir no navegador' : 'Acessar meu guia'}
+        </a>
+        <p style="font-size:12px;color:#577171;margin-top:32px;line-height:1.6;">
+          Luciano Herzog · CEO LDC Capital · CVM 3976-4<br />
+          ldccapital.com.br
+        </p>
+      </div>
+    </div>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: 'Seu guia — O que os bankers de São Paulo não te contam | LDC Capital',
+    html: htmlContent,
+    attachments,
   });
 }
 

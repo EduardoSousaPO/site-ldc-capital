@@ -33,7 +33,8 @@ export async function addToGoogleSheets(data: {
     | 'Materiais'
     | 'Page - ebook invest internacionais'
     | 'Calculadora IR Dividendos 2026'
-    | 'Page - Live Eleições 2026';
+    | 'Page - Live Eleições 2026'
+    | 'Page - Guia LDC';
   // Atribuição UTM (opcionais — só preenchidos pelo form Home a partir do PR UTM YouTube).
   utm_source?: string | null;
   utm_medium?: string | null;

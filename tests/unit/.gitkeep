@@ -1,0 +1,3 @@
+# Pasta preparada para testes unitários consolidados.
+# HOJE: testes vivem em src/**/__tests__/ (vitest.config.ts inclui esse glob).
+# Migração futura sob demanda dentro de Feature Contract.

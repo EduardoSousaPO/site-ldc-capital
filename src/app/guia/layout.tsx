@@ -16,7 +16,6 @@ export const metadata: Metadata = {
 export default function GuiaLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="dark bg-[#262d3d] min-h-screen">
-      {/* TODO: pixel Meta - inserir aqui */}
       {children}
     </div>
   );

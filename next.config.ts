@@ -6,15 +6,22 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
-    // Permite usar URL externa direto no campo "URL da capa" do CMS.
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "**",
+        hostname: "wsoxukpeyzmpcngjugie.supabase.co",
       },
       {
-        protocol: "http",
-        hostname: "**",
+        protocol: "https",
+        hostname: "*.supabase.co",
+      },
+      {
+        protocol: "https",
+        hostname: "blob.vercel-storage.com",
+      },
+      {
+        protocol: "https",
+        hostname: "*.public.blob.vercel-storage.com",
       },
     ],
   },

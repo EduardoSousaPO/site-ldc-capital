@@ -25,6 +25,7 @@ export interface GuiaFormState {
   message: string;
   nomeConfirmado?: string;
   emailConfirmado?: string;
+  whatsappUrl?: string;
   errors?: {
     nome?: string[];
     whatsapp?: string[];

@@ -3,7 +3,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { headers } from 'next/headers';
 import { z } from 'zod';
-import { GuiaFormState } from '@/types/guia-lead';
+import { GuiaFormState, GuiaFormData } from '@/types/guia-lead';
 
 const guiaLeadSchema = z.object({
   nome: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -14,13 +14,26 @@ const guiaLeadSchema = z.object({
   }),
 });
 
-// Untyped admin client — guia_leads não está nos Database types gerados ainda
 function getAdminClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
+}
+
+function generateWhatsAppURL(data: GuiaFormData): string {
+  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_LDC || '5551926340242';
+
+  const message = `Oi, quero o guia dos bankers!
+
+Meus dados:
+Nome: ${data.nome}
+E-mail: ${data.email}
+WhatsApp: ${data.whatsapp}
+Patrimonio: ${data.patrimonio_range === 'acima_500k' ? 'Acima de R$500k' : data.patrimonio_range === '300k_500k' ? 'R$300k a R$500k' : data.patrimonio_range === '100k_300k' ? 'R$100k a R$300k' : 'Menos de R$100k'}`;
+
+  return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
 }
 
 export async function submitGuiaLead(
@@ -66,24 +79,41 @@ export async function submitGuiaLead(
     });
 
     if (error) {
-      // Duplicidade — ainda retorna sucesso para não frustrar o lead
       if (error.code === '23505') {
+        const whatsappUrl = generateWhatsAppURL(validatedFields.data);
         return {
           success: true,
-          message: `Perfeito, ${validatedFields.data.nome}. O guia foi enviado para ${validatedFields.data.email}. Fique atento também ao seu WhatsApp.`,
-          nomeConfirmado: validatedFields.data.nome,
-          emailConfirmado: validatedFields.data.email,
+          whatsappUrl,
+          message: 'Redirecionando para WhatsApp...',
         };
       }
       console.error('Erro ao salvar guia lead:', error);
       throw error;
     }
 
+    // Google Sheets
+    if (process.env.GOOGLE_SHEETS_ID && process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
+      try {
+        const { addToGoogleSheets } = await import('@/lib/google-sheets');
+        await addToGoogleSheets({
+          nome: validatedFields.data.nome,
+          email: validatedFields.data.email,
+          telefone: validatedFields.data.whatsapp,
+          patrimonio: validatedFields.data.patrimonio_range,
+          origem: 'landing-guia',
+          origemFormulario: 'Page - Guia LDC',
+        });
+      } catch (sheetsErr) {
+        console.error('Erro ao salvar guia lead no Google Sheets:', sheetsErr);
+      }
+    }
+
+    const whatsappUrl = generateWhatsAppURL(validatedFields.data);
+
     return {
       success: true,
-      message: `Perfeito, ${validatedFields.data.nome}. O guia foi enviado para ${validatedFields.data.email}. Fique atento também ao seu WhatsApp.`,
-      nomeConfirmado: validatedFields.data.nome,
-      emailConfirmado: validatedFields.data.email,
+      whatsappUrl,
+      message: 'Redirecionando para WhatsApp...',
     };
   } catch (err) {
     console.error('Erro ao salvar guia lead:', err);

@@ -284,7 +284,7 @@ Campos enviados para planilha:
 
 Documento de referencia de setup:
 
-- `docs/GOOGLE_SHEETS_SETUP.md`
+- `docs/wiki/runbooks/google-sheets-setup.md`
 
 ---
 
