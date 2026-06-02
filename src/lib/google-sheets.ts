@@ -34,6 +34,14 @@ export async function addToGoogleSheets(data: {
     | 'Page - ebook invest internacionais'
     | 'Calculadora IR Dividendos 2026'
     | 'Page - Live Eleições 2026';
+  // Atribuição UTM (opcionais — só preenchidos pelo form Home a partir do PR UTM YouTube).
+  utm_source?: string | null;
+  utm_medium?: string | null;
+  utm_campaign?: string | null;
+  utm_content?: string | null;
+  utm_term?: string | null;
+  landing_page?: string | null;
+  referrer?: string | null;
 }) {
   try {
     const auth = await getGoogleSheetsAuth();
@@ -48,30 +56,37 @@ export async function addToGoogleSheets(data: {
     // Dados para inserir na planilha - ordem correspondente aos cabeçalhos
     const values = [
       [
-        new Date().toLocaleString('pt-BR', { 
+        new Date().toLocaleString('pt-BR', {
           timeZone: 'America/Sao_Paulo',
           day: '2-digit',
-          month: '2-digit', 
+          month: '2-digit',
           year: 'numeric',
           hour: '2-digit',
           minute: '2-digit',
           second: '2-digit'
-        }), // Data/Hora formatada
-        data.nome, // Nome Completo
-        data.telefone, // Telefone
-        data.email, // E-mail
-        data.patrimonio, // Patrimônio para Investimento
-        data.origem, // Como nos conheceu?
-        data.origemFormulario, // Origem (Formulário)
-        'Novo', // Status inicial
-        data.mensagem || data.titulo || '' // Observações (mensagem ou título se houver)
+        }),                                  // A: Data/Hora
+        data.nome,                           // B: Nome Completo
+        data.telefone,                       // C: Telefone
+        data.email,                          // D: E-mail
+        data.patrimonio,                     // E: Patrimônio
+        data.origem,                         // F: Como nos conheceu?
+        data.origemFormulario,               // G: Origem (Formulário)
+        'Novo',                              // H: Status
+        data.mensagem || data.titulo || '',  // I: Observações
+        data.utm_source   ?? '',             // J: utm_source
+        data.utm_medium   ?? '',             // K: utm_medium
+        data.utm_campaign ?? '',             // L: utm_campaign
+        data.utm_content  ?? '',             // M: utm_content
+        data.utm_term     ?? '',             // N: utm_term
+        data.landing_page ?? '',             // O: landing_page
+        data.referrer     ?? '',             // P: referrer
       ]
     ];
 
     // Inserir dados na planilha
     const response = await sheets.spreadsheets.values.append({
       spreadsheetId,
-      range: 'Leads!A:I', // Colunas A até I (9 colunas)
+      range: 'Leads!A:P', // 16 colunas (A–I dados originais + J–P UTM)
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values,
@@ -108,13 +123,20 @@ export async function createSheetsHeaders() {
       'Como nos conheceu?',
       'Origem (Formulário)',
       'Status',
-      'Observações'
+      'Observações',
+      'utm_source',
+      'utm_medium',
+      'utm_campaign',
+      'utm_content',
+      'utm_term',
+      'landing_page',
+      'referrer',
     ];
 
     // Inserir cabeçalhos
     const response = await sheets.spreadsheets.values.update({
       spreadsheetId,
-      range: 'Leads!A1:I1',
+      range: 'Leads!A1:P1',
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values: [headers],
