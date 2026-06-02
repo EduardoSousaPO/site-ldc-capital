@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, CheckCircle } from "lucide-react";
 import { leadFormSchema, type LeadFormData, formatPhone, patrimonioOptions, origemOptions } from "@/app/lib/schema";
 import { trackLead, trackEvent } from "@/lib/analytics";
+import { captureUtmFromUrl, getStoredUtm, type UtmAttribution } from "@/lib/utm";
 
 type LeadFormProps = {
   title?: string;
@@ -22,6 +23,7 @@ type LeadFormProps = {
 export default function LeadForm({ title, subtitle, ctaLabel }: LeadFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const utmRef = useRef<UtmAttribution>({});
 
   const {
     register,
@@ -35,6 +37,10 @@ export default function LeadForm({ title, subtitle, ctaLabel }: LeadFormProps) {
     resolver: zodResolver(leadFormSchema),
   });
 
+  useEffect(() => {
+    utmRef.current = captureUtmFromUrl();
+  }, []);
+
   const telefoneValue = watch("telefone");
 
   const headingTitle = title ?? "Peça sua Análise de Carteira Gratuita";
@@ -44,10 +50,15 @@ export default function LeadForm({ title, subtitle, ctaLabel }: LeadFormProps) {
   const onSubmit = async (data: LeadFormData) => {
     setIsSubmitting(true);
     try {
+      // Atribuição do último clique — recarrega do storage caso a sessão tenha
+      // sido aberta antes do mount (ex.: SPA navigation).
+      const utm = { ...getStoredUtm(), ...utmRef.current };
+      const payload: LeadFormData = { ...data, ...utm };
+
       const response = await fetch("/api/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
       let result;
@@ -62,7 +73,22 @@ export default function LeadForm({ title, subtitle, ctaLabel }: LeadFormProps) {
         // Rastrear conversão bem-sucedida
         trackLead("formulario-home", 100);
         trackEvent("form_submit_success", "conversion", "formulario-lead");
-        
+
+        // Evento de conversão para GTM/GA4 — somente após sucesso confirmado.
+        if (typeof window !== "undefined") {
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({
+            event: "diagnostico_agendado",
+            form_name: "diagnostico_gratuito",
+            page_path: window.location.pathname,
+            utm_source: utm.utm_source,
+            utm_medium: utm.utm_medium,
+            utm_campaign: utm.utm_campaign,
+            utm_content: utm.utm_content,
+            utm_term: utm.utm_term,
+          });
+        }
+
         setIsSubmitted(true);
         reset();
         setTimeout(() => setIsSubmitted(false), 5000);

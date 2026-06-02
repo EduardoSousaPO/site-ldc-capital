@@ -135,6 +135,7 @@ export default function RootLayout({
 }>) {
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
   const metaPixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+  const gtmId = process.env.NEXT_PUBLIC_GTM_ID;
 
   return (
     <html lang="pt-BR" data-scroll-behavior="smooth">
@@ -148,7 +149,7 @@ export default function RootLayout({
           {children}
           <WhatsAppButton />
         </ToastProvider>
-        <Analytics gaId={gaId} metaPixelId={metaPixelId} />
+        <Analytics gaId={gaId} metaPixelId={metaPixelId} gtmId={gtmId} />
         {metaPixelId ? (
           <noscript>
             {/* Fallback sem JS: um único hit; o pixel principal roda só no useEffect de Analytics */}

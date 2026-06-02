@@ -31,7 +31,27 @@ export async function POST(request: NextRequest) {
       origemFormulario: 'Home' as const,
       ip: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown",
       userAgent: request.headers.get("user-agent") || "unknown",
+      utm_source: validatedData.utm_source ?? null,
+      utm_medium: validatedData.utm_medium ?? null,
+      utm_campaign: validatedData.utm_campaign ?? null,
+      utm_content: validatedData.utm_content ?? null,
+      utm_term: validatedData.utm_term ?? null,
+      landing_page: validatedData.landing_page ?? null,
+      referrer: validatedData.referrer ?? null,
     };
+
+    // utm_captured_at = momento do submit (createdAt já cobre, mas mantemos
+    // explícito para auditoria caso o cookie/storage tenha sido populado antes).
+    const hasAnyUtm = Boolean(
+      leadData.utm_source ||
+      leadData.utm_medium ||
+      leadData.utm_campaign ||
+      leadData.utm_content ||
+      leadData.utm_term ||
+      leadData.landing_page ||
+      leadData.referrer
+    );
+    const utmCapturedAt = hasAnyUtm ? new Date().toISOString() : null;
     
     // Salvar no Supabase usando a tabela Client (Lead não existe)
     let supabaseResult: { success: boolean; error?: string; leadId?: string } = { success: false };
@@ -46,6 +66,14 @@ export async function POST(request: NextRequest) {
           email: leadData.email,
           phone: leadData.telefone || null,
           notes: `Patrimônio: ${leadData.patrimonio || 'N/I'} | Origem: ${leadData.origem || 'Home'} | IP: ${leadData.ip}`,
+          utm_source: leadData.utm_source,
+          utm_medium: leadData.utm_medium,
+          utm_campaign: leadData.utm_campaign,
+          utm_content: leadData.utm_content,
+          utm_term: leadData.utm_term,
+          landing_page: leadData.landing_page,
+          referrer: leadData.referrer,
+          utm_captured_at: utmCapturedAt,
         })
         .select("id")
         .single();

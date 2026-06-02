@@ -218,28 +218,52 @@ export type Database = {
           createdAt: string
           email: string | null
           id: string
+          landing_page: string | null
           name: string
           notes: string | null
           phone: string | null
+          referrer: string | null
           updatedAt: string
+          utm_campaign: string | null
+          utm_captured_at: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
         }
         Insert: {
           createdAt?: string
           email?: string | null
           id?: string
+          landing_page?: string | null
           name: string
           notes?: string | null
           phone?: string | null
+          referrer?: string | null
           updatedAt?: string
+          utm_campaign?: string | null
+          utm_captured_at?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Update: {
           createdAt?: string
           email?: string | null
           id?: string
+          landing_page?: string | null
           name?: string
           notes?: string | null
           phone?: string | null
+          referrer?: string | null
           updatedAt?: string
+          utm_campaign?: string | null
+          utm_captured_at?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Relationships: []
       }
