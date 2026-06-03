@@ -228,3 +228,38 @@ window.dataLayer
 - `.env` real — alteração requer PAUSE (CLAUDE.md). Adicionar `NEXT_PUBLIC_GTM_ID=GTM-XXXXXXX` manualmente (template já em `.env.example`).
 - `supabase/migrations/` — nenhuma migração nova; apenas DDL sugerida na seção 5.
 - `next.config.ts`, `vercel.json` — fora do escopo.
+
+---
+
+## 11. Painel admin de rastreamento de vídeos (F-020)
+
+> Adicionado 2026-06-02. Feature Contract: `docs/plans/feature-contracts/F-admin-video-tracking.md`.
+
+Painel em `/admin` que gera links UTM e cruza **leads do Supabase** (`Client`, via `utm_content = videoId`) com **métricas do YouTube Data API v3**. Não usa GA4 Data API.
+
+### 11.1 Páginas
+
+| Rota | Função |
+|---|---|
+| `/admin/videos` | Lista de vídeos rastreados (filtros: campanha, período, busca; sort por leads_30d; paginação 20). |
+| `/admin/videos/new` | Cria/edita: cola URL do YouTube, define `utm_campaign` (chips dos 6 slugs oficiais + normalização), gera/copia link UTM. Edição via `?id=`. |
+| `/admin/videos/[id]` | Detalhe: KPIs (views/leads/conversão/última lead), LineChart leads/dia 90d, BarChart leads por origem, tabela de leads, botão "Atualizar métricas". |
+| `/admin/analytics/utm` | Dashboard global: cards (total/com-UTM/share/top campanha), BarCharts por campanha e source, LineChart leads/dia, top 10 vídeos. |
+
+### 11.2 Rotas API (todas com `checkAdminAuth` + service role)
+
+`POST/GET /api/admin/videos` · `GET/PATCH/DELETE /api/admin/videos/[id]` · `POST .../[id]/refresh` (rate-limit 1/min) · `GET .../[id]/leads` · `GET .../preview` · `GET /api/admin/analytics/utm`.
+
+Resposta padrão: `{ success: true, data }` | `{ success: false, message, errors? }`.
+
+### 11.3 Banco
+
+Tabela nova `tracked_videos` (migration `20260602190000_create_tracked_videos`): cache de métricas YouTube + `utm_campaign`. RLS habilitado (`is_admin_or_editor()` como defesa em profundidade; gate operacional é app-layer). **Não altera `Client`** — o join de leads é `Client.utm_content = tracked_videos.youtube_video_id`. Leads sem vídeo correspondente são "órfãos".
+
+### 11.4 Env
+
+`YOUTUBE_API_KEY` (server-only, **nunca** `NEXT_PUBLIC_`). Sem a chave, o painel funciona mas exibe "métrica indisponível" (degradação graciosa). Adicionar em `.env` local e nos environments da Vercel.
+
+### 11.5 Geração de link (consistente com §1)
+
+`buildUtmUrl` produz `https://www.ldccapital.com.br/diagnostico-gratuito?utm_source=youtube&utm_medium=video&utm_campaign=<slug>&utm_content=<videoId>[&utm_term=...]`. A normalização de slug (`normalizeCampaignSlug`) garante minúsculas-com-hífen-sem-acento. Os 6 slugs oficiais (§1) aparecem como chips; outros valores são aceitos com aviso suave.

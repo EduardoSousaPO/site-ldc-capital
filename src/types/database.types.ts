@@ -572,6 +572,71 @@ export type Database = {
           },
         ]
       }
+      tracked_videos: {
+        Row: {
+          channel_title: string | null
+          comment_count: number | null
+          created_at: string
+          created_by_user_id: string | null
+          duration_seconds: number | null
+          id: string
+          like_count: number | null
+          published_at: string | null
+          thumbnail_url: string | null
+          title: string | null
+          updated_at: string
+          utm_campaign: string
+          utm_term: string | null
+          view_count: number | null
+          youtube_synced_at: string | null
+          youtube_video_id: string
+        }
+        Insert: {
+          channel_title?: string | null
+          comment_count?: number | null
+          created_at?: string
+          created_by_user_id?: string | null
+          duration_seconds?: number | null
+          id?: string
+          like_count?: number | null
+          published_at?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string
+          utm_campaign: string
+          utm_term?: string | null
+          view_count?: number | null
+          youtube_synced_at?: string | null
+          youtube_video_id: string
+        }
+        Update: {
+          channel_title?: string | null
+          comment_count?: number | null
+          created_at?: string
+          created_by_user_id?: string | null
+          duration_seconds?: number | null
+          id?: string
+          like_count?: number | null
+          published_at?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string
+          utm_campaign?: string
+          utm_term?: string | null
+          view_count?: number | null
+          youtube_synced_at?: string | null
+          youtube_video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracked_videos_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "User"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       User: {
         Row: {
           createdAt: string

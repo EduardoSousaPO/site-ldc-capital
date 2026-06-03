@@ -15,7 +15,8 @@ import {
   User,
   BookOpen,
   TrendingUp,
-  CloudUpload
+  CloudUpload,
+  Video
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AdminToaster } from "@/components/ui/toaster";
@@ -102,6 +103,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       href: "/admin/materials",
       icon: BookOpen,
       current: pathname.startsWith("/admin/materials")
+    },
+    {
+      name: "Vídeos",
+      href: "/admin/videos",
+      icon: Video,
+      current: pathname.startsWith("/admin/videos") || pathname.startsWith("/admin/analytics")
     },
     {
       name: "Wealth Planning",
